@@ -1,0 +1,13 @@
+{
+  "services": [
+    {
+      "id": "1",
+      "name": "Glances",
+      "url": "http://localhost:61208",
+      "icon": "monitor",
+      "description": "System Monitoring"
+    }
+  ],
+  "glances_url": "http://localhost:61208",
+  "refresh_interval": 2000
+}

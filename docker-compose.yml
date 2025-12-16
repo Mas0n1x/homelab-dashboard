@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: homelab-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - homelab-network
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: homelab-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - GLANCES_URL=http://host.docker.internal:61208
+      - CONFIG_PATH=/app/data/config.json
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - homelab-data:/app/data
+    networks:
+      - homelab-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  nginx:
+    image: nginx:alpine
+    container_name: homelab-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - homelab-network
+    depends_on:
+      - frontend
+      - backend
+
+networks:
+  homelab-network:
+    driver: bridge
+
+volumes:
+  homelab-data:
