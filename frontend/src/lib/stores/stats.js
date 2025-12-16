@@ -7,11 +7,11 @@ export const services = writable([]);
 export const connected = writable(false);
 
 const API_URL = typeof window !== 'undefined'
-  ? `${window.location.protocol}//${window.location.hostname}:3001`
+  ? `${window.location.protocol}//${window.location.host}`
   : 'http://localhost:3001';
 
 const WS_URL = typeof window !== 'undefined'
-  ? `ws://${window.location.hostname}:3001/ws`
+  ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
   : 'ws://localhost:3001/ws';
 
 let ws = null;
