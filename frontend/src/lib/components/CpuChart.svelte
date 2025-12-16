@@ -25,8 +25,8 @@
         datasets: [{
           label: 'CPU %',
           data: cpuHistory,
-          borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderColor: 'rgb(34, 197, 94)',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
           fill: true,
           tension: 0.3,
           pointRadius: 0,

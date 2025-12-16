@@ -33,8 +33,8 @@
   <div class="card">
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-2">
-        <div class="p-2 bg-blue-600/20 rounded-lg">
-          <Cpu class="w-5 h-5 text-blue-400" />
+        <div class="p-2 bg-green-600/20 rounded-lg">
+          <Cpu class="w-5 h-5 text-green-400" />
         </div>
         <span class="font-medium text-dark-200">CPU</span>
       </div>
@@ -56,8 +56,8 @@
   <div class="card">
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-2">
-        <div class="p-2 bg-purple-600/20 rounded-lg">
-          <MemoryStick class="w-5 h-5 text-purple-400" />
+        <div class="p-2 bg-green-600/20 rounded-lg">
+          <MemoryStick class="w-5 h-5 text-green-400" />
         </div>
         <span class="font-medium text-dark-200">RAM</span>
       </div>
@@ -79,8 +79,8 @@
   <div class="card">
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-2">
-        <div class="p-2 bg-orange-600/20 rounded-lg">
-          <HardDrive class="w-5 h-5 text-orange-400" />
+        <div class="p-2 bg-green-600/20 rounded-lg">
+          <HardDrive class="w-5 h-5 text-green-400" />
         </div>
         <span class="font-medium text-dark-200">Disk</span>
       </div>
@@ -102,8 +102,8 @@
   <div class="card">
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-2">
-        <div class="p-2 bg-red-600/20 rounded-lg">
-          <Thermometer class="w-5 h-5 text-red-400" />
+        <div class="p-2 bg-green-600/20 rounded-lg">
+          <Thermometer class="w-5 h-5 text-green-400" />
         </div>
         <span class="font-medium text-dark-200">Temperatur</span>
       </div>
@@ -137,8 +137,8 @@
 
   <!-- Network -->
   <div class="card flex items-center gap-4">
-    <div class="p-3 bg-cyan-600/20 rounded-lg">
-      <Wifi class="w-6 h-6 text-cyan-400" />
+    <div class="p-3 bg-green-600/20 rounded-lg">
+      <Wifi class="w-6 h-6 text-green-400" />
     </div>
     <div class="flex-1">
       <p class="stat-label">Netzwerk</p>
@@ -146,7 +146,7 @@
         {@const net = $systemStats.network[0]}
         <div class="flex gap-4 text-sm">
           <span class="text-green-400">↓ {formatBytes(net.rxRate || 0)}/s</span>
-          <span class="text-blue-400">↑ {formatBytes(net.txRate || 0)}/s</span>
+          <span class="text-green-300">↑ {formatBytes(net.txRate || 0)}/s</span>
         </div>
       {:else}
         <p class="text-sm text-dark-400">Keine Daten</p>

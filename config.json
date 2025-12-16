@@ -3,11 +3,165 @@
     {
       "id": "1",
       "name": "Glances",
-      "url": "http://localhost:61208",
+      "url": "http://192.168.2.103:61208",
       "icon": "monitor",
       "description": "System Monitoring"
+    },
+    {
+      "id": "2",
+      "name": "Pi-hole",
+      "url": "http://192.168.2.103:8082/admin",
+      "icon": "shield",
+      "description": "DNS & Adblocker"
+    },
+    {
+      "id": "3",
+      "name": "Wiki.js",
+      "url": "http://192.168.2.103:8081",
+      "icon": "file",
+      "description": "Wiki & Dokumentation"
+    },
+    {
+      "id": "4",
+      "name": "Portainer",
+      "url": "http://192.168.2.103:9000",
+      "icon": "server",
+      "description": "Container Management"
+    },
+    {
+      "id": "5",
+      "name": "Vaultwarden",
+      "url": "https://vault.corleone-lspd.de",
+      "icon": "shield",
+      "description": "Passwort Manager"
+    },
+    {
+      "id": "6",
+      "name": "Nextcloud",
+      "url": "http://maxcloud.corleone-lspd.de",
+      "icon": "cloud",
+      "description": "Cloud Storage"
+    },
+    {
+      "id": "7",
+      "name": "FileBrowser",
+      "url": "http://192.168.2.103:8088",
+      "icon": "storage",
+      "description": "Dateimanager"
+    },
+    {
+      "id": "8",
+      "name": "Grafana",
+      "url": "http://192.168.2.103:3000",
+      "icon": "monitor",
+      "description": "Dashboards & Metriken"
+    },
+    {
+      "id": "9",
+      "name": "OpenSpeedTest",
+      "url": "http://192.168.2.103:8087",
+      "icon": "wifi",
+      "description": "Netzwerk Speedtest"
+    },
+    {
+      "id": "10",
+      "name": "LawNet",
+      "url": "https://akten.corleone-lspd.de",
+      "icon": "database",
+      "description": "Aktensystem Produktion"
+    },
+    {
+      "id": "11",
+      "name": "LawNet Dev",
+      "url": "http://192.168.2.103:8100",
+      "icon": "terminal",
+      "description": "Aktensystem Entwicklung"
+    },
+    {
+      "id": "12",
+      "name": "LawNet Sales",
+      "url": "http://192.168.2.103:8099",
+      "icon": "database",
+      "description": "Aktensystem Sales"
+    },
+    {
+      "id": "13",
+      "name": "LawNet Sales Admin",
+      "url": "http://192.168.2.103:8099/admin.html",
+      "icon": "settings",
+      "description": "Sales Administration"
+    },
+    {
+      "id": "14",
+      "name": "LSPD Dashboard",
+      "url": "https://dashboard.corleone-lspd.de",
+      "icon": "shield",
+      "description": "LSPD Übersicht"
+    },
+    {
+      "id": "15",
+      "name": "LSPD Generatoren",
+      "url": "https://generator.corleone-lspd.de",
+      "icon": "settings",
+      "description": "Akten & Einsatzbericht Generator"
+    },
+    {
+      "id": "16",
+      "name": "Personalsystem",
+      "url": "https://personal.corleone-lspd.de",
+      "icon": "server",
+      "description": "Personal Management"
+    },
+    {
+      "id": "17",
+      "name": "Straftatenrechner",
+      "url": "http://192.168.2.103:8102",
+      "icon": "settings",
+      "description": "LSPD Strafberechnung"
+    },
+    {
+      "id": "18",
+      "name": "Diensthandbuch",
+      "url": "https://diensthandbuch.corleone-lspd.de",
+      "icon": "file",
+      "description": "LSPD Wiki"
+    },
+    {
+      "id": "19",
+      "name": "WordPress",
+      "url": "http://diensthandbuch.corleone-lspd.de",
+      "icon": "globe",
+      "description": "Diensthandbuch (alt)"
+    },
+    {
+      "id": "20",
+      "name": "Portfolio",
+      "url": "http://192.168.2.103:8101",
+      "icon": "globe",
+      "description": "mas0n1x Portfolio"
+    },
+    {
+      "id": "21",
+      "name": "Jellyfin",
+      "url": "http://192.168.2.103:8096",
+      "icon": "video",
+      "description": "Media Server"
+    },
+    {
+      "id": "22",
+      "name": "PaperlessNGX",
+      "url": "http://192.168.2.103:8084/dashboard",
+      "icon": "file",
+      "description": "Dokumentenmanagement"
+    },
+    {
+      "id": "23",
+      "name": "Homelab Dashboard",
+      "url": "http://192.168.2.103",
+      "icon": "monitor",
+      "description": "Dieses Dashboard"
     }
   ],
-  "glances_url": "http://localhost:61208",
+  "glances_url": "http://192.168.2.103:61208",
   "refresh_interval": 2000
 }

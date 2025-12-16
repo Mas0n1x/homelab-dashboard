@@ -67,14 +67,14 @@
         href={service.url}
         target="_blank"
         rel="noopener noreferrer"
-        class="card hover:border-blue-500 hover:bg-dark-800 transition-all group relative"
+        class="card hover:border-green-500 hover:bg-dark-800 transition-all group relative"
       >
         <div class="flex items-center gap-3">
-          <div class="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-            <svelte:component this={getIcon(service.icon)} class="w-6 h-6 text-blue-400" />
+          <div class="p-3 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-colors">
+            <svelte:component this={getIcon(service.icon)} class="w-6 h-6 text-green-400" />
           </div>
           <div class="flex-1 min-w-0">
-            <h3 class="font-medium text-white group-hover:text-blue-400 transition-colors truncate">
+            <h3 class="font-medium text-white group-hover:text-green-400 transition-colors truncate">
               {service.name}
             </h3>
             {#if service.description}
@@ -83,7 +83,7 @@
               <p class="text-xs text-dark-500 truncate">{service.url}</p>
             {/if}
           </div>
-          <ExternalLink class="w-4 h-4 text-dark-500 group-hover:text-blue-400 transition-colors" />
+          <ExternalLink class="w-4 h-4 text-dark-500 group-hover:text-green-400 transition-colors" />
         </div>
 
         <button
@@ -105,7 +105,7 @@
 
     {#if $services.length > 0}
       <button
-        class="card border-dashed hover:border-blue-500 hover:bg-dark-800 transition-all flex items-center justify-center gap-2 text-dark-400 hover:text-blue-400 min-h-[88px]"
+        class="card border-dashed hover:border-green-500 hover:bg-dark-800 transition-all flex items-center justify-center gap-2 text-dark-400 hover:text-green-400 min-h-[88px]"
         on:click={openModal}
       >
         <Plus class="w-5 h-5" />
@@ -133,7 +133,7 @@
             type="text"
             bind:value={newService.name}
             placeholder="z.B. Portainer"
-            class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-blue-500"
+            class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-green-500"
             required
           />
         </div>
@@ -144,7 +144,7 @@
             type="url"
             bind:value={newService.url}
             placeholder="http://192.168.1.100:9000"
-            class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-blue-500"
+            class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-green-500"
             required
           />
         </div>
@@ -155,7 +155,7 @@
             type="text"
             bind:value={newService.description}
             placeholder="Container Management"
-            class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-blue-500"
+            class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-green-500"
           />
         </div>
 
@@ -165,10 +165,10 @@
             {#each availableIcons as icon}
               <button
                 type="button"
-                class="p-2 rounded-lg border transition-all {newService.icon === icon ? 'border-blue-500 bg-blue-600/20' : 'border-dark-600 hover:border-dark-500'}"
+                class="p-2 rounded-lg border transition-all {newService.icon === icon ? 'border-green-500 bg-green-600/20' : 'border-dark-600 hover:border-dark-500'}"
                 on:click={() => newService.icon = icon}
               >
-                <svelte:component this={getIcon(icon)} class="w-4 h-4 {newService.icon === icon ? 'text-blue-400' : 'text-dark-400'}" />
+                <svelte:component this={getIcon(icon)} class="w-4 h-4 {newService.icon === icon ? 'text-green-400' : 'text-dark-400'}" />
               </button>
             {/each}
           </div>

@@ -36,8 +36,8 @@ export async function getSystemStats() {
         interface: n.interface_name,
         rxBytes: n.bytes_recv || 0,
         txBytes: n.bytes_sent || 0,
-        rxRate: n.bytes_recv_rate || 0,
-        txRate: n.bytes_sent_rate || 0
+        rxRate: n.bytes_recv_rate_per_sec || n.bytes_recv_rate || 0,
+        txRate: n.bytes_sent_rate_per_sec || n.bytes_sent_rate || 0
       })) : [],
       temperature: Array.isArray(sensors) ? sensors.filter(s => s.type === 'temperature_core').map(s => ({
         label: s.label,

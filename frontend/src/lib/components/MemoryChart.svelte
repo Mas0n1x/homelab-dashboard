@@ -25,8 +25,8 @@
         datasets: [{
           label: 'RAM %',
           data: memHistory,
-          borderColor: 'rgb(168, 85, 247)',
-          backgroundColor: 'rgba(168, 85, 247, 0.1)',
+          borderColor: 'rgb(74, 222, 128)',
+          backgroundColor: 'rgba(74, 222, 128, 0.1)',
           fill: true,
           tension: 0.3,
           pointRadius: 0,

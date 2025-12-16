@@ -131,7 +131,7 @@
             on:click={() => openLogs(container.id, container.name)}
             title="Logs"
           >
-            <FileText class="w-4 h-4 text-blue-400" />
+            <FileText class="w-4 h-4 text-green-400" />
           </button>
         </div>
       </div>
@@ -177,7 +177,7 @@
       <div class="flex-1 overflow-auto p-4">
         {#if loadingLogs}
           <div class="flex items-center justify-center py-8">
-            <RotateCcw class="w-6 h-6 animate-spin text-blue-400" />
+            <RotateCcw class="w-6 h-6 animate-spin text-green-400" />
           </div>
         {:else}
           <pre class="text-xs text-dark-300 font-mono whitespace-pre-wrap break-all">{logsContent || 'Keine Logs vorhanden'}</pre>

@@ -2,7 +2,7 @@
   import '../app.css';
   import { onMount, onDestroy } from 'svelte';
   import { connectWebSocket, disconnectWebSocket, connected, fetchServices } from '$lib/stores/stats.js';
-  import { Server, Activity, Box, Link, RefreshCw } from 'lucide-svelte';
+  import { Activity, Box, Link, RefreshCw } from 'lucide-svelte';
 
   let currentTime = new Date();
   let timeInterval;
@@ -35,9 +35,7 @@
     <div class="container mx-auto px-4 py-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div class="p-2 bg-blue-600 rounded-lg">
-            <Server class="w-6 h-6" />
-          </div>
+          <img src="/logo.png" alt="Mason1x" class="w-10 h-10 rounded-lg" />
           <div>
             <h1 class="text-xl font-bold text-white">Homelab Dashboard</h1>
             <p class="text-xs text-dark-400">Raspberry Pi 5</p>
