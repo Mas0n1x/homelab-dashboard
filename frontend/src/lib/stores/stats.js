@@ -135,3 +135,23 @@ export async function getContainerLogs(containerId, tail = 100) {
     throw error;
   }
 }
+
+export async function getContainerDetails(containerId) {
+  try {
+    const response = await fetch(`${API_URL}/api/docker/containers/${containerId}/details`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching container details:', error);
+    throw error;
+  }
+}
+
+export async function getContainerStats(containerId) {
+  try {
+    const response = await fetch(`${API_URL}/api/docker/containers/${containerId}/stats`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching container stats:', error);
+    throw error;
+  }
+}
