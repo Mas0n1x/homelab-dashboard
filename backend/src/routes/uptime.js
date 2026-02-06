@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getUptimePercent, getUptimeHistory, getUptimeSummary } from '../services/uptime.js';
+import { getUptimePercent, getUptimeHistory, getUptimeSummary, getUptimeTimeline } from '../services/uptime.js';
 
 const router = Router();
 
@@ -11,6 +11,17 @@ router.get('/summary', (req, res) => {
     res.json(summary);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch uptime summary', message: error.message });
+  }
+});
+
+// Get 30-day timeline for a service
+router.get('/timeline/:serviceId', (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const timeline = getUptimeTimeline(req.params.serviceId, days);
+    res.json(timeline);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch timeline', message: error.message });
   }
 });
 

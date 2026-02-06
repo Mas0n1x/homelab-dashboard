@@ -3,12 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Activity, Bell, Server } from 'lucide-react';
+import { Activity, Server } from 'lucide-react';
 import { clsx } from 'clsx';
 import { NAV_ITEMS, getIcon } from '@/lib/constants';
 import { useServerStore } from '@/stores/serverStore';
-import { useNotificationStore } from '@/stores/notificationStore';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { NotificationDropdown } from './NotificationDropdown';
 
 interface HeaderProps {
   connected: boolean;
@@ -17,7 +17,6 @@ interface HeaderProps {
 export function Header({ connected }: HeaderProps) {
   const pathname = usePathname();
   const { activeServerId, servers } = useServerStore();
-  const { unreadCount } = useNotificationStore();
   const [time, setTime] = useState('');
   const [showServerDropdown, setShowServerDropdown] = useState(false);
   const { setActiveServer } = useServerStore();
@@ -121,14 +120,7 @@ export function Header({ connected }: HeaderProps) {
             />
 
             {/* Notifications */}
-            <button className="relative p-2 rounded-lg hover:bg-white/[0.06] transition-colors">
-              <Bell className="w-4.5 h-4.5 text-white/50" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-accent-danger text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
+            <NotificationDropdown />
 
             {/* Time */}
             <span className="text-sm font-mono text-white/40 hidden lg:block">{time}</span>

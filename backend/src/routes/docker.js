@@ -84,6 +84,20 @@ router.post('/containers/:id/restart', async (req, res) => {
   }
 });
 
+// Update container restart policy
+router.put('/containers/:id/restart-policy', async (req, res) => {
+  try {
+    const { policy } = req.body; // 'no', 'always', 'unless-stopped', 'on-failure'
+    if (!['no', 'always', 'unless-stopped', 'on-failure'].includes(policy)) {
+      return res.status(400).json({ error: 'Invalid restart policy' });
+    }
+    const result = await dockerService.updateRestartPolicy(req.params.id, policy);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update restart policy', message: error.message });
+  }
+});
+
 // ==================== IMAGES ====================
 
 // Get all images
@@ -184,6 +198,72 @@ router.post('/system/prune', async (req, res) => {
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to prune system', message: error.message });
+  }
+});
+
+// ==================== COMPOSE PROJECTS ====================
+
+router.get('/compose/projects', async (req, res) => {
+  try {
+    const projects = await dockerService.getComposeProjects();
+    res.json(projects);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/compose/:project/:action', async (req, res) => {
+  try {
+    const { project, action } = req.params;
+    if (!['start', 'stop', 'restart'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid action' });
+    }
+    const result = await dockerService.composeAction(project, action);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== IMAGE UPDATES ====================
+
+router.get('/updates/check', async (req, res) => {
+  try {
+    const updates = await dockerService.checkImageUpdates();
+    res.json(updates);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/updates/pull/:id', async (req, res) => {
+  try {
+    const result = await dockerService.pullAndRecreate(req.params.id);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== DISK USAGE ====================
+
+router.get('/disk-usage', async (req, res) => {
+  try {
+    const usage = await dockerService.getDiskUsage();
+    res.json(usage);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== CONTAINER STATS BATCH ====================
+
+router.get('/stats/all', async (req, res) => {
+  try {
+    const stats = await dockerService.getAllContainerStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

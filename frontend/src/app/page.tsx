@@ -1,34 +1,59 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Box, Image, Server } from 'lucide-react';
 import { SystemOverview } from '@/components/monitoring/SystemOverview';
 import { CpuChart } from '@/components/monitoring/CpuChart';
 import { MemoryChart } from '@/components/monitoring/MemoryChart';
 import { NetworkChart } from '@/components/monitoring/NetworkChart';
+import { FavoritesBar } from '@/components/dashboard/FavoritesBar';
+import { SpeedtestWidget } from '@/components/dashboard/SpeedtestWidget';
+import { SearchBar } from '@/components/dashboard/SearchBar';
+import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
+import { GitHubWidget } from '@/components/dashboard/GitHubWidget';
+import { CalendarWidget } from '@/components/dashboard/CalendarWidget';
+import { BookmarksWidget } from '@/components/dashboard/BookmarksWidget';
+import { NotesWidget } from '@/components/dashboard/NotesWidget';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { useServerStore } from '@/stores/serverStore';
 import type { SystemStats, DockerInfo, Container, PortfolioData } from '@/lib/types';
 
 export default function DashboardPage() {
-  const queryClient = useQueryClient();
   const { activeServerId } = useServerStore();
 
-  const stats = queryClient.getQueryData<SystemStats>(['systemStats', activeServerId]);
-  const dockerInfo = queryClient.getQueryData<DockerInfo>(['dockerInfo', activeServerId]);
-  const containers = queryClient.getQueryData<Container[]>(['containers', activeServerId]);
-  const portfolio = queryClient.getQueryData<PortfolioData>(['portfolio']);
+  const { data: stats } = useQuery<SystemStats>({
+    queryKey: ['systemStats', activeServerId],
+    enabled: false,
+  });
+  const { data: dockerInfo } = useQuery<DockerInfo>({
+    queryKey: ['dockerInfo', activeServerId],
+    enabled: false,
+  });
+  const { data: containers } = useQuery<Container[]>({
+    queryKey: ['containers', activeServerId],
+    enabled: false,
+  });
+  const { data: portfolio } = useQuery<PortfolioData>({
+    queryKey: ['portfolio'],
+    enabled: false,
+  });
 
   const running = containers?.filter(c => c.state === 'running').length || 0;
   const total = containers?.length || 0;
 
   return (
     <div className="space-y-6">
+      {/* Search Bar */}
+      <SearchBar />
+
+      {/* Favorites */}
+      <FavoritesBar />
+
       {/* System Stats */}
       <SystemOverview stats={stats || null} />
 
-      {/* Docker + Portfolio Summary */}
+      {/* Docker + Uptime + Speedtest */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <GlassCard delay={0.15} glow="cyan" hover>
           <div className="flex items-center justify-between mb-2">
@@ -63,18 +88,38 @@ export default function DashboardPage() {
           <span className="text-xl font-semibold text-emerald-400">{stats?.uptime || 'N/A'}</span>
         </GlassCard>
 
-        {portfolio && (
+        <SpeedtestWidget />
+      </div>
+
+      {/* Weather + Calendar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <WeatherWidget />
+        <CalendarWidget />
+        {portfolio ? (
           <GlassCard delay={0.3} glow="indigo" hover>
-            <div className="flex items-center justify-between mb-2">
-              <span className="stat-label">Portfolio Anfragen</span>
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <span className="stat-label">Portfolio Anfragen</span>
+                <span className="stat-value text-accent-light block mt-1">
+                  <AnimatedNumber value={portfolio.stats.openRequests} />
+                </span>
+              </div>
+              <span className="text-sm text-white/30">{portfolio.stats.customers} Kunden</span>
             </div>
-            <span className="stat-value text-accent-light">
-              <AnimatedNumber value={portfolio.stats.openRequests} />
-            </span>
-            <p className="text-xs text-white/30 mt-1">{portfolio.stats.customers} Kunden</p>
           </GlassCard>
+        ) : (
+          <BookmarksWidget />
         )}
       </div>
+
+      {/* Bookmarks + Notes */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {portfolio && <BookmarksWidget />}
+        <NotesWidget />
+      </div>
+
+      {/* GitHub */}
+      <GitHubWidget />
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

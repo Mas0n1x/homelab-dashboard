@@ -100,6 +100,18 @@ export async function restartContainer(containerId, dockerInstance) {
   }
 }
 
+export async function updateRestartPolicy(containerId, policy, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
+  try {
+    const container = docker.getContainer(containerId);
+    await container.update({ RestartPolicy: { Name: policy, MaximumRetryCount: policy === 'on-failure' ? 5 : 0 } });
+    return { success: true, message: `Restart policy updated to ${policy}` };
+  } catch (error) {
+    console.error('Error updating restart policy:', error.message);
+    throw error;
+  }
+}
+
 export async function getContainerLogs(containerId, tail = 100, dockerInstance) {
   const docker = getDockerInstance(dockerInstance);
   try {
@@ -371,6 +383,225 @@ export async function systemPrune(options = {}, dockerInstance) {
   } catch (error) {
     console.error('Error pruning system:', error.message);
     throw error;
+  }
+}
+
+// ==================== COMPOSE ACTIONS ====================
+
+export async function getComposeProjects(dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
+  try {
+    const containers = await docker.listContainers({ all: true });
+    const projects = new Map();
+
+    containers.forEach(c => {
+      const project = c.Labels?.['com.docker.compose.project'] || null;
+      if (!project) return;
+      if (!projects.has(project)) {
+        projects.set(project, {
+          name: project,
+          workingDir: c.Labels?.['com.docker.compose.project.working_dir'] || null,
+          configFiles: c.Labels?.['com.docker.compose.project.config_files'] || null,
+          containers: [],
+        });
+      }
+      projects.get(project).containers.push({
+        id: c.Id,
+        name: c.Names[0]?.replace(/^\//, '') || 'unknown',
+        service: c.Labels?.['com.docker.compose.service'] || '',
+        state: c.State,
+        image: c.Image,
+      });
+    });
+
+    return Array.from(projects.values());
+  } catch (error) {
+    console.error('Error fetching compose projects:', error.message);
+    throw error;
+  }
+}
+
+export async function composeAction(projectName, action, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
+  try {
+    const containers = await docker.listContainers({ all: true });
+    const projectContainers = containers.filter(
+      c => c.Labels?.['com.docker.compose.project'] === projectName
+    );
+
+    const results = [];
+    for (const c of projectContainers) {
+      const container = docker.getContainer(c.Id);
+      try {
+        if (action === 'stop') await container.stop();
+        else if (action === 'start') await container.start();
+        else if (action === 'restart') await container.restart();
+        results.push({ id: c.Id, name: c.Names[0]?.replace(/^\//, ''), success: true });
+      } catch (e) {
+        results.push({ id: c.Id, name: c.Names[0]?.replace(/^\//, ''), success: false, error: e.message });
+      }
+    }
+
+    return { project: projectName, action, results };
+  } catch (error) {
+    console.error('Error performing compose action:', error.message);
+    throw error;
+  }
+}
+
+// ==================== IMAGE UPDATE CHECK ====================
+
+export async function checkImageUpdates(dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
+  try {
+    const containers = await docker.listContainers({ all: true });
+    const updates = [];
+
+    for (const c of containers) {
+      const image = c.Image;
+      if (!image || image.startsWith('sha256:')) continue;
+
+      try {
+        const [repo, tag = 'latest'] = image.includes(':') ? image.split(':') : [image, 'latest'];
+        const pullStream = await docker.pull(`${repo}:${tag}`);
+        await new Promise((resolve, reject) => {
+          docker.modem.followProgress(pullStream, (err, output) => {
+            if (err) reject(err);
+            else resolve(output);
+          });
+        });
+
+        const currentInspect = await docker.getImage(c.ImageID).inspect();
+        const latestInspect = await docker.getImage(`${repo}:${tag}`).inspect();
+
+        if (currentInspect.Id !== latestInspect.Id) {
+          updates.push({
+            containerId: c.Id,
+            containerName: c.Names[0]?.replace(/^\//, ''),
+            image,
+            currentId: currentInspect.Id.substring(0, 12),
+            latestId: latestInspect.Id.substring(0, 12),
+            hasUpdate: true,
+          });
+        }
+      } catch {
+        // Skip images that can't be pulled
+      }
+    }
+
+    return updates;
+  } catch (error) {
+    console.error('Error checking image updates:', error.message);
+    throw error;
+  }
+}
+
+export async function pullAndRecreate(containerId, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
+  try {
+    const container = docker.getContainer(containerId);
+    const inspect = await container.inspect();
+    const image = inspect.Config.Image;
+
+    const pullStream = await docker.pull(image);
+    await new Promise((resolve, reject) => {
+      docker.modem.followProgress(pullStream, (err, output) => {
+        if (err) reject(err);
+        else resolve(output);
+      });
+    });
+
+    try { await container.stop(); } catch {}
+    await container.remove();
+
+    const newContainer = await docker.createContainer({
+      ...inspect.Config,
+      name: inspect.Name.replace(/^\//, ''),
+      HostConfig: inspect.HostConfig,
+      NetworkingConfig: { EndpointsConfig: inspect.NetworkSettings.Networks },
+    });
+
+    await newContainer.start();
+    return { success: true, newId: newContainer.id };
+  } catch (error) {
+    console.error('Error pulling and recreating:', error.message);
+    throw error;
+  }
+}
+
+// ==================== DISK USAGE ====================
+
+export async function getDiskUsage(dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
+  try {
+    const df = await docker.df();
+
+    const containers = (df.Containers || []).map(c => ({
+      id: c.Id?.substring(0, 12),
+      name: c.Names?.[0]?.replace(/^\//, '') || 'unknown',
+      size: c.SizeRw || 0,
+      rootFs: c.SizeRootFs || 0,
+      state: c.State,
+    }));
+
+    const images = (df.Images || []).map(i => ({
+      id: i.Id?.replace('sha256:', '').substring(0, 12),
+      repo: i.RepoTags?.[0] || '<none>',
+      size: i.Size || 0,
+      shared: i.SharedSize || 0,
+      unique: (i.Size || 0) - (i.SharedSize || 0),
+    }));
+
+    const volumes = (df.Volumes || []).map(v => ({
+      name: v.Name,
+      size: v.UsageData?.Size || 0,
+      refCount: v.UsageData?.RefCount || 0,
+    }));
+
+    const buildCache = (df.BuildCache || []).reduce((sum, b) => sum + (b.Size || 0), 0);
+
+    return { containers, images, volumes, buildCache };
+  } catch (error) {
+    console.error('Error fetching disk usage:', error.message);
+    throw error;
+  }
+}
+
+// ==================== CONTAINER STATS BATCH ====================
+
+export async function getAllContainerStats(dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
+  try {
+    const containers = await docker.listContainers({ filters: { status: ['running'] } });
+    const statsPromises = containers.map(async (c) => {
+      try {
+        const container = docker.getContainer(c.Id);
+        const stats = await container.stats({ stream: false });
+
+        const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
+        const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
+        const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * stats.cpu_stats.online_cpus * 100 : 0;
+        const memUsage = stats.memory_stats.usage || 0;
+        const memLimit = stats.memory_stats.limit || 1;
+
+        return {
+          id: c.Id.substring(0, 12),
+          name: c.Names[0]?.replace(/^\//, ''),
+          cpu: parseFloat(cpuPercent.toFixed(2)),
+          memUsage,
+          memLimit,
+          memPercent: parseFloat(((memUsage / memLimit) * 100).toFixed(2)),
+        };
+      } catch {
+        return null;
+      }
+    });
+
+    const results = await Promise.all(statsPromises);
+    return results.filter(Boolean);
+  } catch (error) {
+    console.error('Error fetching all container stats:', error.message);
+    return [];
   }
 }
 

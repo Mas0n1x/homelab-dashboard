@@ -7,6 +7,7 @@ import { useServerStore } from '@/stores/serverStore';
 import { Header } from '@/components/layout/Header';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { Background } from '@/components/layout/Background';
+import { ThemeCustomizer } from '@/components/dashboard/ThemeCustomizer';
 import * as api from '@/lib/api';
 
 function WebSocketManager({ children }: { children: React.ReactNode }) {
@@ -28,6 +29,7 @@ function WebSocketManager({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <MobileNav />
+      <ThemeCustomizer />
     </>
   );
 }

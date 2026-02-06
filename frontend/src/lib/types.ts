@@ -74,6 +74,7 @@ export interface DockerInfo {
 
 export interface Service {
   id: string
+  containerId?: string
   source: 'docker' | 'manual'
   serverId: string
   name: string
@@ -83,7 +84,9 @@ export interface Service {
   category: string
   order: number
   state?: string
+  status?: string
   image?: string
+  project?: string
   uptime?: {
     uptime24h: number | null
     uptime7d: number | null
@@ -171,4 +174,66 @@ export interface UptimeCheck {
   online: number
   response_time: number
   checked_at: string
+}
+
+export interface Favorite {
+  service_id: string
+  sort_order: number
+}
+
+export interface ContainerStats {
+  id: string
+  name: string
+  cpu: number
+  memUsage: number
+  memLimit: number
+  memPercent: number
+}
+
+export interface SpeedtestResult {
+  id?: number
+  download: number
+  upload: number
+  ping: number
+  server: string
+  tested_at?: string
+}
+
+export interface ComposeProject {
+  name: string
+  workingDir: string | null
+  configFiles: string | null
+  containers: {
+    id: string
+    name: string
+    service: string
+    state: string
+    image: string
+  }[]
+}
+
+export interface DiskUsage {
+  containers: { id: string; name: string; size: number; rootFs: number; state: string }[]
+  images: { id: string; repo: string; size: number; shared: number; unique: number }[]
+  volumes: { name: string; size: number; refCount: number }[]
+  buildCache: number
+}
+
+export interface AlertChannel {
+  id: string
+  type: 'discord' | 'telegram'
+  name: string
+  webhook_url: string
+  enabled: boolean
+  events: string[]
+  created_at?: string
+}
+
+export interface ImageUpdate {
+  containerId: string
+  containerName: string
+  image: string
+  currentId: string
+  latestId: string
+  hasUpdate: boolean
 }

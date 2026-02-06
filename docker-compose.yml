@@ -25,6 +25,7 @@ services:
       - DB_PATH=/app/data/dashboard.db
       - CONFIG_PATH=/app/data/config.json
       - PORTFOLIO_API_URL=http://host.docker.internal:3000
+      - PORTFOLIO_PASSWORD=admin
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - homelab-data:/app/data

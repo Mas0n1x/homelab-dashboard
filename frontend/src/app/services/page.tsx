@@ -2,21 +2,42 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ExternalLink, Plus, Trash2, Zap } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ExternalLink, Plus, Trash2, Zap, BarChart3, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Modal } from '@/components/ui/Modal';
+import { ServiceDetail } from '@/components/services/ServiceDetail';
 import { getIcon } from '@/lib/constants';
 import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
-import type { Service } from '@/lib/types';
+import type { Service, Favorite } from '@/lib/types';
 
 export default function ServicesPage() {
   const { activeServerId } = useServerStore();
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [expandedService, setExpandedService] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', url: '', icon: 'link', description: '', category: 'Extern' });
+
+  const { data: favorites } = useQuery<Favorite[]>({
+    queryKey: ['favorites', activeServerId],
+    queryFn: () => api.getFavorites(activeServerId) as Promise<Favorite[]>,
+    staleTime: 30000,
+  });
+
+  const favoriteIds = new Set(favorites?.map(f => f.service_id) || []);
+
+  const favMutation = useMutation({
+    mutationFn: async (serviceId: string) => {
+      if (favoriteIds.has(serviceId)) {
+        await api.removeFavorite(serviceId, activeServerId);
+      } else {
+        await api.addFavorite(serviceId, activeServerId);
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['favorites'] }),
+  });
 
   const { data } = useQuery({
     queryKey: ['services', activeServerId],
@@ -24,8 +45,12 @@ export default function ServicesPage() {
     refetchInterval: 30000,
   });
 
+  const { data: serviceStatus } = useQuery<any[]>({
+    queryKey: ['serviceStatus', activeServerId],
+    enabled: false,
+  });
+
   const services: Service[] = (data as any)?.services || [];
-  const serviceStatus = queryClient.getQueryData<any[]>(['serviceStatus', activeServerId]);
 
   const statusMap = new Map(serviceStatus?.map(s => [s.serviceId, s]) || []);
 
@@ -73,6 +98,7 @@ export default function ServicesPage() {
               const status = statusMap.get(service.id);
               const isOnline = status?.online ?? (service.state === 'running');
               const uptime24 = service.uptime?.uptime24h;
+              const isExpanded = expandedService === service.id;
 
               return (
                 <motion.div
@@ -81,8 +107,8 @@ export default function ServicesPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                 >
-                  <div className="glass-card glass-card-hover p-4 group h-full flex flex-col">
-                    <div className="relative z-10 flex flex-col h-full">
+                  <div className="glass-card glass-card-hover p-4 group flex flex-col">
+                    <div className="relative z-10 flex flex-col">
                       <div className="flex items-start justify-between mb-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isOnline ? 'bg-accent/10' : 'bg-red-500/10'}`}>
                           <Icon className={`w-5 h-5 ${isOnline ? 'text-accent-light' : 'text-red-400'}`} />
@@ -105,16 +131,27 @@ export default function ServicesPage() {
                         <p className="text-xs text-white/40 mb-3 line-clamp-2">{service.description}</p>
                       )}
 
-                      <div className="mt-auto pt-3 border-t border-white/[0.04] flex items-center justify-between">
-                        {uptime24 !== null && uptime24 !== undefined ? (
-                          <span className={`text-xs font-mono ${uptime24 >= 99 ? 'text-emerald-400' : uptime24 >= 90 ? 'text-amber-400' : 'text-red-400'}`}>
-                            {uptime24}% Uptime
-                          </span>
-                        ) : (
-                          <span className="text-xs text-white/20">--</span>
-                        )}
+                      <div className="pt-3 border-t border-white/[0.04] flex items-center justify-between">
+                        <button
+                          onClick={() => setExpandedService(isExpanded ? null : service.id)}
+                          className={`flex items-center gap-1 text-xs font-mono transition-colors ${
+                            isExpanded ? 'text-accent-light' : uptime24 !== null && uptime24 !== undefined
+                              ? uptime24 >= 99 ? 'text-emerald-400 hover:text-emerald-300' : uptime24 >= 90 ? 'text-amber-400 hover:text-amber-300' : 'text-red-400 hover:text-red-300'
+                              : 'text-white/20 hover:text-white/40'
+                          }`}
+                        >
+                          <BarChart3 className="w-3 h-3" />
+                          {uptime24 !== null && uptime24 !== undefined ? `${uptime24}%` : '--'}
+                        </button>
 
                         <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => favMutation.mutate(service.id)}
+                            className={`p-1.5 rounded-lg transition-all ${favoriteIds.has(service.id) ? 'text-amber-400 hover:bg-amber-500/10' : 'text-white/30 hover:text-amber-400 hover:bg-amber-500/10'}`}
+                            title={favoriteIds.has(service.id) ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+                          >
+                            <Star className={`w-3.5 h-3.5 ${favoriteIds.has(service.id) ? 'fill-current' : ''}`} />
+                          </button>
                           {service.url && (
                             <a
                               href={service.url}
@@ -135,6 +172,13 @@ export default function ServicesPage() {
                           )}
                         </div>
                       </div>
+
+                      {/* Service Detail (expandable: resources + uptime) */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <ServiceDetail service={service} />
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                 </motion.div>

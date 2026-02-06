@@ -8,6 +8,12 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Tabs } from '@/components/ui/Tabs';
 import { Modal } from '@/components/ui/Modal';
+import { ContainerResourcesInline } from '@/components/docker/ContainerResources';
+import { ComposeActions } from '@/components/docker/ComposeActions';
+import { DiskTreemap } from '@/components/docker/DiskTreemap';
+import { ImageUpdates } from '@/components/docker/ImageUpdates';
+import { ContainerComparison } from '@/components/docker/ContainerComparison';
+import { ContainerTemplates } from '@/components/docker/ContainerTemplates';
 import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import type { Container, DockerInfo } from '@/lib/types';
@@ -21,8 +27,10 @@ export default function DockerPage() {
   const [logsModal, setLogsModal] = useState<{ open: boolean; containerId: string; name: string; logs: string }>({ open: false, containerId: '', name: '', logs: '' });
   const [loading, setLoading] = useState<Record<string, boolean>>({});
 
-  const containers = queryClient.getQueryData<Container[]>(['containers', activeServerId]) || [];
-  const dockerInfo = queryClient.getQueryData<DockerInfo>(['dockerInfo', activeServerId]);
+  const { data: containersData } = useQuery<Container[]>({ queryKey: ['containers', activeServerId], enabled: false });
+  const { data: dockerInfoData } = useQuery<DockerInfo>({ queryKey: ['dockerInfo', activeServerId], enabled: false });
+  const containers = containersData || [];
+  const dockerInfo = dockerInfoData;
 
   const { data: images } = useQuery({ queryKey: ['images'], queryFn: () => api.getImages(), enabled: activeTab === 'images' });
   const { data: volumes } = useQuery({ queryKey: ['volumes'], queryFn: () => api.getVolumes(), enabled: activeTab === 'volumes' });
@@ -70,10 +78,15 @@ export default function DockerPage() {
 
   const tabs = [
     { id: 'containers', label: 'Container', count: containers.length },
+    { id: 'compose', label: 'Projekte' },
     { id: 'images', label: 'Images', count: (images as any[])?.length },
     { id: 'volumes', label: 'Volumes', count: (volumes as any[])?.length },
     { id: 'networks', label: 'Netzwerke', count: (networks as any[])?.length },
     { id: 'ports', label: 'Ports', count: (ports as any[])?.length },
+    { id: 'comparison', label: 'Vergleich' },
+    { id: 'templates', label: 'Templates' },
+    { id: 'storage', label: 'Speicher' },
+    { id: 'updates', label: 'Updates' },
   ];
 
   return (
@@ -130,6 +143,13 @@ export default function DockerPage() {
                           </div>
 
                           <div className="flex items-center gap-2 flex-shrink-0">
+                            {/* Resource sparklines for running containers */}
+                            {c.state === 'running' && (
+                              <div className="hidden lg:block">
+                                <ContainerResourcesInline containerId={c.id} />
+                              </div>
+                            )}
+
                             <StatusBadge status={c.state} />
 
                             {c.state === 'running' ? (
@@ -180,6 +200,9 @@ export default function DockerPage() {
           ))}
         </div>
       )}
+
+      {/* Compose Projects Tab */}
+      {activeTab === 'compose' && <ComposeActions />}
 
       {/* Images Tab */}
       {activeTab === 'images' && (
@@ -265,6 +288,18 @@ export default function DockerPage() {
           </div>
         </GlassCard>
       )}
+
+      {/* Comparison Tab */}
+      {activeTab === 'comparison' && <ContainerComparison />}
+
+      {/* Templates Tab */}
+      {activeTab === 'templates' && <ContainerTemplates />}
+
+      {/* Storage Tab */}
+      {activeTab === 'storage' && <DiskTreemap />}
+
+      {/* Updates Tab */}
+      {activeTab === 'updates' && <ImageUpdates />}
 
       {/* Logs Modal */}
       <Modal isOpen={logsModal.open} onClose={() => setLogsModal(prev => ({ ...prev, open: false }))} title={`Logs: ${logsModal.name}`} size="lg">

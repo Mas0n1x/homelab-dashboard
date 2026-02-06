@@ -67,6 +67,58 @@ export function getUptimeHistory(serviceId, hours = 24) {
   ).all(serviceId, since);
 }
 
+export function getUptimeTimeline(serviceId, days = 30) {
+  const db = getDb();
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  const rows = db.prepare(`
+    SELECT
+      date(checked_at) as day,
+      COUNT(*) as total,
+      SUM(online) as up,
+      ROUND(AVG(response_time)) as avg_response_time,
+      MIN(response_time) as min_response_time,
+      MAX(response_time) as max_response_time
+    FROM uptime_checks
+    WHERE service_id = ? AND checked_at > ?
+    GROUP BY date(checked_at)
+    ORDER BY day ASC
+  `).all(serviceId, since);
+
+  // Build full timeline filling gaps with null
+  const timeline = [];
+  const now = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    const dayStr = date.toISOString().split('T')[0];
+    const row = rows.find(r => r.day === dayStr);
+
+    timeline.push(row ? {
+      date: dayStr,
+      uptime: row.total > 0 ? parseFloat(((row.up / row.total) * 100).toFixed(1)) : null,
+      checks: row.total,
+      avgResponseTime: row.avg_response_time || 0,
+    } : {
+      date: dayStr,
+      uptime: null,
+      checks: 0,
+      avgResponseTime: 0,
+    });
+  }
+
+  const totalChecks = rows.reduce((sum, r) => sum + r.total, 0);
+  const totalUp = rows.reduce((sum, r) => sum + r.up, 0);
+
+  return {
+    serviceId,
+    days,
+    timeline,
+    overallUptime: totalChecks > 0 ? parseFloat(((totalUp / totalChecks) * 100).toFixed(2)) : null,
+    totalChecks
+  };
+}
+
 export function getUptimeSummary(serverId = 'local') {
   const db = getDb();
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();

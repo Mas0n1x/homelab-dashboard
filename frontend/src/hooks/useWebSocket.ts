@@ -17,7 +17,10 @@ export function useWebSocket() {
     if (typeof window === 'undefined') return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.hostname}:${window.location.port}/ws`;
+    const host = window.location.port
+      ? `${window.location.hostname}:${window.location.port}`
+      : window.location.hostname;
+    const wsUrl = `${protocol}//${host}/ws`;
 
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
@@ -52,6 +55,10 @@ export function useWebSocket() {
 
           case 'notifications':
             addNotifications(msg.data);
+            break;
+
+          case 'container-stats':
+            queryClient.setQueryData(['containerStats', msg.serverId], msg.data);
             break;
         }
       } catch {

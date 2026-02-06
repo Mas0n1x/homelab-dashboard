@@ -74,6 +74,84 @@ export function initDatabase() {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS favorites (
+      service_id TEXT NOT NULL,
+      server_id TEXT NOT NULL DEFAULT 'local',
+      sort_order INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (service_id, server_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS speedtest_results (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      download REAL NOT NULL,
+      upload REAL NOT NULL,
+      ping REAL NOT NULL,
+      server TEXT,
+      tested_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS alert_channels (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      name TEXT NOT NULL,
+      webhook_url TEXT NOT NULL,
+      enabled INTEGER DEFAULT 1,
+      events TEXT DEFAULT '["container_crash","service_offline","cpu_high"]',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS alert_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      channel_id TEXT,
+      event_type TEXT NOT NULL,
+      message TEXT NOT NULL,
+      sent_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS bookmarks (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      icon TEXT DEFAULT 'link',
+      category TEXT DEFAULT 'Allgemein',
+      sort_order INTEGER DEFAULT 999,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS notes (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT DEFAULT '',
+      pinned INTEGER DEFAULT 0,
+      color TEXT DEFAULT 'default',
+      updated_at TEXT DEFAULT (datetime('now')),
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS calendar_events (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      date TEXT NOT NULL,
+      time TEXT,
+      color TEXT DEFAULT 'indigo',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS container_templates (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      image TEXT NOT NULL,
+      ports TEXT DEFAULT '[]',
+      env TEXT DEFAULT '[]',
+      volumes TEXT DEFAULT '[]',
+      restart_policy TEXT DEFAULT 'unless-stopped',
+      category TEXT DEFAULT 'Allgemein',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   // Ensure local server exists

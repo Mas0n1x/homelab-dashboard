@@ -1,7 +1,8 @@
 import {
   Monitor, Shield, Server, Database, Cloud, HardDrive, Wifi, Settings,
   Terminal, Globe, Film, FileText, Box, Lock, BarChart3, Search,
-  Mail, Calendar, Users, CreditCard, BookOpen, Folder, Activity, Link
+  Mail, Calendar, Users, CreditCard, BookOpen, Folder, Activity, Link,
+  Map, Bot, GitBranch, Download, Play, Home, ShoppingCart
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -18,6 +19,7 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   globe: Globe,
   video: Film,
   file: FileText,
+  'file-text': FileText,
   box: Box,
   lock: Lock,
   chart: BarChart3,
@@ -27,9 +29,17 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   users: Users,
   credit: CreditCard,
   book: BookOpen,
+  'book-open': BookOpen,
   folder: Folder,
   activity: Activity,
   link: Link,
+  map: Map,
+  bot: Bot,
+  'git-branch': GitBranch,
+  download: Download,
+  play: Play,
+  home: Home,
+  'shopping-cart': ShoppingCart,
 };
 
 export function getIcon(iconName: string): LucideIcon {
@@ -40,7 +50,10 @@ export const NAV_ITEMS = [
   { href: '/', label: 'System', icon: 'monitor' },
   { href: '/docker', label: 'Docker', icon: 'box' },
   { href: '/services', label: 'Services', icon: 'globe' },
+  { href: '/logs', label: 'Logs', icon: 'file-text' },
+  { href: '/terminal', label: 'Terminal', icon: 'terminal' },
   { href: '/portfolio', label: 'Portfolio', icon: 'folder' },
+  { href: '/settings', label: 'Settings', icon: 'settings' },
 ] as const;
 
 export const CONTAINER_STATE_COLORS: Record<string, string> = {
