@@ -1,114 +1,169 @@
 import { Router } from 'express';
-import { readFile, writeFile } from 'fs/promises';
-import { existsSync } from 'fs';
+import { getDb } from '../services/database.js';
+import { discoverServices } from '../services/discovery.js';
+import { getUptimeSummary } from '../services/uptime.js';
 
 const router = Router();
-const CONFIG_PATH = process.env.CONFIG_PATH || '/app/data/config.json';
 
-async function loadConfig() {
-  try {
-    if (existsSync(CONFIG_PATH)) {
-      const data = await readFile(CONFIG_PATH, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error loading config:', error.message);
-  }
-  return { services: [] };
-}
-
-async function saveConfig(config) {
-  await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2));
-}
-
-// Get all services
+// Get all services (discovered + manual, merged with overrides)
 router.get('/', async (req, res) => {
   try {
-    const config = await loadConfig();
-    res.json(config.services || []);
+    const serverId = req.query.serverId || 'local';
+    const db = getDb();
+
+    // Get auto-discovered services
+    const discovered = await discoverServices(serverId);
+
+    // Get manual services
+    const manual = db.prepare(
+      'SELECT * FROM manual_services WHERE server_id = ? ORDER BY sort_order ASC'
+    ).all(serverId);
+
+    // Get overrides
+    const overrides = db.prepare(
+      'SELECT * FROM service_overrides WHERE server_id = ?'
+    ).all(serverId);
+
+    const overrideMap = new Map(overrides.map(o => [o.service_id, o]));
+
+    // Get uptime data
+    const uptimeSummary = getUptimeSummary(serverId);
+
+    // Apply overrides to discovered services
+    const mergedDiscovered = discovered
+      .map(s => {
+        const override = overrideMap.get(s.id);
+        if (override?.hidden) return null;
+        return {
+          ...s,
+          name: override?.name || s.name,
+          icon: override?.icon || s.icon,
+          url: override?.url || s.url,
+          description: override?.description || s.description,
+          category: override?.category || s.category,
+          order: override?.sort_order ?? s.order,
+          uptime: uptimeSummary[s.id] || null
+        };
+      })
+      .filter(Boolean);
+
+    // Add uptime to manual services
+    const mergedManual = manual.map(s => ({
+      ...s,
+      source: 'manual',
+      serverId,
+      order: s.sort_order,
+      uptime: uptimeSummary[s.id] || null
+    }));
+
+    // Combine and sort
+    const all = [...mergedDiscovered, ...mergedManual].sort((a, b) => (a.order || 999) - (b.order || 999));
+
+    res.json({
+      services: all,
+      discovered: mergedDiscovered,
+      manual: mergedManual
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load services', message: error.message });
   }
 });
 
-// Add a new service
-router.post('/', async (req, res) => {
+// Add a manual service
+router.post('/', (req, res) => {
   try {
-    const { name, url, icon, description } = req.body;
+    const { name, url, icon, description, category, sortOrder } = req.body;
+    const serverId = req.body.serverId || 'local';
 
     if (!name || !url) {
       return res.status(400).json({ error: 'Name and URL are required' });
     }
 
-    const config = await loadConfig();
-    const newService = {
-      id: Date.now().toString(),
-      name,
-      url,
-      icon: icon || 'link',
-      description: description || ''
-    };
+    const db = getDb();
+    const id = `manual-${Date.now()}`;
 
-    config.services = config.services || [];
-    config.services.push(newService);
-    await saveConfig(config);
+    db.prepare(
+      'INSERT INTO manual_services (id, server_id, name, url, icon, description, category, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, serverId, name, url, icon || 'link', description || '', category || 'Extern', sortOrder || 999);
 
-    res.status(201).json(newService);
+    const service = db.prepare('SELECT * FROM manual_services WHERE id = ?').get(id);
+    res.status(201).json(service);
   } catch (error) {
     res.status(500).json({ error: 'Failed to add service', message: error.message });
   }
 });
 
-// Update a service
-router.put('/:id', async (req, res) => {
+// Update a manual service
+router.put('/:id', (req, res) => {
   try {
-    const { name, url, icon, description } = req.body;
-    const config = await loadConfig();
+    const { name, url, icon, description, category, sortOrder } = req.body;
+    const db = getDb();
 
-    const index = config.services.findIndex(s => s.id === req.params.id);
-    if (index === -1) {
+    const existing = db.prepare('SELECT * FROM manual_services WHERE id = ?').get(req.params.id);
+    if (!existing) {
       return res.status(404).json({ error: 'Service not found' });
     }
 
-    config.services[index] = {
-      ...config.services[index],
-      name: name || config.services[index].name,
-      url: url || config.services[index].url,
-      icon: icon || config.services[index].icon,
-      description: description !== undefined ? description : config.services[index].description
-    };
+    db.prepare(
+      'UPDATE manual_services SET name = ?, url = ?, icon = ?, description = ?, category = ?, sort_order = ? WHERE id = ?'
+    ).run(
+      name || existing.name,
+      url || existing.url,
+      icon || existing.icon,
+      description !== undefined ? description : existing.description,
+      category || existing.category,
+      sortOrder ?? existing.sort_order,
+      req.params.id
+    );
 
-    await saveConfig(config);
-    res.json(config.services[index]);
+    const updated = db.prepare('SELECT * FROM manual_services WHERE id = ?').get(req.params.id);
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ error: 'Failed to update service', message: error.message });
   }
 });
 
-// Delete a service
-router.delete('/:id', async (req, res) => {
+// Delete a manual service
+router.delete('/:id', (req, res) => {
   try {
-    const config = await loadConfig();
-    const index = config.services.findIndex(s => s.id === req.params.id);
-
-    if (index === -1) {
+    const db = getDb();
+    const result = db.prepare('DELETE FROM manual_services WHERE id = ?').run(req.params.id);
+    if (result.changes === 0) {
       return res.status(404).json({ error: 'Service not found' });
     }
-
-    config.services.splice(index, 1);
-    await saveConfig(config);
-
-    res.json({ success: true, message: 'Service deleted' });
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete service', message: error.message });
+  }
+});
+
+// Override a discovered service
+router.put('/override/:serviceId', (req, res) => {
+  try {
+    const { name, icon, url, description, category, sortOrder, hidden } = req.body;
+    const serverId = req.body.serverId || 'local';
+    const db = getDb();
+
+    db.prepare(`
+      INSERT INTO service_overrides (service_id, server_id, name, icon, url, description, category, sort_order, hidden)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(service_id, server_id) DO UPDATE SET
+        name = excluded.name, icon = excluded.icon, url = excluded.url,
+        description = excluded.description, category = excluded.category,
+        sort_order = excluded.sort_order, hidden = excluded.hidden
+    `).run(req.params.serviceId, serverId, name || null, icon || null, url || null, description || null, category || null, sortOrder || null, hidden ? 1 : 0);
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to save override', message: error.message });
   }
 });
 
 // Check service status
 router.get('/:id/status', async (req, res) => {
   try {
-    const config = await loadConfig();
-    const service = config.services.find(s => s.id === req.params.id);
+    const db = getDb();
+    const service = db.prepare('SELECT url FROM manual_services WHERE id = ?').get(req.params.id);
 
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
@@ -117,19 +172,14 @@ router.get('/:id/status', async (req, res) => {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(service.url, {
-        method: 'HEAD',
-        signal: controller.signal
-      });
-
+      const response = await fetch(service.url, { method: 'HEAD', signal: controller.signal });
       clearTimeout(timeout);
       res.json({ online: response.ok, status: response.status });
     } catch {
       res.json({ online: false, status: 0 });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Failed to check service status', message: error.message });
+    res.status(500).json({ error: 'Failed to check status', message: error.message });
   }
 });
 

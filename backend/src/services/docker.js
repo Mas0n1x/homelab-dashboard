@@ -1,8 +1,14 @@
 import Docker from 'dockerode';
 
-const docker = new Docker({ socketPath: '/var/run/docker.sock' });
+// Default local Docker instance
+const defaultDocker = new Docker({ socketPath: '/var/run/docker.sock' });
 
-export async function getContainers() {
+function getDockerInstance(dockerInstance) {
+  return dockerInstance || defaultDocker;
+}
+
+export async function getContainers(dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const containers = await docker.listContainers({ all: true });
 
@@ -19,9 +25,9 @@ export async function getContainers() {
         public: p.PublicPort,
         type: p.Type
       })),
-      // Compose project info from labels
       project: container.Labels?.['com.docker.compose.project'] || null,
-      service: container.Labels?.['com.docker.compose.service'] || null
+      service: container.Labels?.['com.docker.compose.service'] || null,
+      labels: container.Labels || {}
     }));
   } catch (error) {
     console.error('Error fetching containers:', error.message);
@@ -29,7 +35,8 @@ export async function getContainers() {
   }
 }
 
-export async function getContainerStats(containerId) {
+export async function getContainerStats(containerId, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const container = docker.getContainer(containerId);
     const stats = await container.stats({ stream: false });
@@ -57,7 +64,8 @@ export async function getContainerStats(containerId) {
   }
 }
 
-export async function startContainer(containerId) {
+export async function startContainer(containerId, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const container = docker.getContainer(containerId);
     await container.start();
@@ -68,7 +76,8 @@ export async function startContainer(containerId) {
   }
 }
 
-export async function stopContainer(containerId) {
+export async function stopContainer(containerId, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const container = docker.getContainer(containerId);
     await container.stop();
@@ -79,7 +88,8 @@ export async function stopContainer(containerId) {
   }
 }
 
-export async function restartContainer(containerId) {
+export async function restartContainer(containerId, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const container = docker.getContainer(containerId);
     await container.restart();
@@ -90,7 +100,8 @@ export async function restartContainer(containerId) {
   }
 }
 
-export async function getContainerLogs(containerId, tail = 100) {
+export async function getContainerLogs(containerId, tail = 100, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const container = docker.getContainer(containerId);
     const logs = await container.logs({
@@ -107,7 +118,8 @@ export async function getContainerLogs(containerId, tail = 100) {
   }
 }
 
-export async function getDockerInfo() {
+export async function getDockerInfo(dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const info = await docker.info();
     return {
@@ -128,7 +140,8 @@ export async function getDockerInfo() {
   }
 }
 
-export async function getContainerDetails(containerId) {
+export async function getContainerDetails(containerId, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const container = docker.getContainer(containerId);
     const inspect = await container.inspect();
@@ -172,12 +185,12 @@ export async function getContainerDetails(containerId) {
 
 // ==================== IMAGES ====================
 
-export async function getImages() {
+export async function getImages(dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const images = await docker.listImages({ all: true });
     const containers = await docker.listContainers({ all: true });
 
-    // Get image IDs that are in use
     const usedImageIds = new Set(containers.map(c => c.ImageID));
 
     return images.map(image => ({
@@ -196,7 +209,8 @@ export async function getImages() {
   }
 }
 
-export async function deleteImage(imageId, force = false) {
+export async function deleteImage(imageId, force = false, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const image = docker.getImage(imageId);
     await image.remove({ force });
@@ -207,7 +221,8 @@ export async function deleteImage(imageId, force = false) {
   }
 }
 
-export async function pruneImages() {
+export async function pruneImages(dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const result = await docker.pruneImages({ filters: { dangling: { false: true } } });
     return {
@@ -223,12 +238,12 @@ export async function pruneImages() {
 
 // ==================== VOLUMES ====================
 
-export async function getVolumes() {
+export async function getVolumes(dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const { Volumes } = await docker.listVolumes();
     const containers = await docker.listContainers({ all: true });
 
-    // Get volumes that are in use
     const usedVolumes = new Set();
     containers.forEach(c => {
       (c.Mounts || []).forEach(m => {
@@ -265,7 +280,8 @@ export async function getVolumes() {
   }
 }
 
-export async function deleteVolume(volumeName, force = false) {
+export async function deleteVolume(volumeName, force = false, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const volume = docker.getVolume(volumeName);
     await volume.remove({ force });
@@ -276,7 +292,8 @@ export async function deleteVolume(volumeName, force = false) {
   }
 }
 
-export async function pruneVolumes() {
+export async function pruneVolumes(dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const result = await docker.pruneVolumes();
     return {
@@ -292,7 +309,8 @@ export async function pruneVolumes() {
 
 // ==================== NETWORKS ====================
 
-export async function getNetworks() {
+export async function getNetworks(dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const networks = await docker.listNetworks();
 
@@ -326,7 +344,8 @@ export async function getNetworks() {
 
 // ==================== SYSTEM ====================
 
-export async function systemPrune(options = {}) {
+export async function systemPrune(options = {}, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const results = {
       containers: null,
@@ -348,10 +367,7 @@ export async function systemPrune(options = {}) {
       results.networks = await docker.pruneNetworks();
     }
 
-    return {
-      success: true,
-      results
-    };
+    return { success: true, results };
   } catch (error) {
     console.error('Error pruning system:', error.message);
     throw error;
@@ -360,7 +376,8 @@ export async function systemPrune(options = {}) {
 
 // ==================== PORTS OVERVIEW ====================
 
-export async function getPortsOverview() {
+export async function getPortsOverview(dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
   try {
     const containers = await docker.listContainers({ all: true });
     const ports = [];
