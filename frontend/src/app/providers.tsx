@@ -2,12 +2,14 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useServerStore } from '@/stores/serverStore';
 import { Header } from '@/components/layout/Header';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { Background } from '@/components/layout/Background';
 import { ThemeCustomizer } from '@/components/dashboard/ThemeCustomizer';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 import * as api from '@/lib/api';
 
 function WebSocketManager({ children }: { children: React.ReactNode }) {
@@ -34,6 +36,16 @@ function WebSocketManager({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AppContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  if (pathname === '/login') {
+    return <>{children}</>;
+  }
+
+  return <WebSocketManager>{children}</WebSocketManager>;
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
@@ -46,7 +58,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <WebSocketManager>{children}</WebSocketManager>
+      <AuthGuard>
+        <AppContent>{children}</AppContent>
+      </AuthGuard>
     </QueryClientProvider>
   );
 }

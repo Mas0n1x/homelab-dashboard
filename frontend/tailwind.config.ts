@@ -16,8 +16,8 @@ const config: Config = {
           elevated: 'rgba(25, 25, 55, 0.4)',
         },
         accent: {
-          DEFAULT: '#6366f1',
-          light: '#818cf8',
+          DEFAULT: 'var(--accent-color)',
+          light: 'var(--accent-light)',
           dark: '#4f46e5',
           success: '#10b981',
           danger: '#ef4444',

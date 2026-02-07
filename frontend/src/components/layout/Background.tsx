@@ -3,18 +3,18 @@
 export function Background() {
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-[#050510]">
-      {/* Animated gradient orbs */}
+      {/* Animated gradient orbs - uses CSS vars from ThemeCustomizer */}
       <div
         className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] animate-glow-pulse"
-        style={{ background: 'rgba(99, 102, 241, 0.08)' }}
+        style={{ background: 'rgba(var(--accent-rgb), calc(0.08 * var(--orb-opacity)))' }}
       />
       <div
         className="absolute bottom-[-15%] right-[-5%] w-[500px] h-[500px] rounded-full blur-[100px] animate-glow-pulse"
-        style={{ background: 'rgba(139, 92, 246, 0.06)', animationDelay: '2s' }}
+        style={{ background: 'rgba(var(--accent-rgb), calc(0.06 * var(--orb-opacity)))', animationDelay: '2s' }}
       />
       <div
         className="absolute top-[30%] right-[15%] w-[400px] h-[400px] rounded-full blur-[80px] animate-glow-pulse"
-        style={{ background: 'rgba(6, 182, 212, 0.04)', animationDelay: '4s' }}
+        style={{ background: 'rgba(var(--accent-rgb), calc(0.04 * var(--orb-opacity)))', animationDelay: '4s' }}
       />
 
       {/* Subtle grid overlay */}

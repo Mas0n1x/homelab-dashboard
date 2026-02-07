@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, Plus, Trash2, TestTube, Check, Loader2, Settings } from 'lucide-react';
+import { Bell, Plus, Trash2, TestTube, Check, Loader2, Settings, Shield, AlertTriangle, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Modal } from '@/components/ui/Modal';
+import { useAuthStore } from '@/stores/authStore';
 import * as api from '@/lib/api';
 import type { AlertChannel } from '@/lib/types';
 
@@ -20,9 +22,47 @@ const EVENT_OPTIONS = [
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const { setupCompleted, logout, refreshToken } = useAuthStore();
   const [showAddModal, setShowAddModal] = useState(false);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [form, setForm] = useState({ type: 'discord' as 'discord' | 'telegram', name: '', webhookUrl: '', events: ['container_crash', 'service_offline'] });
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
+
+  const handleChangePassword = async () => {
+    setPwError('');
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      setPwError('Passwörter stimmen nicht überein');
+      return;
+    }
+    if (pwForm.newPassword.length < 6) {
+      setPwError('Passwort muss mindestens 6 Zeichen lang sein');
+      return;
+    }
+    setPwLoading(true);
+    try {
+      await api.changePassword(pwForm.currentPassword, pwForm.newPassword);
+      setPwSuccess(true);
+      setTimeout(async () => {
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+          });
+        } catch {}
+        logout();
+        router.replace('/login');
+      }, 1500);
+    } catch (err: any) {
+      setPwError(err.message?.includes('401') ? 'Aktuelles Passwort ist falsch' : 'Fehler beim Ändern des Passworts');
+    } finally {
+      setPwLoading(false);
+    }
+  };
 
   const { data: channels } = useQuery<AlertChannel[]>({
     queryKey: ['alert-channels'],
@@ -83,6 +123,82 @@ export default function SettingsPage() {
           </h1>
           <p className="text-sm text-white/40 mt-0.5">Alerting & Benachrichtigungen</p>
         </div>
+      </div>
+
+      {/* Default Password Warning */}
+      {!setupCompleted && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20"
+        >
+          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-amber-300">Standard-Passwort aktiv</p>
+            <p className="text-xs text-amber-400/60 mt-0.5">Bitte ändere das Standard-Passwort (admin/admin) bevor du das Dashboard öffentlich erreichbar machst.</p>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Security / Password Change */}
+      <div>
+        <h2 className="text-sm font-medium flex items-center gap-2 mb-3">
+          <Shield className="w-4 h-4 text-indigo-400" />
+          Sicherheit
+        </h2>
+        <GlassCard>
+          <div className="relative z-10 space-y-4">
+            <div>
+              <label className="text-xs text-white/40 block mb-1.5">Aktuelles Passwort</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <input
+                  type="password"
+                  className="glass-input w-full pl-10"
+                  value={pwForm.currentPassword}
+                  onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))}
+                  placeholder="Aktuelles Passwort"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-white/40 block mb-1.5">Neues Passwort</label>
+                <input
+                  type="password"
+                  className="glass-input w-full"
+                  value={pwForm.newPassword}
+                  onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
+                  placeholder="Min. 6 Zeichen"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-white/40 block mb-1.5">Passwort bestätigen</label>
+                <input
+                  type="password"
+                  className="glass-input w-full"
+                  value={pwForm.confirmPassword}
+                  onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                  placeholder="Passwort wiederholen"
+                />
+              </div>
+            </div>
+            {pwError && (
+              <p className="text-xs text-red-400">{pwError}</p>
+            )}
+            {pwSuccess && (
+              <p className="text-xs text-emerald-400">Passwort geändert! Du wirst abgemeldet...</p>
+            )}
+            <button
+              onClick={handleChangePassword}
+              disabled={!pwForm.currentPassword || !pwForm.newPassword || !pwForm.confirmPassword || pwLoading}
+              className="btn-primary disabled:opacity-40 flex items-center gap-2 text-xs"
+            >
+              {pwLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
+              {pwLoading ? 'Wird geändert...' : 'Passwort ändern'}
+            </button>
+          </div>
+        </GlassCard>
       </div>
 
       {/* Alert Channels */}

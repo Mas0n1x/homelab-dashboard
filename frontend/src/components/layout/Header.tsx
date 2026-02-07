@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Activity, Server } from 'lucide-react';
+import { Activity, Server, LogOut } from 'lucide-react';
 import { clsx } from 'clsx';
 import { NAV_ITEMS, getIcon } from '@/lib/constants';
 import { useServerStore } from '@/stores/serverStore';
+import { useAuthStore } from '@/stores/authStore';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { NotificationDropdown } from './NotificationDropdown';
 
@@ -16,10 +17,26 @@ interface HeaderProps {
 
 export function Header({ connected }: HeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { activeServerId, servers } = useServerStore();
+  const { logout, refreshToken } = useAuthStore();
   const [time, setTime] = useState('');
   const [showServerDropdown, setShowServerDropdown] = useState(false);
   const { setActiveServer } = useServerStore();
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+    } catch {
+      // ignore
+    }
+    logout();
+    router.replace('/login');
+  };
 
   useEffect(() => {
     const update = () => {
@@ -124,6 +141,15 @@ export function Header({ connected }: HeaderProps) {
 
             {/* Time */}
             <span className="text-sm font-mono text-white/40 hidden lg:block">{time}</span>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+              title="Abmelden"
+            >
+              <LogOut className="w-4 h-4 text-white/40 hover:text-white/70" />
+            </button>
           </div>
         </div>
       </div>

@@ -26,6 +26,7 @@ services:
       - CONFIG_PATH=/app/data/config.json
       - PORTFOLIO_API_URL=http://host.docker.internal:3000
       - PORTFOLIO_PASSWORD=admin
+      - JWT_SECRET=${JWT_SECRET:-homelab-dashboard-change-me}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - homelab-data:/app/data
@@ -49,6 +50,24 @@ services:
     depends_on:
       - frontend
       - backend
+
+  # Cloudflare Tunnel (uncomment to enable public access)
+  # 1. Create a tunnel at https://one.dash.cloudflare.com -> Networks -> Tunnels
+  # 2. Copy the tunnel token to .env as CLOUDFLARE_TUNNEL_TOKEN
+  # 3. Add a public hostname pointing to http://nginx:80
+  # 4. Uncomment the service below and run: docker compose up -d cloudflared
+  #
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: homelab-cloudflared
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run
+  #   environment:
+  #     - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+  #   networks:
+  #     - homelab-network
+  #   depends_on:
+  #     - nginx
 
 networks:
   homelab-network:

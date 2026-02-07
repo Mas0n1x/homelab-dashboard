@@ -5,6 +5,9 @@ import '@/styles/globals.css';
 export const metadata: Metadata = {
   title: 'Homelab Dashboard',
   description: 'Homelab Management Dashboard',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

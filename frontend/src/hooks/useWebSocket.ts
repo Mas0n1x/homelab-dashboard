@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useServerStore } from '@/stores/serverStore';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { useAuthStore } from '@/stores/authStore';
 
 export function useWebSocket() {
   const { activeServerId } = useServerStore();
@@ -16,11 +17,14 @@ export function useWebSocket() {
   const connect = useCallback(() => {
     if (typeof window === 'undefined') return;
 
+    const { accessToken } = useAuthStore.getState();
+    if (!accessToken) return;
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.port
       ? `${window.location.hostname}:${window.location.port}`
       : window.location.hostname;
-    const wsUrl = `${protocol}//${host}/ws`;
+    const wsUrl = `${protocol}//${host}/ws?token=${encodeURIComponent(accessToken)}`;
 
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;

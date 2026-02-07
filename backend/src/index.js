@@ -8,7 +8,10 @@ import serverManager from './services/serverManager.js';
 import { discoverServices, hasDiscoveryChanged } from './services/discovery.js';
 import { checkAllServices } from './services/uptime.js';
 import * as portfolio from './services/portfolio.js';
+import { ensureDefaultUser, cleanupExpiredTokens } from './services/auth.js';
+import { authenticateToken, verifyToken } from './middleware/auth.js';
 
+import authRoutes from './routes/auth.js';
 import systemRoutes from './routes/system.js';
 import dockerRoutes from './routes/docker.js';
 import servicesRoutes from './routes/services.js';
@@ -34,14 +37,26 @@ console.log('Database initialized');
 // Migrate config.json if it exists
 await migrateFromConfigJson();
 
+// Create default admin user if none exists
+await ensureDefaultUser();
+
 // Initialize server connections
 serverManager.init();
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
 app.use(express.json());
 
-// Routes
+// Public routes (no auth required)
+app.use('/api/auth', authRoutes);
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Auth middleware for all other /api routes
+app.use('/api', authenticateToken);
+
+// Protected routes
 app.use('/api/system', systemRoutes);
 app.use('/api/docker', dockerRoutes);
 app.use('/api/services', servicesRoutes);
@@ -55,11 +70,6 @@ app.use('/api/bookmarks', bookmarksRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/templates', templatesRoutes);
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
 
 // Create HTTP server
 const server = createServer(app);
@@ -251,7 +261,21 @@ function cleanupTerminalSession(ws) {
   }
 }
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  // Verify JWT token from query parameter
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const token = url.searchParams.get('token');
+    if (!token) {
+      ws.close(4001, 'Unauthorized');
+      return;
+    }
+    verifyToken(token);
+  } catch (err) {
+    ws.close(4001, 'Unauthorized');
+    return;
+  }
+
   console.log('Client connected to WebSocket');
   const clientState = { subscriptions: new Set(), intervals: [] };
   clients.set(ws, clientState);
@@ -494,6 +518,15 @@ setInterval(() => {
     console.error('Cleanup error:', error.message);
   }
 }, 24 * 60 * 60 * 1000);
+
+// Background: Cleanup expired refresh tokens (every hour)
+setInterval(() => {
+  try {
+    cleanupExpiredTokens();
+  } catch (error) {
+    console.error('Token cleanup error:', error.message);
+  }
+}, 60 * 60 * 1000);
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Homelab Dashboard API running on port ${PORT}`);

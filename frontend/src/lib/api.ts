@@ -1,12 +1,64 @@
+import { useAuthStore } from '@/stores/authStore';
+
 const API_BASE = typeof window !== 'undefined'
   ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api`
   : 'http://localhost:3001/api';
 
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function refreshAccessToken(): Promise<boolean> {
+  const { refreshToken, setTokens, logout } = useAuthStore.getState();
+  if (!refreshToken) return false;
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) {
+      logout();
+      window.location.href = '/login';
+      return false;
+    }
+    const data = await res.json();
+    setTokens(data.accessToken, data.refreshToken);
+    if (data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
+    return true;
+  } catch {
+    logout();
+    window.location.href = '/login';
+    return false;
+  }
+}
+
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
+  const { accessToken } = useAuthStore.getState();
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    ...(options?.headers as Record<string, string> || {}),
+  };
+
+  let res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+
+  if (res.status === 401 && !endpoint.startsWith('/auth/')) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      refreshPromise = refreshAccessToken().finally(() => { isRefreshing = false; });
+    }
+    const success = await refreshPromise;
+    if (success) {
+      const newToken = useAuthStore.getState().accessToken;
+      headers.Authorization = `Bearer ${newToken}`;
+      res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+    }
+  }
+
   if (!res.ok) {
     throw new Error(`API error: ${res.status} ${res.statusText}`);
   }
@@ -144,3 +196,7 @@ export const deleteTemplate = (id: string) =>
   fetchApi(`/templates/${id}`, { method: 'DELETE' });
 export const deployTemplate = (id: string, data: Record<string, unknown>) =>
   fetchApi(`/templates/${id}/deploy`, { method: 'POST', body: JSON.stringify(data) });
+
+// Auth
+export const changePassword = (currentPassword: string, newPassword: string) =>
+  fetchApi('/auth/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) });

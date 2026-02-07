@@ -52,7 +52,9 @@
 
 @layer components {
   .glass-card {
-    @apply relative rounded-2xl backdrop-blur-[16px] border shadow-glass;
+    @apply relative rounded-2xl border shadow-glass;
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
     background: rgba(255, 255, 255, 0.03);
     border-color: rgba(255, 255, 255, 0.08);
   }
@@ -87,8 +89,8 @@
   }
 
   .glass-input:focus {
-    border-color: rgba(99, 102, 241, 0.5);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    border-color: rgba(var(--accent-rgb), 0.5);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
   }
 
   .glass-input::placeholder {
@@ -108,15 +110,15 @@
 
   .btn-primary {
     @apply px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200;
-    background: rgba(99, 102, 241, 0.2);
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    color: #818cf8;
+    background: rgba(var(--accent-rgb), 0.2);
+    border: 1px solid rgba(var(--accent-rgb), 0.3);
+    color: var(--accent-light);
   }
 
   .btn-primary:hover {
-    background: rgba(99, 102, 241, 0.3);
-    border-color: rgba(99, 102, 241, 0.5);
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+    background: rgba(var(--accent-rgb), 0.3);
+    border-color: rgba(var(--accent-rgb), 0.5);
+    box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.15);
   }
 
   .btn-success {
