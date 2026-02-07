@@ -237,3 +237,98 @@ export interface ImageUpdate {
   latestId: string
   hasUpdate: boolean
 }
+
+// ─── Tracker ───
+
+export interface TrackerTask {
+  id: string
+  title: string
+  description: string
+  notes: string
+  estimated_time: number
+  actual_time: number
+  status: 'backlog' | 'inprogress' | 'done'
+  category: string
+  labels: string[]
+  project_id: string | null
+  subtasks: { text: string; completed: boolean }[]
+  sort_order: number
+  created_at: string
+  completed_at: string | null
+}
+
+export interface TrackerProject {
+  id: string
+  name: string
+  color: string
+  total_time: number
+  task_count: number
+  created_at: string
+}
+
+export interface PlayerData {
+  id: number
+  level: number
+  xp: number
+  total_xp: number
+  streak: number
+  last_active_date: string | null
+  daily_goal: number
+  xp_for_next_level: number
+}
+
+export interface Achievement {
+  id: string
+  name: string
+  desc: string
+  icon: string
+  unlocked: boolean
+  unlocked_at: string | null
+}
+
+export interface TrackerNote {
+  id: string
+  title: string
+  content: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DailyStats {
+  date: string
+  completed: number
+  total_minutes: number
+  categories: Record<string, number>
+}
+
+export interface TodayStats {
+  completed: number
+  total_minutes: number
+  categories: Record<string, number>
+  daily_goal: number
+}
+
+export interface AccuracyStats {
+  total: number
+  faster: number
+  on_time: number
+  slower: number
+  avg_deviation: number
+  accuracy_percent: number
+}
+
+export interface CompletionResult {
+  xp_gained: number
+  level_up: boolean
+  new_level: number
+  current_xp: number
+  total_xp: number
+  streak: number
+  new_achievements: Achievement[]
+}
+
+export interface TrackerCategory {
+  id: string
+  name: string
+  color: string
+}

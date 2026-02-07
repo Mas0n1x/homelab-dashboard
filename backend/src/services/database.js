@@ -171,6 +171,70 @@ export function initDatabase() {
 
     CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash ON refresh_tokens(token_hash);
     CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expiry ON refresh_tokens(expires_at);
+
+    -- Tracker: Projects
+    CREATE TABLE IF NOT EXISTS tracker_projects (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      color TEXT DEFAULT '#6366f1',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    -- Tracker: Tasks
+    CREATE TABLE IF NOT EXISTS tracker_tasks (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      estimated_time INTEGER DEFAULT 25,
+      actual_time INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'backlog',
+      category TEXT DEFAULT '',
+      labels TEXT DEFAULT '[]',
+      project_id TEXT REFERENCES tracker_projects(id) ON DELETE SET NULL,
+      subtasks TEXT DEFAULT '[]',
+      sort_order INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      completed_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_tracker_tasks_status ON tracker_tasks(status);
+    CREATE INDEX IF NOT EXISTS idx_tracker_tasks_project ON tracker_tasks(project_id);
+
+    -- Tracker: Player (single row)
+    CREATE TABLE IF NOT EXISTS tracker_player (
+      id INTEGER PRIMARY KEY DEFAULT 1,
+      level INTEGER DEFAULT 1,
+      xp INTEGER DEFAULT 0,
+      total_xp INTEGER DEFAULT 0,
+      streak INTEGER DEFAULT 0,
+      last_active_date TEXT,
+      daily_goal INTEGER DEFAULT 120,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    -- Tracker: Achievements
+    CREATE TABLE IF NOT EXISTS tracker_achievements (
+      id TEXT PRIMARY KEY,
+      unlocked_at TEXT DEFAULT (datetime('now'))
+    );
+
+    -- Tracker: Daily Stats
+    CREATE TABLE IF NOT EXISTS tracker_daily_stats (
+      date TEXT PRIMARY KEY,
+      completed INTEGER DEFAULT 0,
+      total_minutes INTEGER DEFAULT 0,
+      categories TEXT DEFAULT '{}'
+    );
+
+    -- Tracker: Notes
+    CREATE TABLE IF NOT EXISTS tracker_notes (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   // Ensure local server exists
@@ -180,6 +244,12 @@ export function initDatabase() {
     db.prepare(
       'INSERT INTO servers (id, name, host, is_local, glances_url, docker_socket) VALUES (?, ?, ?, ?, ?, ?)'
     ).run('local', 'Raspberry Pi 5', '192.168.2.103', 1, glancesUrl, '/var/run/docker.sock');
+  }
+
+  // Ensure tracker player row exists
+  const playerExists = db.prepare('SELECT id FROM tracker_player WHERE id = 1').get();
+  if (!playerExists) {
+    db.prepare('INSERT INTO tracker_player (id) VALUES (1)').run();
   }
 
   return db;

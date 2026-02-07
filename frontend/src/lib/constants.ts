@@ -53,6 +53,7 @@ export const NAV_ITEMS = [
   { href: '/logs', label: 'Logs', icon: 'file-text' },
   { href: '/terminal', label: 'Terminal', icon: 'terminal' },
   { href: '/portfolio', label: 'Portfolio', icon: 'folder' },
+  { href: '/tracker', label: 'Tracker', icon: 'activity' },
   { href: '/settings', label: 'Settings', icon: 'settings' },
 ] as const;
 

@@ -200,3 +200,54 @@ export const deployTemplate = (id: string, data: Record<string, unknown>) =>
 // Auth
 export const changePassword = (currentPassword: string, newPassword: string) =>
   fetchApi('/auth/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) });
+
+// Tracker - Tasks
+export const getTrackerTasks = () => fetchApi('/tracker/tasks');
+export const createTrackerTask = (data: { title: string; description?: string; estimated_time?: number; category?: string; labels?: string[]; project_id?: string; subtasks?: { text: string; completed: boolean }[] }) =>
+  fetchApi('/tracker/tasks', { method: 'POST', body: JSON.stringify(data) });
+export const updateTrackerTask = (id: string, data: Record<string, unknown>) =>
+  fetchApi(`/tracker/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const moveTrackerTask = (id: string, status: string, sort_order?: number) =>
+  fetchApi(`/tracker/tasks/${id}/move`, { method: 'PUT', body: JSON.stringify({ status, sort_order }) });
+export const completeTrackerTask = (id: string, actual_time: number) =>
+  fetchApi(`/tracker/tasks/${id}/complete`, { method: 'PUT', body: JSON.stringify({ actual_time }) });
+export const deleteTrackerTask = (id: string) =>
+  fetchApi(`/tracker/tasks/${id}`, { method: 'DELETE' });
+export const clearDoneTasks = () =>
+  fetchApi('/tracker/tasks/done', { method: 'DELETE' });
+
+// Tracker - Projects
+export const getTrackerProjects = () => fetchApi('/tracker/projects');
+export const createTrackerProject = (data: { name: string; color?: string }) =>
+  fetchApi('/tracker/projects', { method: 'POST', body: JSON.stringify(data) });
+export const updateTrackerProject = (id: string, data: Record<string, unknown>) =>
+  fetchApi(`/tracker/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteTrackerProject = (id: string) =>
+  fetchApi(`/tracker/projects/${id}`, { method: 'DELETE' });
+
+// Tracker - Player & Achievements
+export const getTrackerPlayer = () => fetchApi('/tracker/player');
+export const updateDailyGoal = (daily_goal: number) =>
+  fetchApi('/tracker/player/goal', { method: 'PUT', body: JSON.stringify({ daily_goal }) });
+export const getTrackerAchievements = () => fetchApi('/tracker/achievements');
+export const getTrackerCategories = () => fetchApi('/tracker/categories');
+
+// Tracker - Stats
+export const getTrackerStatsToday = () => fetchApi('/tracker/stats/today');
+export const getTrackerStatsWeek = () => fetchApi('/tracker/stats/week');
+export const getTrackerHeatmap = () => fetchApi('/tracker/stats/heatmap');
+export const getTrackerAccuracy = () => fetchApi('/tracker/stats/accuracy');
+
+// Tracker - Notes
+export const getTrackerNotes = () => fetchApi('/tracker/notes');
+export const createTrackerNote = (data: { title: string; content?: string }) =>
+  fetchApi('/tracker/notes', { method: 'POST', body: JSON.stringify(data) });
+export const updateTrackerNote = (id: string, data: Record<string, unknown>) =>
+  fetchApi(`/tracker/notes/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteTrackerNote = (id: string) =>
+  fetchApi(`/tracker/notes/${id}`, { method: 'DELETE' });
+
+// Tracker - Backup
+export const exportTrackerBackup = () => fetchApi('/tracker/backup/export');
+export const importTrackerBackup = (data: unknown) =>
+  fetchApi('/tracker/backup/import', { method: 'POST', body: JSON.stringify(data) });

@@ -48,6 +48,9 @@ const config: Config = {
         'fade-in': 'fade-in 0.5s ease-out',
         'slide-up': 'slide-up 0.5s ease-out',
         'pulse-dot': 'pulse-dot 2s ease-in-out infinite',
+        'steam': 'steam 2s ease-out infinite',
+        'steam-delay': 'steam 2s ease-out 0.5s infinite',
+        'steam-delay-2': 'steam 2s ease-out 1s infinite',
       },
       keyframes: {
         'glow-pulse': {
@@ -65,6 +68,10 @@ const config: Config = {
         'pulse-dot': {
           '0%, 100%': { opacity: '1', transform: 'scale(1)' },
           '50%': { opacity: '0.5', transform: 'scale(1.5)' },
+        },
+        'steam': {
+          '0%': { transform: 'translateY(0) scale(1)', opacity: '0.6' },
+          '100%': { transform: 'translateY(-20px) scale(1.5)', opacity: '0' },
         },
       },
       fontFamily: {
