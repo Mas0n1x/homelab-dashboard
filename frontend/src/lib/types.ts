@@ -332,3 +332,71 @@ export interface TrackerCategory {
   name: string
   color: string
 }
+
+// ─── Mail ───
+
+export interface MailFolder {
+  id: string
+  name: string
+  role: string | null
+  parentId: string | null
+  totalEmails: number
+  unreadEmails: number
+  sortOrder: number
+}
+
+export interface MailAddress {
+  name: string | null
+  email: string
+}
+
+export interface MailBodyPart {
+  partId: string
+  blobId: string
+  type: string
+}
+
+export interface MailEmail {
+  id: string
+  threadId: string
+  blobId: string
+  mailboxIds: Record<string, boolean>
+  from: MailAddress[]
+  to: MailAddress[]
+  cc: MailAddress[]
+  bcc: MailAddress[]
+  replyTo: MailAddress[]
+  subject: string
+  receivedAt: string
+  sentAt: string
+  preview: string
+  size: number
+  hasAttachment: boolean
+  keywords: Record<string, boolean>
+  htmlBody: MailBodyPart[]
+  textBody: MailBodyPart[]
+  attachments: MailAttachment[]
+  bodyValues?: Record<string, { value: string; isEncodingProblem: boolean }>
+}
+
+export interface MailAttachment {
+  partId: string
+  blobId: string
+  name: string | null
+  type: string
+  size: number
+  cid: string | null
+}
+
+export interface MailAccount {
+  name: string
+  description: string
+  emails: string[]
+  type: string
+}
+
+export interface MailCredentials {
+  email: string | null
+  password: string | null
+  accountId: string | null
+}

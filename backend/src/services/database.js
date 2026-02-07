@@ -235,6 +235,15 @@ export function initDatabase() {
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
+
+    -- Mail: Credentials per dashboard user
+    CREATE TABLE IF NOT EXISTS mail_credentials (
+      user_id INTEGER PRIMARY KEY,
+      email TEXT NOT NULL,
+      password_encrypted TEXT NOT NULL,
+      account_id TEXT,
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   // Ensure local server exists

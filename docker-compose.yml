@@ -27,6 +27,9 @@ services:
       - PORTFOLIO_API_URL=http://host.docker.internal:3000
       - PORTFOLIO_PASSWORD=admin
       - JWT_SECRET=${JWT_SECRET:-homelab-dashboard-change-me}
+      - STALWART_URL=http://stalwart:8080
+      - STALWART_ADMIN_USER=${STALWART_ADMIN_USER:-admin}
+      - STALWART_ADMIN_PASSWORD=${STALWART_ADMIN_PASSWORD:-}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - homelab-data:/app/data
@@ -50,6 +53,22 @@ services:
     depends_on:
       - frontend
       - backend
+
+  stalwart:
+    image: stalwartlabs/stalwart:latest
+    container_name: homelab-stalwart
+    restart: unless-stopped
+    hostname: mail.mas0n1x.online
+    volumes:
+      - stalwart-data:/opt/stalwart
+    ports:
+      - "25:25"
+      - "587:587"
+      - "465:465"
+      - "143:143"
+      - "993:993"
+    networks:
+      - homelab-network
 
   # Cloudflare Tunnel (uncomment to enable public access)
   # 1. Create a tunnel at https://one.dash.cloudflare.com -> Networks -> Tunnels
@@ -75,3 +94,4 @@ networks:
 
 volumes:
   homelab-data:
+  stalwart-data:

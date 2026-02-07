@@ -251,3 +251,70 @@ export const deleteTrackerNote = (id: string) =>
 export const exportTrackerBackup = () => fetchApi('/tracker/backup/export');
 export const importTrackerBackup = (data: unknown) =>
   fetchApi('/tracker/backup/import', { method: 'POST', body: JSON.stringify(data) });
+
+// ─── Mail ───
+
+function mailHeaders(email?: string, password?: string): Record<string, string> {
+  if (!email || !password) return {};
+  return { 'X-Mail-Account': email, 'X-Mail-Password': password };
+}
+
+// JMAP Session
+export interface JmapSession {
+  primaryAccounts?: Record<string, string>;
+  accounts?: Record<string, unknown>;
+  capabilities?: Record<string, unknown>;
+  apiUrl?: string;
+  uploadUrl?: string;
+  downloadUrl?: string;
+}
+
+export const getMailSession = (email: string, password: string) =>
+  fetchApi<JmapSession>('/mail/session', { headers: mailHeaders(email, password) });
+
+// Generic JMAP proxy
+export const jmapCall = (email: string, password: string, methodCalls: unknown[][]) =>
+  fetchApi<{ methodResponses: unknown[][] }>('/mail/jmap', {
+    method: 'POST',
+    headers: mailHeaders(email, password),
+    body: JSON.stringify({ methodCalls }),
+  });
+
+// Credentials
+export const getMailCredentials = () => fetchApi<{ email: string | null; password: string | null; accountId: string | null }>('/mail/credentials');
+export const saveMailCredentials = (email: string, password: string, accountId?: string | null) =>
+  fetchApi('/mail/credentials', { method: 'POST', body: JSON.stringify({ email, password, accountId }) });
+export const deleteMailCredentials = () =>
+  fetchApi('/mail/credentials', { method: 'DELETE' });
+
+// Upload attachment
+export const uploadMailAttachment = async (email: string, password: string, accountId: string, file: File) => {
+  const { accessToken } = useAuthStore.getState();
+  const buffer = await file.arrayBuffer();
+  return fetch(`${API_BASE}/mail/upload`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': file.type || 'application/octet-stream',
+      Authorization: `Bearer ${accessToken}`,
+      'X-Mail-Account': email,
+      'X-Mail-Password': password,
+      'X-Mail-Account-Id': accountId,
+    },
+    body: buffer,
+  }).then(r => r.json());
+};
+
+// Download attachment URL
+export const getMailAttachmentUrl = (accountId: string, blobId: string, name: string) =>
+  `${API_BASE}/mail/download/${accountId}/${encodeURIComponent(blobId)}/${encodeURIComponent(name)}`;
+
+// Admin
+export const getMailAccounts = () => fetchApi('/mail/admin/accounts');
+export const createMailAccount = (data: { username: string; password: string; displayName?: string }) =>
+  fetchApi('/mail/admin/accounts', { method: 'POST', body: JSON.stringify(data) });
+export const deleteMailAccount = (username: string) =>
+  fetchApi(`/mail/admin/accounts/${encodeURIComponent(username)}`, { method: 'DELETE' });
+export const updateMailAccountPassword = (username: string, password: string) =>
+  fetchApi(`/mail/admin/accounts/${encodeURIComponent(username)}/password`, { method: 'PUT', body: JSON.stringify({ password }) });
+export const getMailDomains = () => fetchApi('/mail/admin/domains');
+export const getMailDkim = (domain: string) => fetchApi(`/mail/admin/dkim/${encodeURIComponent(domain)}`);
