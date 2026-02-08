@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { getDb } from '../services/database.js';
 import { discoverServices } from '../services/discovery.js';
 import { getUptimeSummary } from '../services/uptime.js';
+import { logAudit } from '../services/audit.js';
 
 const router = Router();
 
@@ -87,6 +88,7 @@ router.post('/', (req, res) => {
     ).run(id, serverId, name, url, icon || 'link', description || '', category || 'Extern', sortOrder || 999);
 
     const service = db.prepare('SELECT * FROM manual_services WHERE id = ?').get(id);
+    logAudit('service.add', name, { url }, req.user?.id);
     res.status(201).json(service);
   } catch (error) {
     res.status(500).json({ error: 'Failed to add service', message: error.message });
@@ -117,6 +119,7 @@ router.put('/:id', (req, res) => {
     );
 
     const updated = db.prepare('SELECT * FROM manual_services WHERE id = ?').get(req.params.id);
+    logAudit('service.update', req.params.id, { name, url }, req.user?.id);
     res.json(updated);
   } catch (error) {
     res.status(500).json({ error: 'Failed to update service', message: error.message });
@@ -131,6 +134,7 @@ router.delete('/:id', (req, res) => {
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Service not found' });
     }
+    logAudit('service.delete', req.params.id, null, req.user?.id);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete service', message: error.message });

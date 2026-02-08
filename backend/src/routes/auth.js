@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { getDb } from '../services/database.js';
 import { authenticateToken } from '../middleware/auth.js';
 import * as authService from '../services/auth.js';
+import { logAudit } from '../services/audit.js';
 
 const router = Router();
 
@@ -29,6 +30,8 @@ router.post('/login', async (req, res) => {
     authService.storeRefreshToken(user.id, refreshToken);
 
     const setupCompleted = db.prepare("SELECT value FROM settings WHERE key = 'setup_completed'").get();
+
+    logAudit('auth.login', user.username, null, user.id);
 
     res.json({
       accessToken,
@@ -112,6 +115,8 @@ router.put('/password', authenticateToken, async (req, res) => {
 
     // Revoke all refresh tokens - force re-login
     authService.revokeAllUserTokens(user.id);
+
+    logAudit('auth.password_change', req.user.username, null, req.user.id);
 
     res.json({ ok: true, message: 'Passwort geändert. Bitte erneut anmelden.' });
   } catch (error) {

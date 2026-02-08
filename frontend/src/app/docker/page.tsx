@@ -14,6 +14,7 @@ import { DiskTreemap } from '@/components/docker/DiskTreemap';
 import { ImageUpdates } from '@/components/docker/ImageUpdates';
 import { ContainerComparison } from '@/components/docker/ContainerComparison';
 import { ContainerTemplates } from '@/components/docker/ContainerTemplates';
+import { ComposeEditor } from '@/components/docker/ComposeEditor';
 import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import type { Container, DockerInfo } from '@/lib/types';
@@ -25,6 +26,7 @@ export default function DockerPage() {
   const [activeTab, setActiveTab] = useState('containers');
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(['all']));
   const [logsModal, setLogsModal] = useState<{ open: boolean; containerId: string; name: string; logs: string }>({ open: false, containerId: '', name: '', logs: '' });
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; containerId: string; containerName: string; action: string }>({ open: false, containerId: '', containerName: '', action: '' });
   const [loading, setLoading] = useState<Record<string, boolean>>({});
 
   const { data: containersData } = useQuery<Container[]>({ queryKey: ['containers', activeServerId], enabled: false });
@@ -49,6 +51,14 @@ export default function DockerPage() {
     }
     setLoading(prev => ({ ...prev, [id]: false }));
   }, []);
+
+  const requestAction = useCallback((id: string, name: string, action: string) => {
+    if (action === 'start') {
+      handleAction(id, action);
+    } else {
+      setConfirmModal({ open: true, containerId: id, containerName: name, action });
+    }
+  }, [handleAction]);
 
   const viewLogs = useCallback(async (id: string, name: string) => {
     try {
@@ -85,6 +95,7 @@ export default function DockerPage() {
     { id: 'ports', label: 'Ports', count: (ports as any[])?.length },
     { id: 'comparison', label: 'Vergleich' },
     { id: 'templates', label: 'Templates' },
+    { id: 'editor', label: 'Editor' },
     { id: 'storage', label: 'Speicher' },
     { id: 'updates', label: 'Updates' },
   ];
@@ -155,7 +166,7 @@ export default function DockerPage() {
                             {c.state === 'running' ? (
                               <>
                                 <button
-                                  onClick={() => handleAction(c.id, 'stop')}
+                                  onClick={() => requestAction(c.id, c.name, 'stop')}
                                   disabled={loading[c.id]}
                                   className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-400/60 hover:text-red-400 transition-all disabled:opacity-30"
                                   title="Stoppen"
@@ -163,7 +174,7 @@ export default function DockerPage() {
                                   <Square className="w-3.5 h-3.5" />
                                 </button>
                                 <button
-                                  onClick={() => handleAction(c.id, 'restart')}
+                                  onClick={() => requestAction(c.id, c.name, 'restart')}
                                   disabled={loading[c.id]}
                                   className="p-1.5 rounded-lg hover:bg-amber-500/10 text-amber-400/60 hover:text-amber-400 transition-all disabled:opacity-30"
                                   title="Neustarten"
@@ -173,7 +184,7 @@ export default function DockerPage() {
                               </>
                             ) : (
                               <button
-                                onClick={() => handleAction(c.id, 'start')}
+                                onClick={() => requestAction(c.id, c.name, 'start')}
                                 disabled={loading[c.id]}
                                 className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-emerald-400/60 hover:text-emerald-400 transition-all disabled:opacity-30"
                                 title="Starten"
@@ -295,11 +306,42 @@ export default function DockerPage() {
       {/* Templates Tab */}
       {activeTab === 'templates' && <ContainerTemplates />}
 
+      {/* Editor Tab */}
+      {activeTab === 'editor' && <ComposeEditor />}
+
       {/* Storage Tab */}
       {activeTab === 'storage' && <DiskTreemap />}
 
       {/* Updates Tab */}
       {activeTab === 'updates' && <ImageUpdates />}
+
+      {/* Confirm Action Modal */}
+      <Modal isOpen={confirmModal.open} onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))} title="Aktion bestätigen" size="sm">
+        <p className="text-sm text-white/70 mb-4">
+          Möchtest du <span className="font-semibold text-white">{confirmModal.containerName}</span> wirklich{' '}
+          {confirmModal.action === 'stop' ? 'stoppen' : 'neustarten'}?
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+            className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/60 transition-colors"
+          >
+            Abbrechen
+          </button>
+          <button
+            onClick={() => {
+              handleAction(confirmModal.containerId, confirmModal.action);
+              setConfirmModal(prev => ({ ...prev, open: false }));
+            }}
+            className={clsx(
+              'px-4 py-2 text-sm rounded-lg font-medium transition-colors',
+              confirmModal.action === 'stop' ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400' : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-400'
+            )}
+          >
+            {confirmModal.action === 'stop' ? 'Stoppen' : 'Neustarten'}
+          </button>
+        </div>
+      </Modal>
 
       {/* Logs Modal */}
       <Modal isOpen={logsModal.open} onClose={() => setLogsModal(prev => ({ ...prev, open: false }))} title={`Logs: ${logsModal.name}`} size="lg">

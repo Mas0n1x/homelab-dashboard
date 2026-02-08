@@ -7,11 +7,12 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import { useAuthStore } from '@/stores/authStore';
 
 export function useWebSocket() {
-  const { activeServerId } = useServerStore();
+  const { activeServerId, setWsFallbackMode } = useServerStore();
   const { addNotifications } = useNotificationStore();
   const queryClient = useQueryClient();
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<NodeJS.Timeout>();
+  const fallbackTimerRef = useRef<NodeJS.Timeout>();
   const [connected, setConnected] = useState(false);
 
   const connect = useCallback(() => {
@@ -31,6 +32,8 @@ export function useWebSocket() {
 
     ws.onopen = () => {
       setConnected(true);
+      setWsFallbackMode(false);
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
       ws.send(JSON.stringify({ type: 'subscribe', serverId: activeServerId }));
     };
 
@@ -72,6 +75,8 @@ export function useWebSocket() {
 
     ws.onclose = () => {
       setConnected(false);
+      // Activate fallback polling after 5s of disconnection
+      fallbackTimerRef.current = setTimeout(() => setWsFallbackMode(true), 5000);
       reconnectTimerRef.current = setTimeout(connect, 3000);
     };
 
@@ -84,6 +89,7 @@ export function useWebSocket() {
     connect();
     return () => {
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
       if (wsRef.current) {
         wsRef.current.onclose = null;
         wsRef.current.close();

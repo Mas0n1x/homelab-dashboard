@@ -36,6 +36,16 @@ router.get('/invoices', async (req, res) => {
   }
 });
 
+// Get customers
+router.get('/customers', async (req, res) => {
+  try {
+    const customers = await portfolio.getCustomers();
+    res.json(customers);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch customers', message: error.message });
+  }
+});
+
 // Get appointments
 router.get('/appointments', async (req, res) => {
   try {

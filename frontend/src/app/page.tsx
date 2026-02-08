@@ -14,29 +14,40 @@ import { GitHubWidget } from '@/components/dashboard/GitHubWidget';
 import { CalendarWidget } from '@/components/dashboard/CalendarWidget';
 import { BookmarksWidget } from '@/components/dashboard/BookmarksWidget';
 import { NotesWidget } from '@/components/dashboard/NotesWidget';
+import { DiskWidget } from '@/components/dashboard/DiskWidget';
+import { UptimeWidget } from '@/components/dashboard/UptimeWidget';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { useServerStore } from '@/stores/serverStore';
+import * as api from '@/lib/api';
 import type { SystemStats, DockerInfo, Container, PortfolioData } from '@/lib/types';
 
 export default function DashboardPage() {
-  const { activeServerId } = useServerStore();
+  const { activeServerId, wsFallbackMode } = useServerStore();
 
   const { data: stats } = useQuery<SystemStats>({
     queryKey: ['systemStats', activeServerId],
-    enabled: false,
+    queryFn: () => api.getSystemStats() as Promise<SystemStats>,
+    enabled: wsFallbackMode,
+    refetchInterval: wsFallbackMode ? 5000 : false,
   });
   const { data: dockerInfo } = useQuery<DockerInfo>({
     queryKey: ['dockerInfo', activeServerId],
-    enabled: false,
+    queryFn: () => api.getDockerInfo() as Promise<DockerInfo>,
+    enabled: wsFallbackMode,
+    refetchInterval: wsFallbackMode ? 5000 : false,
   });
   const { data: containers } = useQuery<Container[]>({
     queryKey: ['containers', activeServerId],
-    enabled: false,
+    queryFn: () => api.getContainers() as Promise<Container[]>,
+    enabled: wsFallbackMode,
+    refetchInterval: wsFallbackMode ? 5000 : false,
   });
   const { data: portfolio } = useQuery<PortfolioData>({
     queryKey: ['portfolio'],
-    enabled: false,
+    queryFn: () => api.getPortfolioDashboard() as Promise<PortfolioData>,
+    enabled: wsFallbackMode,
+    refetchInterval: wsFallbackMode ? 30000 : false,
   });
 
   const running = containers?.filter(c => c.state === 'running').length || 0;
@@ -53,8 +64,8 @@ export default function DashboardPage() {
       {/* System Stats */}
       <SystemOverview stats={stats || null} />
 
-      {/* Docker + Uptime + Speedtest */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Docker + Uptime + Speedtest + Health */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <GlassCard delay={0.15} glow="cyan" hover>
           <div className="flex items-center justify-between mb-2">
             <span className="stat-label">Container</span>
@@ -88,8 +99,14 @@ export default function DashboardPage() {
           <span className="text-xl font-semibold text-emerald-400">{stats?.uptime || 'N/A'}</span>
         </GlassCard>
 
+        <UptimeWidget />
         <SpeedtestWidget />
       </div>
+
+      {/* Disk Storage */}
+      {stats?.disk && stats.disk.length > 0 && (
+        <DiskWidget disks={stats.disk} />
+      )}
 
       {/* Weather + Calendar */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

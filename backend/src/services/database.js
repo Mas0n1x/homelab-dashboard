@@ -246,6 +246,30 @@ export function initDatabase() {
     );
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      action TEXT NOT NULL,
+      target TEXT,
+      details TEXT,
+      user_id INTEGER,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS backups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL,
+      status TEXT DEFAULT 'running',
+      size INTEGER,
+      path TEXT,
+      error TEXT,
+      started_at TEXT DEFAULT (datetime('now')),
+      completed_at TEXT
+    );
+  `);
+
   // Ensure local server exists
   const localServer = db.prepare('SELECT id FROM servers WHERE id = ?').get('local');
   if (!localServer) {

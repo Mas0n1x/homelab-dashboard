@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as dockerService from '../services/docker.js';
+import { logAudit } from '../services/audit.js';
 
 const router = Router();
 
@@ -58,6 +59,7 @@ router.get('/containers/:id/logs', async (req, res) => {
 router.post('/containers/:id/start', async (req, res) => {
   try {
     const result = await dockerService.startContainer(req.params.id);
+    logAudit('container.start', req.params.id, null, req.user?.id);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to start container', message: error.message });
@@ -68,6 +70,7 @@ router.post('/containers/:id/start', async (req, res) => {
 router.post('/containers/:id/stop', async (req, res) => {
   try {
     const result = await dockerService.stopContainer(req.params.id);
+    logAudit('container.stop', req.params.id, null, req.user?.id);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to stop container', message: error.message });
@@ -78,6 +81,7 @@ router.post('/containers/:id/stop', async (req, res) => {
 router.post('/containers/:id/restart', async (req, res) => {
   try {
     const result = await dockerService.restartContainer(req.params.id);
+    logAudit('container.restart', req.params.id, null, req.user?.id);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to restart container', message: error.message });
@@ -219,6 +223,29 @@ router.post('/compose/:project/:action', async (req, res) => {
       return res.status(400).json({ error: 'Invalid action' });
     }
     const result = await dockerService.composeAction(project, action);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== COMPOSE FILE EDITOR ====================
+
+router.get('/compose/:project/file', async (req, res) => {
+  try {
+    const result = await dockerService.getComposeFile(req.params.project);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/compose/:project/file', async (req, res) => {
+  try {
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ error: 'Content is required' });
+    const result = await dockerService.saveComposeFile(req.params.project, content);
+    logAudit('compose.save', req.params.project, null, req.user?.id);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -1,14 +1,12 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Users, FileText, CreditCard, TrendingUp, Calendar, ExternalLink, ArrowUpRight, Clock } from 'lucide-react';
-import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { Users, FileText, CreditCard, ExternalLink, ArrowUpRight, Receipt, Mail, Phone, Building } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
-import { StatusBadge } from '@/components/ui/StatusBadge';
 import * as api from '@/lib/api';
 import { formatCurrency, formatTimeAgo } from '@/lib/formatters';
-import type { PortfolioData, PortfolioRequest } from '@/lib/types';
+import type { PortfolioData, PortfolioRequest, PortfolioInvoice, PortfolioCustomer } from '@/lib/types';
 
 export default function PortfolioPage() {
   const queryClient = useQueryClient();
@@ -27,9 +25,15 @@ export default function PortfolioPage() {
     refetchInterval: 30000,
   });
 
-  const { data: appointments } = useQuery({
-    queryKey: ['portfolioAppointments'],
-    queryFn: () => api.getPortfolioAppointments(),
+  const { data: invoices } = useQuery({
+    queryKey: ['portfolioInvoices'],
+    queryFn: () => api.getPortfolioInvoices() as Promise<PortfolioInvoice[]>,
+    refetchInterval: 60000,
+  });
+
+  const { data: customers } = useQuery({
+    queryKey: ['portfolioCustomers'],
+    queryFn: () => api.getPortfolioCustomers() as Promise<PortfolioCustomer[]>,
     refetchInterval: 60000,
   });
 
@@ -52,12 +56,27 @@ export default function PortfolioPage() {
     confirmed: 'Bestätigt',
   };
 
+  const invoiceStatusColors: Record<string, string> = {
+    paid: 'text-emerald-400',
+    open: 'text-amber-400',
+    overdue: 'text-red-400',
+    cancelled: 'text-white/30',
+  };
+
+  const invoiceStatusLabels: Record<string, string> = {
+    paid: 'Bezahlt',
+    open: 'Offen',
+    overdue: 'Überfällig',
+    cancelled: 'Storniert',
+  };
+
   // Revenue chart data
   const revenueData = [
-    { name: 'Bezahlt', value: stats?.paidRevenue || 0, fill: 'rgba(16,185,129,0.6)' },
-    { name: 'Offen', value: stats?.openRevenue || 0, fill: 'rgba(99,102,241,0.6)' },
-    { name: 'Überfällig', value: stats?.overdueRevenue || 0, fill: 'rgba(239,68,68,0.6)' },
+    { name: 'Bezahlt', value: stats?.paidRevenue || 0, color: '#10b981' },
+    { name: 'Offen', value: stats?.openRevenue || 0, color: '#6366f1' },
+    { name: 'Überfällig', value: stats?.overdueRevenue || 0, color: '#ef4444' },
   ];
+  const maxRevenue = Math.max(...revenueData.map(d => d.value), 1);
 
   return (
     <div className="space-y-6">
@@ -125,24 +144,24 @@ export default function PortfolioPage() {
         {/* Revenue Chart */}
         <GlassCard delay={0.25}>
           <h3 className="text-sm font-semibold mb-4">Umsatz-Übersicht</h3>
-          <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueData} layout="vertical">
-                <XAxis type="number" hide />
-                <YAxis type="category" dataKey="name" width={80} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: 'rgba(15,15,35,0.9)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '8px',
-                    color: '#fff',
-                    fontSize: '12px',
-                  }}
-                  formatter={(v: number) => [formatCurrency(v), 'Betrag']}
-                />
-                <Bar dataKey="value" radius={[0, 6, 6, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="space-y-4">
+            {revenueData.map((item) => (
+              <div key={item.name}>
+                <div className="flex justify-between text-xs mb-1.5">
+                  <span className="text-white/50">{item.name}</span>
+                  <span className="text-white/70 font-medium">{formatCurrency(item.value)}</span>
+                </div>
+                <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${maxRevenue > 0 ? (item.value / maxRevenue * 100) : 0}%`,
+                      backgroundColor: item.color,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </GlassCard>
 
@@ -171,51 +190,93 @@ export default function PortfolioPage() {
         </GlassCard>
       </div>
 
+      {/* Activity Feed + Invoices */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Activity Feed */}
         <GlassCard delay={0.35}>
           <h3 className="text-sm font-semibold mb-4">Letzte Aktivitäten</h3>
           <div className="space-y-3 max-h-[280px] overflow-y-auto">
-            {activities.slice(0, 8).map((act, i) => (
-              <div key={act.id || i} className="flex items-start gap-3 py-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-accent-light mt-1.5 flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm text-white/70">{act.description}</p>
-                  <p className="text-[10px] text-white/25">{formatTimeAgo(act.created_at)}</p>
+              {activities.slice(0, 8).map((act, i) => (
+                <div key={act.id || i} className="flex items-start gap-3 py-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent-light mt-1.5 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm text-white/70">{act.description}</p>
+                    <p className="text-[10px] text-white/25">{formatTimeAgo(act.created_at)}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-            {activities.length === 0 && (
-              <p className="text-sm text-white/30 text-center py-4">Keine Aktivitäten</p>
-            )}
+              ))}
+              {activities.length === 0 && (
+                <p className="text-sm text-white/30 text-center py-4">Keine Aktivitäten</p>
+              )}
           </div>
         </GlassCard>
 
-        {/* Appointments */}
         <GlassCard delay={0.4}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold">Nächste Termine</h3>
-            <Calendar className="w-4 h-4 text-white/30" />
+          <div className="flex items-center gap-2 mb-4">
+            <Receipt className="w-4 h-4 text-white/40" />
+            <h3 className="text-sm font-semibold">Rechnungen</h3>
           </div>
-          <div className="space-y-3 max-h-[280px] overflow-y-auto">
-            {(appointments as any[] || []).slice(0, 6).map((apt: any) => (
-              <div key={apt.id} className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
-                <Clock className="w-4 h-4 text-accent-light/50 flex-shrink-0" />
+          <div className="space-y-2 max-h-[280px] overflow-y-auto">
+            {(invoices || []).slice(0, 10).map((inv) => (
+              <div key={inv.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{apt.name || apt.customer_name}</p>
-                  <p className="text-xs text-white/30">{apt.date} {apt.time}</p>
+                  <p className="text-sm font-medium truncate">{inv.invoice_number || `#${inv.id}`}</p>
+                  <p className="text-xs text-white/30">{inv.customer_name}</p>
                 </div>
-                <span className={`text-xs flex-shrink-0 ${statusColors[apt.status] || 'text-white/40'}`}>
-                  {statusLabels[apt.status] || apt.status}
-                </span>
+                <div className="text-right flex-shrink-0 ml-3">
+                  <p className="text-sm font-medium">{formatCurrency(inv.amount)}</p>
+                  <span className={`text-[10px] font-medium ${invoiceStatusColors[inv.status] || 'text-white/40'}`}>
+                    {invoiceStatusLabels[inv.status] || inv.status}
+                  </span>
+                </div>
               </div>
             ))}
-            {(!appointments || (appointments as any[]).length === 0) && (
-              <p className="text-sm text-white/30 text-center py-4">Keine Termine</p>
+            {(!invoices || invoices.length === 0) && (
+              <p className="text-sm text-white/30 text-center py-4">Keine Rechnungen vorhanden</p>
             )}
           </div>
         </GlassCard>
       </div>
+
+      {/* Customers */}
+      <GlassCard delay={0.45}>
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="w-4 h-4 text-white/40" />
+          <h3 className="text-sm font-semibold">Kunden</h3>
+          <span className="text-xs text-white/30 ml-auto">{(customers || []).length} gesamt</span>
+        </div>
+        <div className="space-y-2 max-h-[320px] overflow-y-auto">
+          {(customers || []).map((cust) => (
+            <div key={cust.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{cust.name}</p>
+                {cust.company && (
+                  <p className="text-xs text-white/40 flex items-center gap-1">
+                    <Building className="w-3 h-3" />
+                    {cust.company}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                {cust.email && (
+                  <span className="text-xs text-white/30 flex items-center gap-1">
+                    <Mail className="w-3 h-3" />
+                    {cust.email}
+                  </span>
+                )}
+                {cust.phone && (
+                  <span className="text-xs text-white/30 flex items-center gap-1">
+                    <Phone className="w-3 h-3" />
+                    {cust.phone}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+          {(!customers || customers.length === 0) && (
+            <p className="text-sm text-white/30 text-center py-4">Keine Kunden vorhanden</p>
+          )}
+        </div>
+      </GlassCard>
     </div>
   );
 }

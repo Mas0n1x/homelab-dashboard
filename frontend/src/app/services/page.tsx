@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ExternalLink, Plus, Trash2, Zap, BarChart3, Star } from 'lucide-react';
+import { ExternalLink, Plus, Trash2, Zap, BarChart3, Star, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -17,6 +17,8 @@ export default function ServicesPage() {
   const { activeServerId } = useServerStore();
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editModal, setEditModal] = useState<{ open: boolean; service: Service | null }>({ open: false, service: null });
+  const [editForm, setEditForm] = useState({ name: '', url: '', icon: '', description: '', category: '' });
   const [expandedService, setExpandedService] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', url: '', icon: 'link', description: '', category: 'Extern' });
 
@@ -68,6 +70,30 @@ export default function ServicesPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['services'] }),
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ service, data }: { service: Service; data: typeof editForm }) => {
+      if (service.source === 'manual') {
+        return api.updateService(service.id, data);
+      }
+      return api.updateServiceOverride(service.id, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      setEditModal({ open: false, service: null });
+    },
+  });
+
+  const openEditModal = (service: Service) => {
+    setEditForm({
+      name: service.name || '',
+      url: service.url || '',
+      icon: service.icon || '',
+      description: service.description || '',
+      category: service.category || '',
+    });
+    setEditModal({ open: true, service });
+  };
+
   // Group by category
   const categories = new Map<string, Service[]>();
   services.forEach(s => {
@@ -96,7 +122,7 @@ export default function ServicesPage() {
             {catServices.map((service, i) => {
               const Icon = getIcon(service.icon);
               const status = statusMap.get(service.id);
-              const isOnline = status?.online ?? (service.state === 'running');
+              const isOnline = status?.online || service.state === 'running';
               const uptime24 = service.uptime?.uptime24h;
               const isExpanded = expandedService === service.id;
 
@@ -152,6 +178,13 @@ export default function ServicesPage() {
                           >
                             <Star className={`w-3.5 h-3.5 ${favoriteIds.has(service.id) ? 'fill-current' : ''}`} />
                           </button>
+                          <button
+                            onClick={() => openEditModal(service)}
+                            className="p-1.5 rounded-lg hover:bg-white/[0.08] text-white/40 hover:text-white/80 transition-all"
+                            title="Bearbeiten"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
                           {service.url && (
                             <a
                               href={service.url}
@@ -187,6 +220,45 @@ export default function ServicesPage() {
           </div>
         </div>
       ))}
+
+      {/* Edit Service Modal */}
+      <Modal isOpen={editModal.open} onClose={() => setEditModal({ open: false, service: null })} title="Service bearbeiten" size="sm">
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs text-white/40 block mb-1.5">Name</label>
+            <input className="glass-input w-full" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+          </div>
+          <div>
+            <label className="text-xs text-white/40 block mb-1.5">URL</label>
+            <input className="glass-input w-full" value={editForm.url} onChange={e => setEditForm(f => ({ ...f, url: e.target.value }))} />
+          </div>
+          <div>
+            <label className="text-xs text-white/40 block mb-1.5">Beschreibung</label>
+            <input className="glass-input w-full" value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-white/40 block mb-1.5">Icon</label>
+              <select className="glass-input w-full" value={editForm.icon} onChange={e => setEditForm(f => ({ ...f, icon: e.target.value }))}>
+                {['link', 'monitor', 'shield', 'server', 'database', 'cloud', 'storage', 'globe', 'terminal', 'file', 'video', 'lock'].map(icon => (
+                  <option key={icon} value={icon}>{icon}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-white/40 block mb-1.5">Kategorie</label>
+              <input className="glass-input w-full" value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))} />
+            </div>
+          </div>
+          <button
+            onClick={() => editModal.service && editMutation.mutate({ service: editModal.service, data: editForm })}
+            disabled={!editForm.name || editMutation.isPending}
+            className="btn-primary w-full disabled:opacity-40"
+          >
+            {editMutation.isPending ? 'Wird gespeichert...' : 'Speichern'}
+          </button>
+        </div>
+      </Modal>
 
       {/* Add Service Modal */}
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Service hinzufügen" size="sm">

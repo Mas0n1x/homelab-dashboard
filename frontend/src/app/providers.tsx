@@ -9,6 +9,7 @@ import { Header } from '@/components/layout/Header';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { Background } from '@/components/layout/Background';
 import { ThemeCustomizer } from '@/components/dashboard/ThemeCustomizer';
+import { CommandPalette } from '@/components/dashboard/CommandPalette';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import * as api from '@/lib/api';
 
@@ -32,6 +33,7 @@ function WebSocketManager({ children }: { children: React.ReactNode }) {
       </main>
       <MobileNav />
       <ThemeCustomizer />
+      <CommandPalette />
     </>
   );
 }

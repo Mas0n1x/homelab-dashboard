@@ -449,6 +449,62 @@ export async function composeAction(projectName, action, dockerInstance) {
   }
 }
 
+// ==================== COMPOSE FILE EDITOR ====================
+
+export async function getComposeFile(projectName, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
+  const containers = await docker.listContainers({ all: true });
+  const projectContainer = containers.find(
+    c => c.Labels?.['com.docker.compose.project'] === projectName
+  );
+  if (!projectContainer) throw new Error('Project not found');
+
+  const configFiles = projectContainer.Labels?.['com.docker.compose.project.config_files'];
+  const workingDir = projectContainer.Labels?.['com.docker.compose.project.working_dir'];
+
+  if (!configFiles || !workingDir) {
+    throw new Error('Compose file path not found in container labels');
+  }
+
+  // The working dir is a host path - map it to /host prefix
+  const hostPath = configFiles.split(',')[0];
+  const mappedPath = `/host${hostPath}`;
+
+  const { readFileSync } = await import('fs');
+  try {
+    const content = readFileSync(mappedPath, 'utf-8');
+    return { content, path: hostPath, workingDir };
+  } catch (error) {
+    throw new Error(`Cannot read compose file: ${error.message}`);
+  }
+}
+
+export async function saveComposeFile(projectName, content, dockerInstance) {
+  const docker = getDockerInstance(dockerInstance);
+  const containers = await docker.listContainers({ all: true });
+  const projectContainer = containers.find(
+    c => c.Labels?.['com.docker.compose.project'] === projectName
+  );
+  if (!projectContainer) throw new Error('Project not found');
+
+  const configFiles = projectContainer.Labels?.['com.docker.compose.project.config_files'];
+  if (!configFiles) throw new Error('Compose file path not found');
+
+  const hostPath = configFiles.split(',')[0];
+  const mappedPath = `/host${hostPath}`;
+
+  const { writeFileSync, copyFileSync, existsSync } = await import('fs');
+
+  // Create backup before saving
+  const backupPath = `${mappedPath}.bak`;
+  if (existsSync(mappedPath)) {
+    copyFileSync(mappedPath, backupPath);
+  }
+
+  writeFileSync(mappedPath, content, 'utf-8');
+  return { path: hostPath, saved: true };
+}
+
 // ==================== IMAGE UPDATE CHECK ====================
 
 export async function checkImageUpdates(dockerInstance) {

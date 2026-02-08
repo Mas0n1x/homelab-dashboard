@@ -138,6 +138,25 @@ export interface PortfolioRequest {
   message?: string
 }
 
+export interface PortfolioInvoice {
+  id: number
+  invoice_number: string
+  customer_name: string
+  amount: number
+  status: string
+  due_date: string
+  created_at: string
+}
+
+export interface PortfolioCustomer {
+  id: number
+  name: string
+  email: string
+  company?: string
+  phone?: string
+  created_at: string
+}
+
 export interface Notification {
   id: string
   type: string

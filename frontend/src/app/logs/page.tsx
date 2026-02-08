@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FileText, Search, Pause, Play, Trash2, ChevronDown } from 'lucide-react';
+import { FileText, Search, Pause, Play, Trash2, ChevronDown, Wifi, WifiOff } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useServerStore } from '@/stores/serverStore';
+import { useAuthStore } from '@/stores/authStore';
 import type { Container } from '@/lib/types';
 
 interface LogLine {
@@ -25,26 +26,61 @@ export default function LogsPage() {
   const [filter, setFilter] = useState('');
   const [paused, setPaused] = useState(false);
   const [showSelector, setShowSelector] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const pausedRef = useRef(false);
+  const containersRef = useRef<Container[]>([]);
+  const reconnectTimerRef = useRef<NodeJS.Timeout>();
+  const selectedRef = useRef<Set<string>>(new Set());
 
   const runningContainers = (containers || []).filter(c => c.state === 'running');
 
+  useEffect(() => {
+    containersRef.current = runningContainers;
+  }, [runningContainers]);
+
+  useEffect(() => {
+    selectedRef.current = selectedContainers;
+  }, [selectedContainers]);
+
   const connect = useCallback(() => {
     if (typeof window === 'undefined') return;
+
+    const { accessToken } = useAuthStore.getState();
+    if (!accessToken) return;
+
+    // Close existing connection
+    if (wsRef.current) {
+      wsRef.current.onclose = null;
+      wsRef.current.close();
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.port
       ? `${window.location.hostname}:${window.location.port}`
       : window.location.hostname;
-    const ws = new WebSocket(`${protocol}//${host}/ws`);
+    const ws = new WebSocket(`${protocol}//${host}/ws?token=${encodeURIComponent(accessToken)}`);
     wsRef.current = ws;
+
+    ws.onopen = () => {
+      setWsConnected(true);
+      // Re-subscribe to any previously selected containers
+      Array.from(selectedRef.current).forEach(containerId => {
+        ws.send(JSON.stringify({
+          type: 'log-stream-start',
+          containerId,
+          serverId: useServerStore.getState().activeServerId,
+          tail: 50,
+        }));
+      });
+    };
 
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
         if (msg.type === 'log-data' && !pausedRef.current) {
-          const container = runningContainers.find(c => c.id === msg.containerId);
+          const container = containersRef.current.find(c => c.id === msg.containerId);
           const lines = msg.data.split('\n').filter((l: string) => l.trim());
           const newLines: LogLine[] = lines.map((text: string) => ({
             container: container?.name || msg.containerId.substring(0, 12),
@@ -56,13 +92,24 @@ export default function LogsPage() {
       } catch {}
     };
 
-    return ws;
-  }, [runningContainers]);
+    ws.onclose = () => {
+      setWsConnected(false);
+      reconnectTimerRef.current = setTimeout(connect, 3000);
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
+  }, []);
 
   useEffect(() => {
-    const ws = connect();
+    connect();
     return () => {
-      ws?.close();
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (wsRef.current) {
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+      }
     };
   }, [connect]);
 
@@ -82,13 +129,11 @@ export default function LogsPage() {
       const next = new Set(prev);
       if (next.has(containerId)) {
         next.delete(containerId);
-        // Stop stream
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({ type: 'log-stream-stop', containerId }));
         }
       } else {
         next.add(containerId);
-        // Start stream
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({
             type: 'log-stream-start',
@@ -129,7 +174,18 @@ export default function LogsPage() {
             <FileText className="w-5 h-5 text-emerald-400" />
             Log Viewer
           </h1>
-          <p className="text-sm text-white/40 mt-0.5">Live-Streaming Container Logs</p>
+          <p className="text-sm text-white/40 mt-0.5 flex items-center gap-2">
+            Live-Streaming Container Logs
+            {wsConnected ? (
+              <span className="flex items-center gap-1 text-emerald-400">
+                <Wifi className="w-3 h-3" /> Verbunden
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-red-400">
+                <WifiOff className="w-3 h-3" /> Verbinde...
+              </span>
+            )}
+          </p>
         </div>
 
         <div className="flex items-center gap-3">

@@ -95,13 +95,13 @@ export async function getDashboardData() {
     const data = await fetchPortfolio('/api/dashboard');
     return {
       stats: {
-        projects: data.stats?.totalProjects || 0,
-        customers: data.stats?.totalCustomers || 0,
+        projects: data.stats?.projects || 0,
+        customers: data.stats?.customers || 0,
         openRequests: data.stats?.openRequests || 0,
-        totalRevenue: data.stats?.totalRevenue || 0,
-        paidRevenue: data.stats?.paidRevenue || 0,
-        openRevenue: data.stats?.openRevenue || 0,
-        overdueRevenue: data.stats?.overdueRevenue || 0,
+        totalRevenue: data.revenue?.total || 0,
+        paidRevenue: data.revenue?.paid || 0,
+        openRevenue: data.revenue?.open || 0,
+        overdueRevenue: data.revenue?.overdue || 0,
       },
       activities: (data.activities || []).slice(0, 10),
       timestamp: new Date().toISOString(),

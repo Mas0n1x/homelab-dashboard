@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { getDb } from './database.js';
 
 const SALT_ROUNDS = 12;
-const ACCESS_TOKEN_EXPIRY = '15m';
+const ACCESS_TOKEN_EXPIRY = '24h';
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 
 export const JWT_SECRET = process.env.JWT_SECRET || 'homelab-dashboard-change-me';

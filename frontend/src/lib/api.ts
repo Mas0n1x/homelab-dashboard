@@ -97,6 +97,8 @@ export const updateService = (id: string, data: Record<string, unknown>) =>
   fetchApi(`/services/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteService = (id: string) =>
   fetchApi(`/services/${id}`, { method: 'DELETE' });
+export const updateServiceOverride = (serviceId: string, data: Record<string, unknown>) =>
+  fetchApi(`/services/override/${serviceId}`, { method: 'PUT', body: JSON.stringify(data) });
 
 // Servers
 export const getServers = () => fetchApi('/servers');
@@ -114,6 +116,7 @@ export const getUptimeTimeline = (serviceId: string, days = 30) => fetchApi(`/up
 export const getPortfolioDashboard = () => fetchApi('/portfolio/dashboard');
 export const getPortfolioRequests = () => fetchApi('/portfolio/requests');
 export const getPortfolioInvoices = () => fetchApi('/portfolio/invoices');
+export const getPortfolioCustomers = () => fetchApi('/portfolio/customers');
 export const getPortfolioAppointments = () => fetchApi('/portfolio/appointments');
 export const getNotifications = () => fetchApi('/portfolio/notifications');
 export const markNotificationRead = (id: string) => fetchApi(`/portfolio/notifications/${id}/read`, { method: 'PUT' });
@@ -136,6 +139,10 @@ export const getSpeedtestStatus = () => fetchApi<{ running: boolean }>('/speedte
 export const getComposeProjects = () => fetchApi('/docker/compose/projects');
 export const composeAction = (project: string, action: string) =>
   fetchApi(`/docker/compose/${encodeURIComponent(project)}/${action}`, { method: 'POST' });
+export const getComposeFile = (project: string) =>
+  fetchApi<{ content: string; path: string; workingDir: string }>(`/docker/compose/${encodeURIComponent(project)}/file`);
+export const saveComposeFile = (project: string, content: string) =>
+  fetchApi(`/docker/compose/${encodeURIComponent(project)}/file`, { method: 'PUT', body: JSON.stringify({ content }) });
 
 // Docker Disk Usage
 export const getDiskUsage = () => fetchApi('/docker/disk-usage');
@@ -159,6 +166,14 @@ export const deleteAlertChannel = (id: string) =>
 export const testAlertChannel = (id: string) =>
   fetchApi(`/alerts/channels/${id}/test`, { method: 'POST' });
 export const getAlertHistory = (limit = 50) => fetchApi(`/alerts/history?limit=${limit}`);
+
+// Audit
+export const getAuditLog = (limit = 50) => fetchApi(`/audit?limit=${limit}`);
+
+// Backups
+export const getBackups = (limit = 20) => fetchApi(`/backup?limit=${limit}`);
+export const getBackupStatus = () => fetchApi<{ running: boolean; latest: any }>('/backup/status');
+export const runBackup = (type = 'database') => fetchApi('/backup/run', { method: 'POST', body: JSON.stringify({ type }) });
 
 // Bookmarks
 export const getBookmarks = () => fetchApi('/bookmarks');

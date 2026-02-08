@@ -27,6 +27,8 @@ import calendarRoutes from './routes/calendar.js';
 import templatesRoutes from './routes/templates.js';
 import trackerRoutes from './routes/tracker.js';
 import mailRoutes from './routes/mail.js';
+import auditRoutes from './routes/audit.js';
+import backupRoutes from './routes/backup.js';
 import { checkAlerts } from './services/alerting.js';
 
 const app = express();
@@ -77,6 +79,8 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/templates', templatesRoutes);
 app.use('/api/tracker', trackerRoutes);
 app.use('/api/mail', mailRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/backup', backupRoutes);
 
 // Create HTTP server
 const server = createServer(app);

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, Plus, Trash2, TestTube, Check, Loader2, Settings, Shield, AlertTriangle, Lock } from 'lucide-react';
+import { Bell, Plus, Trash2, TestTube, Check, Loader2, Settings, Shield, AlertTriangle, Lock, ScrollText, Database, Archive } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Modal } from '@/components/ui/Modal';
@@ -72,6 +72,30 @@ export default function SettingsPage() {
   const { data: history } = useQuery<any[]>({
     queryKey: ['alert-history'],
     queryFn: () => api.getAlertHistory(20) as Promise<any[]>,
+  });
+
+  const { data: auditLog } = useQuery<any[]>({
+    queryKey: ['audit-log'],
+    queryFn: () => api.getAuditLog(50) as Promise<any[]>,
+  });
+
+  const { data: backups } = useQuery<any[]>({
+    queryKey: ['backups'],
+    queryFn: () => api.getBackups() as Promise<any[]>,
+  });
+
+  const { data: backupStatus } = useQuery<{ running: boolean; latest: any }>({
+    queryKey: ['backup-status'],
+    queryFn: () => api.getBackupStatus(),
+    refetchInterval: backups?.some((b: any) => b.status === 'running') ? 2000 : false,
+  });
+
+  const backupMutation = useMutation({
+    mutationFn: (type: string) => api.runBackup(type),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['backups'] });
+      queryClient.invalidateQueries({ queryKey: ['backup-status'] });
+    },
   });
 
   const addMutation = useMutation({
@@ -307,6 +331,98 @@ export default function SettingsPage() {
           </GlassCard>
         </div>
       )}
+
+      {/* Backups */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-medium flex items-center gap-2">
+            <Archive className="w-4 h-4 text-emerald-400" />
+            Backups
+          </h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => backupMutation.mutate('database')}
+              disabled={backupMutation.isPending || backupStatus?.running}
+              className="btn-primary flex items-center gap-2 text-xs disabled:opacity-40"
+            >
+              {backupMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
+              Datenbank
+            </button>
+            <button
+              onClick={() => backupMutation.mutate('full')}
+              disabled={backupMutation.isPending || backupStatus?.running}
+              className="btn-glass flex items-center gap-2 text-xs disabled:opacity-40"
+            >
+              {backupMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
+              Vollständig
+            </button>
+          </div>
+        </div>
+        <GlassCard>
+          <div className="relative z-10">
+            {(!backups || backups.length === 0) ? (
+              <p className="text-sm text-white/30 text-center py-6">Noch keine Backups erstellt</p>
+            ) : (
+              <div className="space-y-1 max-h-[300px] overflow-y-auto">
+                {backups.map((b: any) => (
+                  <div key={b.id} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-white/[0.02] text-xs">
+                    <div className="flex items-center gap-3">
+                      <span className={`px-2 py-0.5 rounded ${
+                        b.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' :
+                        b.status === 'running' ? 'bg-amber-500/10 text-amber-400' :
+                        'bg-red-500/10 text-red-400'
+                      }`}>
+                        {b.status === 'completed' ? 'OK' : b.status === 'running' ? 'Läuft...' : 'Fehler'}
+                      </span>
+                      <span className="text-white/50 capitalize">{b.type}</span>
+                      {b.size && <span className="text-white/25">{(b.size / 1024 / 1024).toFixed(1)} MB</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {b.error && <span className="text-red-400 truncate max-w-[150px]">{b.error}</span>}
+                      <span className="text-white/20">{new Date(b.started_at + 'Z').toLocaleString('de-DE')}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Audit Log */}
+      <div>
+        <h2 className="text-sm font-medium flex items-center gap-2 mb-3">
+          <ScrollText className="w-4 h-4 text-cyan-400" />
+          Audit Log
+        </h2>
+        <GlassCard>
+          <div className="relative z-10">
+            {(!auditLog || auditLog.length === 0) ? (
+              <p className="text-sm text-white/30 text-center py-6">Noch keine Audit-Einträge</p>
+            ) : (
+              <div className="space-y-1 max-h-[400px] overflow-y-auto">
+                {auditLog.map((entry: any) => (
+                  <div key={entry.id} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-white/[0.02] text-xs">
+                    <div className="flex items-center gap-3">
+                      <span className={`px-2 py-0.5 rounded font-mono ${
+                        entry.action.startsWith('container.') ? 'bg-cyan-500/10 text-cyan-400' :
+                        entry.action.startsWith('auth.') ? 'bg-indigo-500/10 text-indigo-400' :
+                        entry.action.startsWith('service.') ? 'bg-emerald-500/10 text-emerald-400' :
+                        'bg-white/[0.06] text-white/50'
+                      }`}>{entry.action}</span>
+                      {entry.target && <span className="text-white/40">{entry.target}</span>}
+                      {entry.details && <span className="text-white/25 truncate max-w-[200px]">{entry.details}</span>}
+                    </div>
+                    <span className="text-white/20 flex-shrink-0 ml-3">
+                      {new Date(entry.created_at + 'Z').toLocaleString('de-DE')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </GlassCard>
+      </div>
 
       {/* Add Channel Modal */}
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Kanal hinzufügen" size="sm">
