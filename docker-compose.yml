@@ -30,6 +30,7 @@ services:
       - STALWART_URL=http://stalwart:8080
       - STALWART_ADMIN_USER=${STALWART_ADMIN_USER:-admin}
       - STALWART_ADMIN_PASSWORD=${STALWART_ADMIN_PASSWORD:-}
+      - MAIL_WEBHOOK_SECRET=${MAIL_WEBHOOK_SECRET:-homelab-mail-webhook-secret}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - homelab-data:/app/data

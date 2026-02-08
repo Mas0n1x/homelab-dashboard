@@ -54,6 +54,9 @@ app.use('/api/auth', authRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+// Mail inbound webhook (auth via webhook secret, not JWT)
+import { handleInboundMail } from './routes/mailInbound.js';
+app.post('/api/mail/inbound', express.json({ limit: '25mb' }), handleInboundMail);
 
 // Auth middleware for all other /api routes
 app.use('/api', authenticateToken);
