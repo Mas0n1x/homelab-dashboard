@@ -39,7 +39,7 @@ export function storeRefreshToken(userId, token) {
 export function validateRefreshToken(token) {
   const db = getDb();
   const hash = crypto.createHash('sha256').update(token).digest('hex');
-  return db.prepare('SELECT * FROM refresh_tokens WHERE token_hash = ? AND expires_at > datetime("now")').get(hash) || null;
+  return db.prepare("SELECT * FROM refresh_tokens WHERE token_hash = ? AND expires_at > datetime('now')").get(hash) || null;
 }
 
 export function revokeRefreshToken(token) {
@@ -66,7 +66,7 @@ export async function ensureDefaultUser() {
 
 export function cleanupExpiredTokens() {
   const db = getDb();
-  const result = db.prepare('DELETE FROM refresh_tokens WHERE expires_at < datetime("now")').run();
+  const result = db.prepare("DELETE FROM refresh_tokens WHERE expires_at < datetime('now')").run();
   if (result.changes > 0) {
     console.log(`Cleaned up ${result.changes} expired refresh tokens`);
   }

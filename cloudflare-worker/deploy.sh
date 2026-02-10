@@ -1,11 +1,20 @@
 #!/bin/bash
 # Deploy Cloudflare Email Worker for mas0n1x.online
-# Usage: ./deploy.sh <CF_EMAIL> <CF_API_KEY>
+# Usage: ./deploy.sh [CF_API_TOKEN]
+# If no token is provided, it will be read from .env file
 
 set -e
 
-CF_EMAIL="${1:?Usage: ./deploy.sh <CF_EMAIL> <CF_API_KEY>}"
-CF_KEY="${2:?Usage: ./deploy.sh <CF_EMAIL> <CF_API_KEY>}"
+if [ -n "$1" ]; then
+    CF_API_TOKEN="$1"
+else
+    CF_API_TOKEN=$(grep CLOUDFLARE_API_TOKEN /srv/homelab-dashboard/.env | cut -d= -f2)
+    if [ -z "$CF_API_TOKEN" ]; then
+        echo "Error: CLOUDFLARE_API_TOKEN not found in .env file and not provided as argument"
+        echo "Usage: ./deploy.sh [CF_API_TOKEN]"
+        exit 1
+    fi
+fi
 ACCOUNT_ID="2916e63238fd7f5347e2b5a250125c9b"
 ZONE_ID="39c3eed9b086cd9452316d4df82dd0f3"
 WORKER_NAME="mail-inbound"
@@ -24,8 +33,7 @@ account_id = "${ACCOUNT_ID}"
 worker_name = "${WORKER_NAME}"
 
 headers = {
-    "X-Auth-Email": "${CF_EMAIL}",
-    "X-Auth-Key": "${CF_KEY}",
+    "Authorization": "Bearer ${CF_API_TOKEN}",
 }
 
 # Read worker script
@@ -83,8 +91,7 @@ import urllib.request, json
 
 zone_id = "${ZONE_ID}"
 headers = {
-    "X-Auth-Email": "${CF_EMAIL}",
-    "X-Auth-Key": "${CF_KEY}",
+    "Authorization": "Bearer ${CF_API_TOKEN}",
     "Content-Type": "application/json"
 }
 

@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { execSync } from 'child_process';
 
 const STALWART_URL = process.env.STALWART_URL || 'http://stalwart:8080';
 const STALWART_ADMIN_USER = process.env.STALWART_ADMIN_USER || 'admin';
@@ -34,10 +35,25 @@ export function decryptPassword(encrypted) {
   return decrypted;
 }
 
+// Hash password for Stalwart using SHA-512 crypt
+function hashPassword(password) {
+  try {
+    const result = execSync(
+      `python3 -c "import crypt; print(crypt.crypt('${password.replace(/'/g, "\\'")}', crypt.METHOD_SHA512))"`,
+      { encoding: 'utf8' }
+    );
+    return result.trim();
+  } catch (error) {
+    throw new Error('Password hashing fehlgeschlagen');
+  }
+}
+
 // ─── JMAP API ───
 
 export async function getJmapSession(email, password) {
-  const authHeader = 'Basic ' + Buffer.from(`${email}:${password}`).toString('base64');
+  // Extract username from email (Stalwart authenticates with username, not full email)
+  const username = email.includes('@') ? email.split('@')[0] : email;
+  const authHeader = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
   const res = await fetch(`${STALWART_URL}/.well-known/jmap`, {
     headers: { Authorization: authHeader },
     redirect: 'follow',
@@ -143,10 +159,12 @@ export async function ensureDomain(domain) {
 export async function createAccount(username, password, displayName) {
   // Ensure domain exists before creating account
   await ensureDomain('mas0n1x.online');
+  // Hash password for Stalwart
+  const hashedPassword = hashPassword(password);
   return adminRequest('POST', 'principal', {
     type: 'individual',
     name: username,
-    secrets: [password],
+    secrets: [hashedPassword],
     description: displayName || username,
     emails: [`${username}@mas0n1x.online`],
     roles: ['user'],
@@ -158,11 +176,12 @@ export async function deleteAccount(username) {
 }
 
 export async function updateAccountPassword(username, password) {
+  const hashedPassword = hashPassword(password);
   return adminRequest('PATCH', `principal/${encodeURIComponent(username)}`, [
     {
       action: 'set',
       field: 'secrets',
-      value: [password],
+      value: [hashedPassword],
     },
   ]);
 }

@@ -16,7 +16,7 @@ interface UploadedFile {
 
 export function ComposeModal() {
   const {
-    email: mailEmail, password, accountId,
+    email: mailEmail, accountId,
     composeOpen, setComposeOpen, composeMode, replyToEmail,
   } = useMailStore();
   const queryClient = useQueryClient();
@@ -64,7 +64,7 @@ export function ComposeModal() {
 
   const sendMutation = useMutation({
     mutationFn: async () => {
-      if (!mailEmail || !password || !accountId) throw new Error('Nicht verbunden');
+      if (!mailEmail || !accountId) throw new Error('Nicht verbunden');
 
       const toAddresses = to.split(',').map(e => e.trim()).filter(Boolean).map(e => ({ email: e }));
       const ccAddresses = cc ? cc.split(',').map(e => e.trim()).filter(Boolean).map(e => ({ email: e })) : [];
@@ -97,7 +97,7 @@ export function ComposeModal() {
       }
 
       // Get identities first
-      const identityResult = await jmapCall(mailEmail, password, [
+      const identityResult = await jmapCall(mailEmail, [
         ['Identity/get', { accountId }, 'i'],
       ]);
       const identityResponse = identityResult.methodResponses?.[0]?.[1] as { list?: { id: string }[] } | undefined;
@@ -106,7 +106,7 @@ export function ComposeModal() {
       if (!identityId) throw new Error('Keine Identität gefunden');
 
       // Create email and submit
-      await jmapCall(mailEmail, password, [
+      await jmapCall(mailEmail, [
         ['Email/set', {
           accountId,
           create: { draft },
@@ -130,11 +130,11 @@ export function ComposeModal() {
   });
 
   const handleFileUpload = async (files: FileList) => {
-    if (!mailEmail || !password || !accountId) return;
+    if (!mailEmail || !accountId) return;
     setUploading(true);
     try {
       for (const file of Array.from(files)) {
-        const result = await uploadMailAttachment(mailEmail, password, accountId, file);
+        const result = await uploadMailAttachment(mailEmail, accountId, file);
         if (result.blobId) {
           setAttachments(prev => [...prev, {
             blobId: result.blobId,

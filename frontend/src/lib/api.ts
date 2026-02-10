@@ -269,9 +269,9 @@ export const importTrackerBackup = (data: unknown) =>
 
 // ─── Mail ───
 
-function mailHeaders(email?: string, password?: string): Record<string, string> {
-  if (!email || !password) return {};
-  return { 'X-Mail-Account': email, 'X-Mail-Password': password };
+function mailHeaders(email?: string): Record<string, string> {
+  if (!email) return {};
+  return { 'X-Mail-Account': email };
 }
 
 // JMAP Session
@@ -284,14 +284,14 @@ export interface JmapSession {
   downloadUrl?: string;
 }
 
-export const getMailSession = (email: string, password: string) =>
-  fetchApi<JmapSession>('/mail/session', { headers: mailHeaders(email, password) });
+export const getMailSession = (email: string) =>
+  fetchApi<JmapSession>('/mail/session', { headers: mailHeaders(email) });
 
 // Generic JMAP proxy
-export const jmapCall = (email: string, password: string, methodCalls: unknown[][]) =>
+export const jmapCall = (email: string, methodCalls: unknown[][]) =>
   fetchApi<{ methodResponses: unknown[][] }>('/mail/jmap', {
     method: 'POST',
-    headers: mailHeaders(email, password),
+    headers: mailHeaders(email),
     body: JSON.stringify({ methodCalls }),
   });
 
@@ -303,7 +303,7 @@ export const deleteMailCredentials = () =>
   fetchApi('/mail/credentials', { method: 'DELETE' });
 
 // Upload attachment
-export const uploadMailAttachment = async (email: string, password: string, accountId: string, file: File) => {
+export const uploadMailAttachment = async (email: string, accountId: string, file: File) => {
   const { accessToken } = useAuthStore.getState();
   const buffer = await file.arrayBuffer();
   return fetch(`${API_BASE}/mail/upload`, {
@@ -312,7 +312,6 @@ export const uploadMailAttachment = async (email: string, password: string, acco
       'Content-Type': file.type || 'application/octet-stream',
       Authorization: `Bearer ${accessToken}`,
       'X-Mail-Account': email,
-      'X-Mail-Password': password,
       'X-Mail-Account-Id': accountId,
     },
     body: buffer,
@@ -323,7 +322,26 @@ export const uploadMailAttachment = async (email: string, password: string, acco
 export const getMailAttachmentUrl = (accountId: string, blobId: string, name: string) =>
   `${API_BASE}/mail/download/${accountId}/${encodeURIComponent(blobId)}/${encodeURIComponent(name)}`;
 
-// Admin
+// Multi-Account Management
+export interface MailAccount {
+  id: number;
+  email: string;
+  accountId: string | null;
+  displayName: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  unreadCount?: number;
+}
+
+export const getUserMailAccounts = () => fetchApi<MailAccount[]>('/mail/accounts');
+export const addUserMailAccount = (data: { email: string; password: string; displayName?: string }) =>
+  fetchApi<MailAccount>('/mail/accounts', { method: 'POST', body: JSON.stringify(data) });
+export const activateUserMailAccount = (id: number) =>
+  fetchApi<{ ok: boolean; email: string }>(`/mail/accounts/${id}/activate`, { method: 'PUT' });
+export const deleteUserMailAccount = (id: number) =>
+  fetchApi<{ ok: boolean }>(`/mail/accounts/${id}`, { method: 'DELETE' });
+
+// Admin (Stalwart Server Management)
 export const getMailAccounts = () => fetchApi('/mail/admin/accounts');
 export const createMailAccount = (data: { username: string; password: string; displayName?: string }) =>
   fetchApi('/mail/admin/accounts', { method: 'POST', body: JSON.stringify(data) });

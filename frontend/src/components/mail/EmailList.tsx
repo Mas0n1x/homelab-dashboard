@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Paperclip, Star, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Paperclip, Star, ChevronLeft, ChevronRight, Trash2, RefreshCw } from 'lucide-react';
 import { clsx } from 'clsx';
 import { jmapCall } from '@/lib/api';
 import { useMailStore } from '@/stores/mailStore';
@@ -13,7 +13,7 @@ interface EmailListProps {
 }
 
 export function EmailList({ folders }: EmailListProps) {
-  const { email, password, accountId, activeFolderId, setSelectedEmailId, searchQuery, searchActive } = useMailStore();
+  const { email, accountId, activeFolderId, setSelectedEmailId, searchQuery, searchActive } = useMailStore();
   const [position, setPosition] = useState(0);
   const queryClient = useQueryClient();
   const limit = 50;
@@ -21,13 +21,13 @@ export function EmailList({ folders }: EmailListProps) {
   const { data, isLoading } = useQuery({
     queryKey: ['mail-emails', accountId, activeFolderId, position, searchActive ? searchQuery : ''],
     queryFn: async () => {
-      if (!email || !password || !accountId) return null;
+      if (!email || !accountId) return null;
 
       const filter = searchActive && searchQuery
         ? { text: searchQuery }
         : { inMailbox: activeFolderId };
 
-      const result = await jmapCall(email, password, [
+      const result = await jmapCall(email, [
         ['Email/query', {
           accountId,
           filter,
@@ -50,15 +50,15 @@ export function EmailList({ folders }: EmailListProps) {
         position: queryResult.position || 0,
       };
     },
-    enabled: !!email && !!password && !!accountId && (!!activeFolderId || searchActive),
+    enabled: !!email && !!accountId && (!!activeFolderId || searchActive),
     refetchInterval: 30000,
   });
 
   // Mark as read
   const markReadMutation = useMutation({
     mutationFn: async (emailId: string) => {
-      if (!email || !password || !accountId) return;
-      await jmapCall(email, password, [
+      if (!email || !accountId) return;
+      await jmapCall(email, [
         ['Email/set', {
           accountId,
           update: { [emailId]: { 'keywords/$seen': true } },
@@ -74,8 +74,8 @@ export function EmailList({ folders }: EmailListProps) {
   // Toggle flag
   const toggleFlagMutation = useMutation({
     mutationFn: async ({ emailId, flagged }: { emailId: string; flagged: boolean }) => {
-      if (!email || !password || !accountId) return;
-      await jmapCall(email, password, [
+      if (!email || !accountId) return;
+      await jmapCall(email, [
         ['Email/set', {
           accountId,
           update: { [emailId]: { 'keywords/$flagged': flagged ? null : true } },
@@ -90,7 +90,7 @@ export function EmailList({ folders }: EmailListProps) {
   // Delete (move to trash)
   const deleteMutation = useMutation({
     mutationFn: async (emailId: string) => {
-      if (!email || !password || !accountId) return;
+      if (!email || !accountId) return;
       const trashFolder = folders.find(f => f.role === 'trash');
       if (!trashFolder) return;
       const currentMailboxIds: Record<string, boolean | null> = {};
@@ -101,7 +101,7 @@ export function EmailList({ folders }: EmailListProps) {
         }
       }
       currentMailboxIds[trashFolder.id] = true;
-      await jmapCall(email, password, [
+      await jmapCall(email, [
         ['Email/set', {
           accountId,
           update: { [emailId]: { mailboxIds: currentMailboxIds } },
@@ -123,6 +123,11 @@ export function EmailList({ folders }: EmailListProps) {
 
   const emails = data?.emails || [];
   const total = data?.total || 0;
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['mail-emails'] });
+    queryClient.invalidateQueries({ queryKey: ['mail-folders'] });
+  };
 
   if (isLoading) {
     return (
@@ -165,6 +170,21 @@ export function EmailList({ folders }: EmailListProps) {
 
   return (
     <div>
+      {/* Header mit Refresh-Button */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xs text-white/40">
+          {total} {total === 1 ? 'E-Mail' : 'E-Mails'}
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={isLoading}
+          className="btn-glass p-1.5 text-white/60 hover:text-white disabled:opacity-30 transition-all group"
+          title="Aktualisieren"
+        >
+          <RefreshCw className={clsx('w-4 h-4', isLoading && 'animate-spin')} />
+        </button>
+      </div>
+
       <div className="glass-card divide-y divide-white/[0.06] overflow-hidden">
         {emails.map((item) => {
           const isRead = !!item.keywords?.['$seen'];

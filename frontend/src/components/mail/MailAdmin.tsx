@@ -2,18 +2,19 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, Trash2, Key, Shield, Copy, Check } from 'lucide-react';
-import { getMailAccounts, createMailAccount, deleteMailAccount, updateMailAccountPassword, getMailDkim } from '@/lib/api';
+import { UserPlus, Trash2, Shield, Copy, Check } from 'lucide-react';
+import { getMailAccounts, createMailAccount, deleteMailAccount, getMailDkim } from '@/lib/api';
 import type { MailAccount } from '@/lib/types';
 
 export function MailAdmin() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
-  const [passwordChange, setPasswordChange] = useState<{ username: string; password: string } | null>(null);
   const [copiedDkim, setCopiedDkim] = useState(false);
+
+  // Fixed password for all mail accounts (user only accesses via dashboard)
+  const FIXED_PASSWORD = 'dashboardaccess';
 
   const { data: accounts = [] } = useQuery<MailAccount[]>({
     queryKey: ['mail-admin-accounts'],
@@ -26,12 +27,15 @@ export function MailAdmin() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () => createMailAccount({ username: newUsername, password: newPassword, displayName: newDisplayName }),
+    mutationFn: () => createMailAccount({
+      username: newUsername,
+      password: FIXED_PASSWORD,
+      displayName: newDisplayName
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mail-admin-accounts'] });
       setShowCreate(false);
       setNewUsername('');
-      setNewPassword('');
       setNewDisplayName('');
     },
   });
@@ -39,15 +43,6 @@ export function MailAdmin() {
   const deleteMutation = useMutation({
     mutationFn: (username: string) => deleteMailAccount(username),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mail-admin-accounts'] }),
-  });
-
-  const passwordMutation = useMutation({
-    mutationFn: ({ username, password }: { username: string; password: string }) =>
-      updateMailAccountPassword(username, password),
-    onSuccess: () => {
-      setPasswordChange(null);
-      queryClient.invalidateQueries({ queryKey: ['mail-admin-accounts'] });
-    },
   });
 
   const handleCopyDkim = (text: string) => {
@@ -89,18 +84,15 @@ export function MailAdmin() {
               placeholder="Anzeigename (z.B. Max Mustermann)"
               className="glass-input w-full text-sm"
             />
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Passwort"
-              className="glass-input w-full text-sm"
-            />
-            <p className="text-[10px] text-white/30">E-Mail wird: {newUsername || '...'}@mas0n1x.online</p>
+            <p className="text-[10px] text-white/30">
+              E-Mail wird: {newUsername || '...'}@mas0n1x.online
+              <br />
+              <span className="text-white/20">Kein Passwort erforderlich - nur Zugriff über Dashboard</span>
+            </p>
             <div className="flex gap-2">
               <button
                 onClick={() => createMutation.mutate()}
-                disabled={!newUsername.trim() || !newPassword.trim() || createMutation.isPending}
+                disabled={!newUsername.trim() || createMutation.isPending}
                 className="btn-primary py-1.5 px-3 text-xs disabled:opacity-40"
               >
                 {createMutation.isPending ? 'Erstelle...' : 'Erstellen'}
@@ -131,27 +123,18 @@ export function MailAdmin() {
                       {account.emails?.join(', ') || `${account.name}@mas0n1x.online`}
                     </p>
                   </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setPasswordChange({ username: account.name, password: '' })}
-                      className="btn-glass p-1.5"
-                      title="Passwort ändern"
-                    >
-                      <Key className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Konto "${account.name}" wirklich löschen?`)) {
-                          deleteMutation.mutate(account.name);
-                        }
-                      }}
-                      disabled={deleteMutation.isPending}
-                      className="btn-glass p-1.5 hover:text-red-400"
-                      title="Löschen"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => {
+                      if (confirm(`Konto "${account.name}" wirklich löschen?`)) {
+                        deleteMutation.mutate(account.name);
+                      }
+                    }}
+                    disabled={deleteMutation.isPending}
+                    className="btn-glass p-1.5 hover:text-red-400"
+                    title="Löschen"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               ))
           ) : (
@@ -160,33 +143,6 @@ export function MailAdmin() {
             </p>
           )}
         </div>
-
-        {/* Password Change Dialog */}
-        {passwordChange && (
-          <div className="mt-3 p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-2">
-            <p className="text-xs text-white/50">Neues Passwort für <strong>{passwordChange.username}</strong></p>
-            <input
-              type="password"
-              value={passwordChange.password}
-              onChange={(e) => setPasswordChange({ ...passwordChange, password: e.target.value })}
-              placeholder="Neues Passwort"
-              className="glass-input w-full text-sm"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => passwordMutation.mutate(passwordChange)}
-                disabled={!passwordChange.password.trim() || passwordMutation.isPending}
-                className="btn-primary py-1.5 px-3 text-xs disabled:opacity-40"
-              >
-                Ändern
-              </button>
-              <button onClick={() => setPasswordChange(null)} className="btn-glass py-1.5 px-3 text-xs">
-                Abbrechen
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* DNS Info */}

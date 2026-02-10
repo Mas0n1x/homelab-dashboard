@@ -12,7 +12,7 @@ interface EmailReaderProps {
 
 export function EmailReader({ folders }: EmailReaderProps) {
   const {
-    email, password, accountId, selectedEmailId, setSelectedEmailId,
+    email, accountId, selectedEmailId, setSelectedEmailId,
     setComposeOpen, setComposeMode, setReplyToEmail,
   } = useMailStore();
   const queryClient = useQueryClient();
@@ -20,8 +20,8 @@ export function EmailReader({ folders }: EmailReaderProps) {
   const { data: emailData, isLoading } = useQuery({
     queryKey: ['mail-email', accountId, selectedEmailId],
     queryFn: async () => {
-      if (!email || !password || !accountId || !selectedEmailId) return null;
-      const result = await jmapCall(email, password, [
+      if (!email || !accountId || !selectedEmailId) return null;
+      const result = await jmapCall(email, [
         ['Email/get', {
           accountId,
           ids: [selectedEmailId],
@@ -38,13 +38,13 @@ export function EmailReader({ folders }: EmailReaderProps) {
       const list = response?.list || [];
       return list[0] || null;
     },
-    enabled: !!email && !!password && !!accountId && !!selectedEmailId,
+    enabled: !!email && !!accountId && !!selectedEmailId,
   });
 
   // Delete (move to trash)
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      if (!email || !password || !accountId || !emailData) return;
+      if (!email || !accountId || !emailData) return;
       const trashFolder = folders.find(f => f.role === 'trash');
       if (!trashFolder) return;
       const newMailboxIds: Record<string, boolean | null> = {};
@@ -52,7 +52,7 @@ export function EmailReader({ folders }: EmailReaderProps) {
         newMailboxIds[mbId] = null;
       }
       newMailboxIds[trashFolder.id] = true;
-      await jmapCall(email, password, [
+      await jmapCall(email, [
         ['Email/set', {
           accountId,
           update: { [emailData.id]: { mailboxIds: newMailboxIds } },

@@ -236,7 +236,7 @@ export function initDatabase() {
       updated_at TEXT DEFAULT (datetime('now'))
     );
 
-    -- Mail: Credentials per dashboard user
+    -- Mail: Credentials per dashboard user (DEPRECATED - use mail_accounts)
     CREATE TABLE IF NOT EXISTS mail_credentials (
       user_id INTEGER PRIMARY KEY,
       email TEXT NOT NULL,
@@ -244,6 +244,24 @@ export function initDatabase() {
       account_id TEXT,
       updated_at TEXT DEFAULT (datetime('now'))
     );
+
+    -- Mail: Multi-account support
+    CREATE TABLE IF NOT EXISTS mail_accounts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      email TEXT NOT NULL,
+      password_encrypted TEXT NOT NULL,
+      account_id TEXT,
+      display_name TEXT,
+      sort_order INTEGER DEFAULT 0,
+      is_active INTEGER DEFAULT 0,
+      added_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(user_id, email)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_mail_accounts_user ON mail_accounts(user_id);
+    CREATE INDEX IF NOT EXISTS idx_mail_accounts_active ON mail_accounts(user_id, is_active);
   `);
 
   db.exec(`
@@ -285,6 +303,9 @@ export function initDatabase() {
     db.prepare('INSERT INTO tracker_player (id) VALUES (1)').run();
   }
 
+  // Migrate mail credentials to multi-account table
+  migrateMailCredentials();
+
   return db;
 }
 
@@ -320,6 +341,42 @@ export async function migrateFromConfigJson() {
     console.log(`Migrated ${config.services.length} services from config.json to SQLite`);
   } catch (error) {
     console.error('Error migrating config.json:', error.message);
+  }
+}
+
+export function migrateMailCredentials() {
+  // Check if migration already ran
+  const migrated = db.prepare("SELECT value FROM settings WHERE key = 'mail_migration_v1'").get();
+  if (migrated?.value === 'true') return;
+
+  console.log('Running mail credentials migration...');
+
+  try {
+    // Migrate existing credentials to new table
+    const existing = db.prepare('SELECT * FROM mail_credentials').all();
+
+    if (existing.length > 0) {
+      const insert = db.prepare(`
+        INSERT OR IGNORE INTO mail_accounts (user_id, email, password_encrypted, account_id, is_active, sort_order)
+        VALUES (?, ?, ?, ?, 1, 0)
+      `);
+
+      db.transaction(() => {
+        for (const cred of existing) {
+          insert.run(cred.user_id, cred.email, cred.password_encrypted, cred.account_id);
+        }
+        // Mark migration complete
+        db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('mail_migration_v1', 'true')").run();
+      })();
+
+      console.log(`✓ Migrated ${existing.length} mail account(s) to new schema`);
+    } else {
+      // No data to migrate, just mark as complete
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('mail_migration_v1', 'true')").run();
+      console.log('✓ No mail accounts to migrate');
+    }
+  } catch (error) {
+    console.error('Failed to migrate mail credentials:', error.message);
   }
 }
 
