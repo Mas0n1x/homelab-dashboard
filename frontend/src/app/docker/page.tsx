@@ -144,7 +144,7 @@ export default function DockerPage() {
                   >
                     <div className="relative z-10 border-t border-white/[0.04]">
                       {projectContainers.map(c => (
-                        <div key={c.id} className="flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors border-b border-white/[0.03] last:border-b-0">
+                        <div key={c.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors border-b border-white/[0.03] last:border-b-0 gap-2 sm:gap-0">
                           <div className="flex items-center gap-3 min-w-0">
                             <span className={clsx('w-2 h-2 rounded-full flex-shrink-0', c.state === 'running' ? 'bg-emerald-400' : 'bg-red-400')} />
                             <div className="min-w-0">
@@ -153,7 +153,7 @@ export default function DockerPage() {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                             {/* Resource sparklines for running containers */}
                             {c.state === 'running' && (
                               <div className="hidden lg:block">

@@ -185,9 +185,9 @@ export default function TerminalPage() {
   };
 
   return (
-    <div className="space-y-4 h-[calc(100vh-10rem)]">
+    <div className="space-y-4 h-[calc(100vh-10rem)] mb-20 md:mb-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-3">
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2">
             <TermIcon className="w-5 h-5 text-cyan-400" />
@@ -196,12 +196,12 @@ export default function TerminalPage() {
           <p className="text-sm text-white/40 mt-0.5">Shell-Zugriff auf Docker Container</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Container selector */}
-          <div className="relative">
+          <div className="relative min-w-0 w-full sm:w-auto">
             <button
               onClick={() => setShowSelector(!showSelector)}
-              className="glass-input flex items-center gap-2 pr-8 min-w-[220px] text-left"
+              className="glass-input flex items-center gap-2 pr-8 w-full sm:min-w-[220px] text-left"
             >
               <Circle className={`w-2 h-2 flex-shrink-0 ${connectedTo ? 'text-emerald-400' : 'text-white/20'}`} />
               <span className="truncate text-sm">
@@ -242,6 +242,7 @@ export default function TerminalPage() {
           )}
         </div>
       </div>
+
 
       {/* Terminal */}
       <GlassCard padding={false} className="flex-1 h-full overflow-hidden">

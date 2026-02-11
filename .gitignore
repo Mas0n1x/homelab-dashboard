@@ -3,7 +3,8 @@ node_modules/
 
 # Build outputs
 frontend/build/
-frontend/.svelte-kit/
+frontend/.next/
+frontend/next-env.d.ts
 backend/dist/
 
 # Environment files

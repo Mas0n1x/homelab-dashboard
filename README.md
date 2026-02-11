@@ -1,6 +1,6 @@
 # Homelab Dashboard
 
-Ein modernes, leichtgewichtiges Dashboard für deinen Raspberry Pi 5 mit Docker-Integration und System-Monitoring.
+Ein umfassendes, modernes Dashboard für deinen Raspberry Pi 5 Homelab-Server mit System-Monitoring, Docker-Management, E-Mail-Client, Web-Terminal und Productivity-Tracker.
 
 ![Dashboard Preview](https://img.shields.io/badge/Status-Active-brightgreen) ![License](https://img.shields.io/badge/License-MIT-blue) ![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi-red)
 
@@ -9,7 +9,7 @@ Ein modernes, leichtgewichtiges Dashboard für deinen Raspberry Pi 5 mit Docker-
 ### System-Monitoring (via Glances API)
 - CPU-Auslastung mit Echtzeit-Graph
 - RAM-Nutzung mit Historie
-- Disk-Auslastung (2TB SSD)
+- Disk-Auslastung mit Treemap-Visualisierung
 - Netzwerk-Traffic (Upload/Download)
 - CPU-Temperatur
 - System-Uptime
@@ -17,28 +17,60 @@ Ein modernes, leichtgewichtiges Dashboard für deinen Raspberry Pi 5 mit Docker-
 ### Docker-Management
 - Liste aller Container mit Status (Running/Stopped)
 - Container starten, stoppen und neustarten
-- Container-Logs in Echtzeit anzeigen
-- Docker-Statistiken (Anzahl Container, Images, Version)
+- Container-Logs in Echtzeit mit Pause/Play
+- Docker Compose Editor & Ausführung
+- Container-Ressourcen-Monitoring
+- Image-Update-Benachrichtigungen
+- Disk-Usage Treemap
 
 ### Service-Links
-- Quick-Links zu allen deinen Homelab-Services
-- Anpassbare Icons (16 verschiedene)
-- Online/Offline Status-Prüfung
+- Automatische Service-Discovery
+- Quick-Links zu allen Homelab-Services
+- Online/Offline Status-Prüfung mit Uptime-Historie
 - Einfaches Hinzufügen/Entfernen über die UI
 
-### Echtzeit-Updates
-- WebSocket-Verbindung für Live-Daten
-- Automatische Aktualisierung alle 2 Sekunden
-- Verbindungsstatus-Anzeige
+### E-Mail-Client
+- JMAP-Protokoll mit Stalwart Mail-Server Integration
+- Multi-Account-Verwaltung
+- E-Mail-Komposition und Ordner-Navigation
+- Mail-Admin-Panel und Suche
+
+### Web-Terminal
+- Browser-basierte Container-Shell via xterm.js
+- Interaktiver Echtzeit-Terminal
+
+### Productivity-Tracker
+- Kanban-Board (TODO, In Progress, Done)
+- Pomodoro-Timer und Focus-Mode
+- Projekt-Verwaltung und Achievements
+- Task-Heatmap und Statistiken
+
+### Portfolio-Dashboard
+- Anfragen, Kunden und Rechnungen
+- Analytics-Übersicht
+
+### Weitere Features
+- JWT-basierte Authentifizierung
+- Anpassbares Glass-Morphism-Theme
+- Command Palette, Wetter-Widget, Kalender, Notizen, Lesezeichen
+- Discord & Telegram Alert-Benachrichtigungen
+- Datenbank-Backup und Audit-Logs
+- Echtzeit-Updates via WebSocket
 
 ## Tech-Stack
 
 | Komponente | Technologie |
 |------------|-------------|
-| Frontend | SvelteKit, Tailwind CSS, Chart.js |
-| Backend | Node.js, Express, WebSocket |
-| Monitoring | Glances API |
+| Frontend | Next.js 14, React 18, TypeScript, Tailwind CSS |
+| State Management | Zustand, TanStack React Query |
+| Charts | Recharts |
+| Animationen | Framer Motion |
+| Terminal | xterm.js |
+| Backend | Node.js 20, Express, WebSocket (ws) |
+| Datenbank | SQLite (better-sqlite3) |
+| Auth | JWT, bcryptjs |
 | Container | Docker, Dockerode |
+| Mail-Server | Stalwart (JMAP) |
 | Reverse Proxy | Nginx |
 
 ## Voraussetzungen
@@ -56,7 +88,14 @@ git clone <repo-url> homelab-dashboard
 cd homelab-dashboard
 ```
 
-### 2. Glances starten
+### 2. Umgebungsvariablen konfigurieren
+
+```bash
+cp .env.example .env
+# .env bearbeiten und JWT_SECRET setzen
+```
+
+### 3. Glances starten
 
 **Option A: Direkt auf dem Host**
 ```bash
@@ -74,13 +113,13 @@ docker run -d --name glances \
   nicolargo/glances:latest-full
 ```
 
-### 3. Dashboard starten
+### 4. Dashboard starten
 
 ```bash
 docker-compose up -d --build
 ```
 
-### 4. Dashboard öffnen
+### 5. Dashboard öffnen
 
 ```
 http://<raspberry-pi-ip>
@@ -92,49 +131,57 @@ Das Dashboard ist jetzt unter Port 80 erreichbar.
 
 ```
 homelab-dashboard/
-├── docker-compose.yml      # Docker Compose Konfiguration
-├── config.json             # Service-Konfiguration (Beispiel)
+├── docker-compose.yml          # Docker Compose Konfiguration
+├── config.json                 # Service-Konfiguration
+├── .env.example                # Umgebungsvariablen-Vorlage
 ├── README.md
 │
-├── backend/                # Node.js API Server
+├── backend/                    # Node.js API Server
 │   ├── Dockerfile
 │   ├── package.json
 │   └── src/
-│       ├── index.js        # Express + WebSocket Server
-│       ├── routes/
-│       │   ├── system.js   # System-Stats Endpoints
-│       │   ├── docker.js   # Docker-Management Endpoints
-│       │   └── services.js # Service-Links Endpoints
-│       └── services/
-│           ├── glances.js  # Glances API Integration
-│           └── docker.js   # Docker API Integration
+│       ├── index.js            # Express + WebSocket Server
+│       ├── routes/             # API Route Handler
+│       ├── services/           # Business Logic
+│       └── middleware/         # Auth Middleware
 │
-├── frontend/               # SvelteKit Dashboard
+├── frontend/                   # Next.js Dashboard
 │   ├── Dockerfile
 │   ├── package.json
-│   ├── svelte.config.js
-│   ├── tailwind.config.js
+│   ├── next.config.js
+│   ├── tailwind.config.ts
 │   └── src/
-│       ├── app.html
-│       ├── app.css
-│       ├── routes/
-│       │   ├── +layout.svelte
-│       │   ├── +page.svelte          # System-Übersicht
-│       │   ├── docker/+page.svelte   # Docker-Management
-│       │   └── services/+page.svelte # Service-Links
-│       └── lib/
-│           ├── components/
-│           │   ├── SystemStats.svelte
-│           │   ├── CpuChart.svelte
-│           │   ├── MemoryChart.svelte
-│           │   ├── NetworkChart.svelte
-│           │   ├── DockerContainers.svelte
-│           │   └── ServiceLinks.svelte
-│           └── stores/
-│               └── stats.js          # State Management
+│       ├── app/                # Next.js App Router
+│       │   ├── page.tsx                # Dashboard Home
+│       │   ├── layout.tsx              # Root Layout
+│       │   ├── login/page.tsx          # Login
+│       │   ├── docker/page.tsx         # Docker-Management
+│       │   ├── logs/page.tsx           # Log-Streaming
+│       │   ├── mail/page.tsx           # E-Mail-Client
+│       │   ├── portfolio/page.tsx      # Portfolio
+│       │   ├── services/page.tsx       # Service-Links
+│       │   ├── settings/page.tsx       # Einstellungen
+│       │   ├── terminal/page.tsx       # Web-Terminal
+│       │   └── tracker/page.tsx        # Productivity-Tracker
+│       ├── components/         # React-Komponenten
+│       │   ├── auth/           # Authentifizierung
+│       │   ├── dashboard/      # Dashboard-Widgets
+│       │   ├── docker/         # Docker-Komponenten
+│       │   ├── layout/         # Layout (Header, Nav)
+│       │   ├── mail/           # Mail-Komponenten
+│       │   ├── monitoring/     # System-Monitoring Charts
+│       │   ├── services/       # Service-Komponenten
+│       │   ├── tracker/        # Tracker-Komponenten
+│       │   └── ui/             # Generische UI-Komponenten
+│       ├── hooks/              # Custom React Hooks
+│       ├── stores/             # Zustand State Stores
+│       ├── lib/                # Utilities & Types
+│       └── styles/             # Globale Styles
 │
-└── nginx/                  # Reverse Proxy
-    └── nginx.conf
+├── nginx/                      # Reverse Proxy
+│   └── nginx.conf
+│
+└── cloudflare-worker/          # Cloudflare Worker Integration
 ```
 
 ## Konfiguration
@@ -143,9 +190,16 @@ homelab-dashboard/
 
 | Variable | Standard | Beschreibung |
 |----------|----------|--------------|
+| `JWT_SECRET` | — | Secret für Token-Signierung (erforderlich) |
 | `GLANCES_URL` | `http://host.docker.internal:61208` | URL zur Glances API |
+| `DB_PATH` | `/app/data/dashboard.db` | Pfad zur SQLite-Datenbank |
 | `CONFIG_PATH` | `/app/data/config.json` | Pfad zur Konfigurationsdatei |
 | `PORT` | `3001` | Backend API Port |
+| `STALWART_URL` | — | URL zum Stalwart Mail-Server |
+| `STALWART_ADMIN_USER` | — | Stalwart Admin-Benutzername |
+| `STALWART_ADMIN_PASSWORD` | — | Stalwart Admin-Passwort |
+| `CLOUDFLARE_TUNNEL_TOKEN` | — | Cloudflare Tunnel Token (optional) |
+| `CLOUDFLARE_API_TOKEN` | — | Cloudflare API Token (optional) |
 
 ### Service-Links konfigurieren
 
@@ -156,9 +210,15 @@ Service-Links können direkt über die Dashboard-UI verwaltet werden:
 3. Gib Name, URL, Beschreibung und Icon ein
 4. Klicke auf **Speichern**
 
-Die Konfiguration wird automatisch in `/app/data/config.json` gespeichert.
-
 ## API Endpoints
+
+### Auth
+| Endpoint | Methode | Beschreibung |
+|----------|---------|--------------|
+| `/api/auth/login` | POST | Login |
+| `/api/auth/refresh` | POST | Token erneuern |
+| `/api/auth/logout` | POST | Logout |
+| `/api/auth/change-password` | POST | Passwort ändern |
 
 ### System (via Glances)
 | Endpoint | Methode | Beschreibung |
@@ -168,30 +228,59 @@ Die Konfiguration wird automatisch in `/app/data/config.json` gespeichert.
 | `/api/system/memory` | GET | RAM Details |
 | `/api/system/disk` | GET | Disk Details |
 | `/api/system/network` | GET | Netzwerk Details |
-| `/api/system/sensors` | GET | Temperatursensoren |
 
 ### Docker
 | Endpoint | Methode | Beschreibung |
 |----------|---------|--------------|
 | `/api/docker/info` | GET | Docker System-Info |
 | `/api/docker/containers` | GET | Alle Container |
-| `/api/docker/containers/:id/start` | POST | Container starten |
-| `/api/docker/containers/:id/stop` | POST | Container stoppen |
-| `/api/docker/containers/:id/restart` | POST | Container neustarten |
-| `/api/docker/containers/:id/logs` | GET | Container Logs |
+| `/api/docker/container/:id/start` | POST | Container starten |
+| `/api/docker/container/:id/stop` | POST | Container stoppen |
+| `/api/docker/container/:id/restart` | POST | Container neustarten |
+| `/api/docker/container/:id/logs` | GET | Container Logs |
+| `/api/docker/container/:id/stats` | GET | Container Stats |
+| `/api/docker/compose/validate` | POST | Compose validieren |
+| `/api/docker/compose/execute` | POST | Compose ausführen |
 
 ### Services
 | Endpoint | Methode | Beschreibung |
 |----------|---------|--------------|
 | `/api/services` | GET | Alle Services |
-| `/api/services` | POST | Service hinzufügen |
-| `/api/services/:id` | PUT | Service aktualisieren |
-| `/api/services/:id` | DELETE | Service löschen |
+| `/api/services/discovered` | GET | Entdeckte Services |
+| `/api/services/status` | GET | Service-Status |
+| `/api/services/favorites` | GET | Favoriten |
+| `/api/services/add` | POST | Service hinzufügen |
+| `/api/services/update` | POST | Service aktualisieren |
+| `/api/services/delete` | POST | Service löschen |
+
+### Mail
+| Endpoint | Methode | Beschreibung |
+|----------|---------|--------------|
+| `/api/mail/accounts` | GET | Mail-Accounts |
+| `/api/mail/inbound` | POST | Eingehende Mail (Webhook) |
+
+### Tracker
+| Endpoint | Methode | Beschreibung |
+|----------|---------|--------------|
+| `/api/tracker/tasks` | GET | Alle Tasks |
+| `/api/tracker/tasks/create` | POST | Task erstellen |
+| `/api/tracker/tasks/update` | POST | Task aktualisieren |
+| `/api/tracker/stats` | GET | Statistiken |
+| `/api/tracker/achievements` | GET | Achievements |
 
 ### WebSocket
 | Endpoint | Beschreibung |
 |----------|--------------|
-| `ws://<host>:3001/ws` | Echtzeit-Updates (System, Docker) |
+| `ws://<host>:3001/ws` | Echtzeit-Updates (System, Docker, Logs, Terminal) |
+
+## Docker Services
+
+| Service | Image | Ports | Beschreibung |
+|---------|-------|-------|--------------|
+| frontend | Next.js (custom) | 3000 (intern) | Dashboard UI |
+| backend | Node.js (custom) | 3001 (intern) | API Server |
+| nginx | nginx:alpine | 80 (extern) | Reverse Proxy |
+| stalwart | stalwartlabs/stalwart | 25, 587, 465, 143, 993 | Mail-Server |
 
 ## Entwicklung
 
@@ -209,25 +298,14 @@ npm install
 npm run dev
 ```
 
-### Beide gleichzeitig
-```bash
-# Terminal 1
-cd backend && npm run dev
-
-# Terminal 2
-cd frontend && npm run dev
-```
-
 Frontend läuft auf `http://localhost:3000`, Backend auf `http://localhost:3001`.
 
-## Ports
+## Updates
 
-| Port | Service | Zugang |
-|------|---------|--------|
-| 80 | Nginx | Extern (Hauptzugang) |
-| 3000 | Frontend | Intern |
-| 3001 | Backend API | Intern |
-| 61208 | Glances | Host |
+```bash
+git pull
+docker-compose up -d --build
+```
 
 ## Troubleshooting
 
@@ -255,20 +333,10 @@ volumes:
 
 Prüfe die Nginx-Konfiguration für WebSocket-Upgrade-Header.
 
-## Updates
-
-```bash
-# Neueste Version holen
-git pull
-
-# Container neu bauen und starten
-docker-compose up -d --build
-```
-
 ## Lizenz
 
 MIT License - Frei nutzbar für private und kommerzielle Zwecke.
 
 ---
 
-Made with SvelteKit + Node.js for Raspberry Pi Homelab
+Built with Next.js + Node.js for Raspberry Pi Homelab

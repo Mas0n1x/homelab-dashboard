@@ -52,7 +52,7 @@ export function NotificationDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 glass-card p-0 z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm glass-card p-0 z-50 overflow-hidden">
           <div className="relative z-10">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">

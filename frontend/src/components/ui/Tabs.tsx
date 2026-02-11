@@ -10,13 +10,13 @@ interface TabsProps {
 
 export function Tabs({ tabs, activeTab, onChange }: TabsProps) {
   return (
-    <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+    <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-x-auto">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
           className={clsx(
-            'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+            'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex-shrink-0 whitespace-nowrap',
             activeTab === tab.id
               ? 'bg-white/[0.08] text-white shadow-sm'
               : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'

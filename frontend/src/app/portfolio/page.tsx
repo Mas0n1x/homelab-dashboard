@@ -246,7 +246,7 @@ export default function PortfolioPage() {
         </div>
         <div className="space-y-2 max-h-[320px] overflow-y-auto">
           {(customers || []).map((cust) => (
-            <div key={cust.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
+            <div key={cust.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 px-3 rounded-lg hover:bg-white/[0.03] transition-colors gap-1 sm:gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{cust.name}</p>
                 {cust.company && (
@@ -256,7 +256,7 @@ export default function PortfolioPage() {
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+              <div className="flex items-center gap-3 flex-shrink-0">
                 {cust.email && (
                   <span className="text-xs text-white/30 flex items-center gap-1">
                     <Mail className="w-3 h-3" />

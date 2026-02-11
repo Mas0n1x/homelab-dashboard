@@ -96,6 +96,10 @@ export default function MailPage() {
         {activeTab === 'posteingang' && (
           <>
             <MailSearch />
+            {/* Mobile folder sidebar - shown above email list */}
+            <div className="md:hidden mt-4 overflow-x-auto">
+              <FolderSidebar folders={folders} />
+            </div>
             <div className="flex gap-4 items-start mt-4">
               <div className="w-56 shrink-0 hidden md:block">
                 <FolderSidebar folders={folders} />
@@ -107,10 +111,6 @@ export default function MailPage() {
                   <EmailList folders={folders} />
                 )}
               </div>
-            </div>
-            {/* Mobile folder sidebar */}
-            <div className="md:hidden mt-4">
-              <FolderSidebar folders={folders} />
             </div>
           </>
         )}

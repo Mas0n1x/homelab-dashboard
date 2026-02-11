@@ -170,7 +170,7 @@ export default function ServicesPage() {
                           {uptime24 !== null && uptime24 !== undefined ? `${uptime24}%` : '--'}
                         </button>
 
-                        <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-1.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => favMutation.mutate(service.id)}
                             className={`p-1.5 rounded-lg transition-all ${favoriteIds.has(service.id) ? 'text-amber-400 hover:bg-amber-500/10' : 'text-white/30 hover:text-amber-400 hover:bg-amber-500/10'}`}

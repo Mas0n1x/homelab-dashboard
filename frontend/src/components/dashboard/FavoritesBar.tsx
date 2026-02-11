@@ -84,7 +84,7 @@ export function FavoritesBar() {
                       <span className="text-xs text-white/30">{isOnline ? 'Online' : 'Offline'}</span>
                     </div>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     {service.url && <ExternalLink className="w-3.5 h-3.5 text-white/30" />}
                     <button
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeMutation.mutate(service.id); }}

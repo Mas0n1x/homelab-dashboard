@@ -25,7 +25,7 @@ export function GlassCard({ children, className, hover = false, glow, padding = 
         glow === 'emerald' && 'hover:shadow-glow-emerald',
         glow === 'red' && 'hover:shadow-glow-red',
         glow === 'cyan' && 'hover:shadow-glow-cyan',
-        padding && 'p-5',
+        padding && 'p-4 sm:p-5',
         className
       )}
     >

@@ -256,17 +256,17 @@ export default function SettingsPage() {
                 transition={{ delay: i * 0.05 }}
               >
                 <GlassCard>
-                  <div className="relative z-10 flex items-center justify-between">
+                  <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${channel.type === 'discord' ? 'bg-indigo-500/10' : 'bg-blue-500/10'}`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${channel.type === 'discord' ? 'bg-indigo-500/10' : 'bg-blue-500/10'}`}>
                         <span className="text-lg">{channel.type === 'discord' ? '💬' : '📨'}</span>
                       </div>
                       <div>
                         <p className="text-sm font-medium">{channel.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className="text-xs text-white/30 capitalize">{channel.type}</span>
                           <span className="text-xs text-white/20">|</span>
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 flex-wrap">
                             {channel.events.map(e => (
                               <span key={e} className="text-xs px-1.5 py-0.5 rounded bg-white/[0.04] text-white/40">
                                 {EVENT_OPTIONS.find(o => o.id === e)?.icon} {EVENT_OPTIONS.find(o => o.id === e)?.label || e}
@@ -277,7 +277,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => toggleMutation.mutate({ id: channel.id, enabled: !channel.enabled })}
                         className={`w-10 h-5 rounded-full transition-colors relative ${channel.enabled ? 'bg-emerald-500/30' : 'bg-white/10'}`}
@@ -316,14 +316,14 @@ export default function SettingsPage() {
           <GlassCard>
             <div className="relative z-10 space-y-2">
               {history.map((h: any, i: number) => (
-                <div key={h.id || i} className="flex items-center justify-between py-1.5 text-xs">
+                <div key={h.id || i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 text-xs gap-1 sm:gap-0">
                   <div className="flex items-center gap-2">
                     <span className="text-white/20">{h.channel_name}</span>
                     <span className="text-white/40">{h.event_type}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-white/50 truncate max-w-[200px]">{h.message}</span>
-                    <span className="text-white/20">{new Date(h.sent_at + 'Z').toLocaleString('de-DE')}</span>
+                    <span className="text-white/20 flex-shrink-0">{new Date(h.sent_at + 'Z').toLocaleString('de-DE')}</span>
                   </div>
                 </div>
               ))}
@@ -339,7 +339,7 @@ export default function SettingsPage() {
             <Archive className="w-4 h-4 text-emerald-400" />
             Backups
           </h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => backupMutation.mutate('database')}
               disabled={backupMutation.isPending || backupStatus?.running}
@@ -402,8 +402,8 @@ export default function SettingsPage() {
             ) : (
               <div className="space-y-1 max-h-[400px] overflow-y-auto">
                 {auditLog.map((entry: any) => (
-                  <div key={entry.id} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-white/[0.02] text-xs">
-                    <div className="flex items-center gap-3">
+                  <div key={entry.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2 px-2 rounded-lg hover:bg-white/[0.02] text-xs gap-1 sm:gap-0">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <span className={`px-2 py-0.5 rounded font-mono ${
                         entry.action.startsWith('container.') ? 'bg-cyan-500/10 text-cyan-400' :
                         entry.action.startsWith('auth.') ? 'bg-indigo-500/10 text-indigo-400' :
@@ -413,7 +413,7 @@ export default function SettingsPage() {
                       {entry.target && <span className="text-white/40">{entry.target}</span>}
                       {entry.details && <span className="text-white/25 truncate max-w-[200px]">{entry.details}</span>}
                     </div>
-                    <span className="text-white/20 flex-shrink-0 ml-3">
+                    <span className="text-white/20 flex-shrink-0 sm:ml-3">
                       {new Date(entry.created_at + 'Z').toLocaleString('de-DE')}
                     </span>
                   </div>

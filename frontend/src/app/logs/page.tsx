@@ -167,33 +167,35 @@ export default function LogsPage() {
     : logs;
 
   return (
-    <div className="space-y-4 h-[calc(100vh-10rem)]">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2">
-            <FileText className="w-5 h-5 text-emerald-400" />
-            Log Viewer
-          </h1>
-          <p className="text-sm text-white/40 mt-0.5 flex items-center gap-2">
-            Live-Streaming Container Logs
-            {wsConnected ? (
-              <span className="flex items-center gap-1 text-emerald-400">
-                <Wifi className="w-3 h-3" /> Verbunden
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-red-400">
-                <WifiOff className="w-3 h-3" /> Verbinde...
-              </span>
-            )}
-          </p>
+    <div className="space-y-4 h-[calc(100vh-10rem)] mb-20 md:mb-0">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold flex items-center gap-2">
+              <FileText className="w-5 h-5 text-emerald-400" />
+              Log Viewer
+            </h1>
+            <p className="text-sm text-white/40 mt-0.5 flex items-center gap-2">
+              Live-Streaming Container Logs
+              {wsConnected ? (
+                <span className="flex items-center gap-1 text-emerald-400">
+                  <Wifi className="w-3 h-3" /> Verbunden
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-red-400">
+                  <WifiOff className="w-3 h-3" /> Verbinde...
+                </span>
+              )}
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Container selector */}
-          <div className="relative">
+          <div className="relative min-w-0 w-full sm:w-auto">
             <button
               onClick={() => setShowSelector(!showSelector)}
-              className="glass-input flex items-center gap-2 pr-8 min-w-[200px] text-left"
+              className="glass-input flex items-center gap-2 pr-8 w-full sm:min-w-[200px] text-left"
             >
               <span className="truncate text-sm">
                 {selectedContainers.size === 0 ? 'Container wählen...' : `${selectedContainers.size} ausgewählt`}
@@ -225,14 +227,14 @@ export default function LogsPage() {
           </div>
 
           {/* Filter */}
-          <div className="relative">
+          <div className="relative w-full sm:w-48">
             <Search className="w-4 h-4 text-white/30 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={filter}
               onChange={e => setFilter(e.target.value)}
               placeholder="Filter..."
-              className="glass-input pl-9 w-48"
+              className="glass-input pl-9 w-full"
             />
           </div>
 

@@ -80,14 +80,14 @@ export function ThemeCustomizer() {
     <>
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-4 right-4 z-50 p-2.5 rounded-xl glass-card glass-card-hover shadow-lg"
+        className="fixed bottom-20 md:bottom-4 right-4 z-50 p-2.5 rounded-xl glass-card glass-card-hover shadow-lg"
         title="Theme anpassen"
       >
         <Palette className="w-4 h-4 text-white/50" />
       </button>
 
       {open && (
-        <div className="fixed bottom-16 right-4 z-50 w-64 glass-card p-4 space-y-4">
+        <div className="fixed bottom-32 md:bottom-16 right-4 z-50 w-64 glass-card p-4 space-y-4">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium">Theme</span>

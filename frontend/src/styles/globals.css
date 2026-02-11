@@ -146,7 +146,7 @@
   }
 
   .stat-value {
-    @apply text-3xl font-bold tabular-nums;
+    @apply text-2xl sm:text-3xl font-bold tabular-nums;
   }
 
   .stat-label {
@@ -160,5 +160,19 @@
 
   .text-secondary {
     color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* Safe area insets for notch devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .glass-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Reduce blur on mobile for performance */
+@media (max-width: 640px) {
+  :root {
+    --glass-blur: 10px;
   }
 }
