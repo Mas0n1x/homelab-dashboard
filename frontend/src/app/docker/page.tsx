@@ -15,6 +15,7 @@ import { ImageUpdates } from '@/components/docker/ImageUpdates';
 import { ContainerComparison } from '@/components/docker/ContainerComparison';
 import { ContainerTemplates } from '@/components/docker/ContainerTemplates';
 import { ComposeEditor } from '@/components/docker/ComposeEditor';
+import { ServicesTab } from '@/components/docker/ServicesTab';
 import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import type { Container, DockerInfo } from '@/lib/types';
@@ -23,7 +24,7 @@ import { clsx } from 'clsx';
 export default function DockerPage() {
   const queryClient = useQueryClient();
   const { activeServerId } = useServerStore();
-  const [activeTab, setActiveTab] = useState('containers');
+  const [activeTab, setActiveTab] = useState('services');
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(['all']));
   const [logsModal, setLogsModal] = useState<{ open: boolean; containerId: string; name: string; logs: string }>({ open: false, containerId: '', name: '', logs: '' });
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; containerId: string; containerName: string; action: string }>({ open: false, containerId: '', containerName: '', action: '' });
@@ -87,6 +88,7 @@ export default function DockerPage() {
   };
 
   const tabs = [
+    { id: 'services', label: 'Services' },
     { id: 'containers', label: 'Container', count: containers.length },
     { id: 'compose', label: 'Projekte' },
     { id: 'images', label: 'Images', count: (images as any[])?.length },
@@ -113,6 +115,9 @@ export default function DockerPage() {
       <div className="overflow-x-auto">
         <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
       </div>
+
+      {/* Services Tab */}
+      {activeTab === 'services' && <ServicesTab />}
 
       {/* Container Tab */}
       {activeTab === 'containers' && (

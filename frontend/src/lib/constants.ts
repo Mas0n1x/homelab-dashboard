@@ -49,7 +49,6 @@ export function getIcon(iconName: string): LucideIcon {
 export const NAV_ITEMS = [
   { href: '/', label: 'System', icon: 'monitor' },
   { href: '/docker', label: 'Docker', icon: 'box' },
-  { href: '/services', label: 'Services', icon: 'globe' },
   { href: '/logs', label: 'Logs', icon: 'file-text' },
   { href: '/terminal', label: 'Terminal', icon: 'terminal' },
   { href: '/portfolio', label: 'Portfolio', icon: 'folder' },
