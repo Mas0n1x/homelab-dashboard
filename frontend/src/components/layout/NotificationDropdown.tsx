@@ -35,6 +35,7 @@ export function NotificationDropdown() {
     'new-customer': '\uD83D\uDC64',
     'service-offline': '\uD83D\uDD34',
     'container-crash': '\uD83D\uDC80',
+    'new-mail': '✉️',
   };
 
   return (

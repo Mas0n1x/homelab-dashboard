@@ -80,6 +80,22 @@ export async function handleInboundMail(req, res) {
     }
 
     console.log(`Mail received: ${fromAddress} -> ${toAddress} (${subject})`);
+
+    // Send notification to all connected WebSocket clients
+    if (req.app.locals.broadcast) {
+      req.app.locals.broadcast({
+        type: 'notifications',
+        data: [{
+          id: `mail-${Date.now()}`,
+          type: 'new-mail',
+          title: 'Neue E-Mail',
+          message: `Von ${fromAddress}: ${subject || '(Kein Betreff)'}`,
+          timestamp: new Date().toISOString(),
+          read: false,
+        }]
+      });
+    }
+
     res.json({ ok: true });
   } catch (error) {
     console.error('Inbound mail error:', error.message);

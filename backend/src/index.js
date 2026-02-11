@@ -386,6 +386,7 @@ function broadcast(message) {
     }
   });
 }
+app.locals.broadcast = broadcast;
 
 // Background: Service discovery (every 30 seconds)
 setInterval(async () => {
