@@ -47,70 +47,67 @@ interface MailStore {
   setSearchActive: (active: boolean) => void;
 }
 
+function deriveFields(accounts: MailAccount[], activeAccountEmail: string | null) {
+  const activeAcc = accounts.find(a => a.email === activeAccountEmail);
+  return {
+    email: activeAccountEmail,
+    password: null,
+    accountId: activeAcc?.accountId || null,
+  };
+}
+
 export const useMailStore = create<MailStore>((set, get) => ({
   accounts: [],
   activeAccountEmail: null,
+  email: null,
+  password: null,
+  accountId: null,
 
   setAccounts: (accounts) => {
     const active = accounts.find(a => a.isActive);
-    set({ accounts, activeAccountEmail: active?.email || null });
+    const activeEmail = active?.email || null;
+    set({ accounts, activeAccountEmail: activeEmail, ...deriveFields(accounts, activeEmail) });
   },
 
-  setActiveAccount: (email) => set({ activeAccountEmail: email }),
+  setActiveAccount: (email) => {
+    const { accounts } = get();
+    set({ activeAccountEmail: email, ...deriveFields(accounts, email) });
+  },
 
-  addAccount: (account) => set((state) => ({
-    accounts: [...state.accounts, account],
-    activeAccountEmail: account.email,
-  })),
+  addAccount: (account) => set((state) => {
+    const accounts = [...state.accounts, account];
+    return { accounts, activeAccountEmail: account.email, ...deriveFields(accounts, account.email) };
+  }),
 
   removeAccount: (id) => set((state) => {
     const filtered = state.accounts.filter(a => a.id !== id);
     const active = filtered.find(a => a.isActive);
-    return {
-      accounts: filtered,
-      activeAccountEmail: active?.email || null,
-    };
+    const activeEmail = active?.email || null;
+    return { accounts: filtered, activeAccountEmail: activeEmail, ...deriveFields(filtered, activeEmail) };
   }),
 
-  // Computed getters
-  get email() {
-    return get().activeAccountEmail;
-  },
-
-  get password() {
-    // DEPRECATED - passwords no longer stored in frontend
-    return null;
-  },
-
-  get accountId() {
-    const { accounts, activeAccountEmail } = get();
-    return accounts.find(a => a.email === activeAccountEmail)?.accountId || null;
-  },
-
   // Legacy method for backward compat (sets single account as active)
-  setCredentials: (email, password, accountId) => {
+  setCredentials: (email, _password, accountId) => {
     if (email && accountId) {
-      // Check if account already exists
       const existing = get().accounts.find(a => a.email === email);
       if (existing) {
-        set({ activeAccountEmail: email });
+        set({ activeAccountEmail: email, ...deriveFields(get().accounts, email) });
       } else {
-        // Add as new account
         const newAccount: MailAccount = {
-          id: Date.now(), // temporary ID
+          id: Date.now(),
           email,
           accountId,
           displayName: null,
           sortOrder: get().accounts.length,
           isActive: true,
         };
-        set((state) => ({
-          accounts: [...state.accounts, newAccount],
-          activeAccountEmail: email,
-        }));
+        set((state) => {
+          const accounts = [...state.accounts, newAccount];
+          return { accounts, activeAccountEmail: email, ...deriveFields(accounts, email) };
+        });
       }
     } else {
-      set({ activeAccountEmail: null });
+      set({ activeAccountEmail: null, email: null, accountId: null, password: null });
     }
   },
 

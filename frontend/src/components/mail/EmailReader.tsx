@@ -169,10 +169,10 @@ export function EmailReader({ folders }: EmailReaderProps) {
       <div className="glass-card p-4 overflow-hidden">
         {htmlContent ? (
           <iframe
-            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{color:#e0e0e0;background:transparent;font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.6;margin:0;padding:0;}a{color:#818cf8;}img{max-width:100%;height:auto;}blockquote{border-left:3px solid #333;margin:8px 0;padding:0 12px;color:#999;}</style></head><body>${sanitizeHtml(htmlContent)}</body></html>`}
+            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{color:#e0e0e0!important;background-color:transparent!important;border-color:#333!important;}body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.6;margin:0;padding:0;background:#0d0d1a!important;}a,a *{color:#818cf8!important;}img{max-width:100%;height:auto;}blockquote{border-left:3px solid #444!important;margin:8px 0;padding:0 12px;}blockquote,blockquote *{color:#999!important;}table{border-collapse:collapse;}td,th{padding:4px 8px;}</style></head><body>${sanitizeHtml(htmlContent)}</body></html>`}
             sandbox="allow-same-origin"
-            className="w-full border-0 min-h-[200px]"
-            style={{ colorScheme: 'dark' }}
+            className="w-full border-0 min-h-[200px] rounded-lg"
+            style={{ colorScheme: 'dark', background: '#0d0d1a' }}
             onLoad={(e) => {
               const iframe = e.target as HTMLIFrameElement;
               if (iframe.contentDocument?.body) {

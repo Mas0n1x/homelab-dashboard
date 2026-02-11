@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Plus, Mail, Check, Trash2 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -14,8 +14,20 @@ interface AccountSwitcherProps {
 
 export function AccountSwitcher({ onAddAccount }: AccountSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const { email: activeEmail, setActiveAccount } = useMailStore();
   const queryClient = useQueryClient();
+
+  // Close on click outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen]);
 
   const { data: accounts = [] } = useQuery<MailAccount[]>({
     queryKey: ['mail-accounts'],
@@ -61,7 +73,7 @@ export function AccountSwitcher({ onAddAccount }: AccountSwitcherProps) {
   };
 
   return (
-    <div className="relative">
+    <div ref={dropdownRef} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
@@ -85,12 +97,7 @@ export function AccountSwitcher({ onAddAccount }: AccountSwitcherProps) {
       </button>
 
       {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
-          <div className="absolute top-full left-0 mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden">
+          <div className="absolute top-full right-0 mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
             <div className="py-2">
               {accounts.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-400 text-center">
@@ -157,7 +164,6 @@ export function AccountSwitcher({ onAddAccount }: AccountSwitcherProps) {
               </button>
             </div>
           </div>
-        </>
       )}
     </div>
   );

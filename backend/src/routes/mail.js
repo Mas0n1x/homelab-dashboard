@@ -20,11 +20,13 @@ function getMailAuth(req) {
   if (!row) throw new Error('Mail-Konto nicht gefunden');
 
   const password = mail.decryptPassword(row.password_encrypted);
+  // Stalwart authenticates with username, not full email
+  const username = row.email.includes('@') ? row.email.split('@')[0] : row.email;
   return {
     account: row.email,
     password,
     accountId: row.account_id,
-    authHeader: 'Basic ' + Buffer.from(`${row.email}:${password}`).toString('base64'),
+    authHeader: 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
   };
 }
 
@@ -108,12 +110,21 @@ router.get('/download/:accountId/:blobId/:name', async (req, res) => {
 router.get('/accounts', (req, res) => {
   try {
     const db = getDb();
-    const accounts = db.prepare(`
+    const rows = db.prepare(`
       SELECT id, email, account_id, display_name, sort_order, is_active, added_at
       FROM mail_accounts
       WHERE user_id = ?
       ORDER BY sort_order ASC, added_at ASC
     `).all(req.user.id);
+    const accounts = rows.map(row => ({
+      id: row.id,
+      email: row.email,
+      accountId: row.account_id,
+      displayName: row.display_name,
+      sortOrder: row.sort_order,
+      isActive: row.is_active === 1,
+      addedAt: row.added_at,
+    }));
     res.json(accounts);
   } catch (error) {
     res.status(500).json({ error: error.message });

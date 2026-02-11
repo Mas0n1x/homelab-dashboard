@@ -71,14 +71,32 @@ export function ComposeModal() {
 
       if (toAddresses.length === 0) throw new Error('Empfänger erforderlich');
 
+      // Get identities and mailboxes first
+      const setupResult = await jmapCall(mailEmail, [
+        ['Identity/get', { accountId }, 'i'],
+        ['Mailbox/get', { accountId, ids: null }, 'mb'],
+      ]);
+      const identityResponse = setupResult.methodResponses?.[0]?.[1] as { list?: { id: string }[] } | undefined;
+      const identities = identityResponse?.list || [];
+      const identityId = identities[0]?.id;
+      if (!identityId) throw new Error('Keine Identität gefunden');
+
+      const mailboxResponse = setupResult.methodResponses?.[1]?.[1] as { list?: { id: string; role: string | null }[] } | undefined;
+      const mailboxes = mailboxResponse?.list || [];
+      const draftsId = mailboxes.find(m => m.role === 'drafts')?.id;
+      const sentId = mailboxes.find(m => m.role === 'sent')?.id;
+      if (!draftsId) throw new Error('Drafts-Ordner nicht gefunden');
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const draft: Record<string, any> = {
         from: [{ email: mailEmail }],
         to: toAddresses,
         subject: subject || '(Kein Betreff)',
-        textBody: [{ value: body, type: 'text/plain' }],
-        'keywords/$draft': true,
-        mailboxIds: {},
+        bodyValues: {
+          body: { value: body, isEncodingProblem: false, isTruncated: false },
+        },
+        textBody: [{ partId: 'body', type: 'text/plain' }],
+        mailboxIds: { [draftsId]: true },
       };
 
       if (ccAddresses.length > 0) draft.cc = ccAddresses;
@@ -96,16 +114,7 @@ export function ComposeModal() {
         }));
       }
 
-      // Get identities first
-      const identityResult = await jmapCall(mailEmail, [
-        ['Identity/get', { accountId }, 'i'],
-      ]);
-      const identityResponse = identityResult.methodResponses?.[0]?.[1] as { list?: { id: string }[] } | undefined;
-      const identities = identityResponse?.list || [];
-      const identityId = identities[0]?.id;
-      if (!identityId) throw new Error('Keine Identität gefunden');
-
-      // Create email and submit
+      // Create email in Drafts and submit; on success move to Sent
       await jmapCall(mailEmail, [
         ['Email/set', {
           accountId,
@@ -117,6 +126,13 @@ export function ComposeModal() {
             sub: {
               identityId,
               emailId: '#draft',
+            },
+          },
+          onSuccessUpdateEmail: {
+            '#sub': {
+              [`mailboxIds/${draftsId}`]: null,
+              ...(sentId ? { [`mailboxIds/${sentId}`]: true } : {}),
+              'keywords/$draft': null,
             },
           },
         }, 's'],
