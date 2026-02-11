@@ -71,14 +71,15 @@ export function Header({ connected }: HeaderProps) {
                     key={item.href}
                     href={item.href}
                     className={clsx(
-                      'flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+                      'flex items-center gap-2 px-2 lg:px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200',
                       isActive
                         ? 'bg-white/[0.08] text-white'
                         : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
                     )}
+                    title={item.label}
                   >
                     <Icon className="w-4 h-4" />
-                    {item.label}
+                    <span className="hidden lg:inline">{item.label}</span>
                   </Link>
                 );
               })}
