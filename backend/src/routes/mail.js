@@ -139,7 +139,27 @@ router.post('/accounts', async (req, res) => {
     }
 
     // Test connection first
-    const session = await mail.getJmapSession(email, password);
+    let session;
+    try {
+      session = await mail.getJmapSession(email, password);
+    } catch (authError) {
+      // Account might not exist on Stalwart yet — auto-create it
+      const username = email.includes('@') ? email.split('@')[0] : email;
+      try {
+        await mail.createAccount(username, password, displayName || username);
+      } catch (createError) {
+        // Ignore if account already exists (409), re-throw otherwise
+        if (!createError.message.includes('409') && !createError.message.includes('already')) {
+          return res.status(400).json({ error: `Konto konnte nicht erstellt werden: ${createError.message}` });
+        }
+      }
+      // Retry authentication after account creation
+      try {
+        session = await mail.getJmapSession(email, password);
+      } catch (retryError) {
+        return res.status(400).json({ error: `Verbindung fehlgeschlagen: ${retryError.message}` });
+      }
+    }
     const accountId = session?.primaryAccounts?.['urn:ietf:params:jmap:mail'] || null;
 
     const db = getDb();
