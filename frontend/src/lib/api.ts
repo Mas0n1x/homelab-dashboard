@@ -343,7 +343,7 @@ export const deleteUserMailAccount = (id: number) =>
 
 // Admin (Stalwart Server Management)
 export const getMailAccounts = () => fetchApi('/mail/admin/accounts');
-export const createMailAccount = (data: { username: string; password: string; displayName?: string }) =>
+export const createMailAccount = (data: { username: string; password: string; displayName?: string; domain?: string }) =>
   fetchApi('/mail/admin/accounts', { method: 'POST', body: JSON.stringify(data) });
 export const deleteMailAccount = (username: string) =>
   fetchApi(`/mail/admin/accounts/${encodeURIComponent(username)}`, { method: 'DELETE' });

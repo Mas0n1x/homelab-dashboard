@@ -64,7 +64,7 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
           type="text"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="user@mas0n1x.online"
+          placeholder="user@domain.tld"
           className="glass-input w-full"
           autoComplete="email"
         />

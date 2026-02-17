@@ -156,9 +156,9 @@ export async function ensureDomain(domain) {
   }
 }
 
-export async function createAccount(username, password, displayName) {
+export async function createAccount(username, password, displayName, domain = 'mas0n1x.online') {
   // Ensure domain exists before creating account
-  await ensureDomain('mas0n1x.online');
+  await ensureDomain(domain);
   // Hash password for Stalwart
   const hashedPassword = hashPassword(password);
   return adminRequest('POST', 'principal', {
@@ -166,7 +166,7 @@ export async function createAccount(username, password, displayName) {
     name: username,
     secrets: [hashedPassword],
     description: displayName || username,
-    emails: [`${username}@mas0n1x.online`],
+    emails: [`${username}@${domain}`],
     roles: ['user'],
   });
 }

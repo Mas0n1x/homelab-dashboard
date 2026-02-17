@@ -145,8 +145,9 @@ router.post('/accounts', async (req, res) => {
     } catch (authError) {
       // Account might not exist on Stalwart yet — auto-create it
       const username = email.includes('@') ? email.split('@')[0] : email;
+      const domain = email.includes('@') ? email.split('@')[1] : undefined;
       try {
-        await mail.createAccount(username, password, displayName || username);
+        await mail.createAccount(username, password, displayName || username, domain);
       } catch (createError) {
         // Ignore if account already exists (409), re-throw otherwise
         if (!createError.message.includes('409') && !createError.message.includes('already')) {
@@ -319,9 +320,9 @@ router.get('/admin/accounts', async (req, res) => {
 
 router.post('/admin/accounts', async (req, res) => {
   try {
-    const { username, password, displayName } = req.body;
+    const { username, password, displayName, domain } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Benutzername und Passwort erforderlich' });
-    const result = await mail.createAccount(username, password, displayName);
+    const result = await mail.createAccount(username, password, displayName, domain);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -353,7 +354,8 @@ router.put('/admin/accounts/:username/password', async (req, res) => {
 router.get('/admin/domains', async (req, res) => {
   try {
     const domains = await mail.listDomains();
-    res.json(domains);
+    const names = domains.map(d => typeof d === 'string' ? d : d.name).filter(Boolean);
+    res.json(names);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
