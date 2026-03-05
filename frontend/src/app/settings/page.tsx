@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bell, Plus, Trash2, TestTube, Check, Loader2, Settings, Shield, AlertTriangle, Lock, ScrollText, Database, Archive } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { PageTransition } from '@/components/ui/PageTransition';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Modal } from '@/components/ui/Modal';
 import { useAuthStore } from '@/stores/authStore';
@@ -138,6 +139,7 @@ export default function SettingsPage() {
   };
 
   return (
+    <PageTransition>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -473,5 +475,6 @@ export default function SettingsPage() {
         </div>
       </Modal>
     </div>
+    </PageTransition>
   );
 }

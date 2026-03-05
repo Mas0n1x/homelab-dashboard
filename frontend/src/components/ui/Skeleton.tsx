@@ -10,9 +10,9 @@ export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
       className={clsx(
-        'animate-pulse rounded-lg',
-        'bg-gradient-to-r from-white/[0.03] via-white/[0.06] to-white/[0.03]',
-        'bg-[length:200%_100%]',
+        'rounded-lg',
+        'bg-gradient-to-r from-white/[0.02] via-white/[0.06] to-white/[0.02]',
+        'bg-[length:300%_100%] animate-shimmer',
         className
       )}
     />

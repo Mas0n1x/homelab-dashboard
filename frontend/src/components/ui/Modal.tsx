@@ -36,25 +36,27 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-black/50 backdrop-blur-md"
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.96, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0, scale: 0.96, y: 24 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className={`relative w-full ${sizes[size]} glass-card p-0 max-h-[85vh] flex flex-col`}
           >
             <div className="relative z-10 flex items-center justify-between p-5 border-b border-white/[0.06]">
               <h2 className="text-lg font-semibold">{title}</h2>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-white/10 transition-all duration-200 hover:rotate-90"
               >
                 <X className="w-5 h-5 text-white/60" />
               </button>
             </div>
+            <div className="absolute bottom-[calc(100%-73px)] left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent z-20" />
             <div className="relative z-10 p-5 overflow-y-auto">
               {children}
             </div>

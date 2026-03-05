@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FileText, Search, Pause, Play, Trash2, ChevronDown, Wifi, WifiOff } from 'lucide-react';
+import { PageTransition } from '@/components/ui/PageTransition';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useServerStore } from '@/stores/serverStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -167,6 +168,7 @@ export default function LogsPage() {
     : logs;
 
   return (
+    <PageTransition>
     <div className="space-y-4 h-[calc(100vh-10rem)] mb-20 md:mb-0">
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -275,5 +277,6 @@ export default function LogsPage() {
         </div>
       </GlassCard>
     </div>
+    </PageTransition>
   );
 }

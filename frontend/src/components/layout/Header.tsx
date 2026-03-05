@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Activity, Server, LogOut } from 'lucide-react';
 import { clsx } from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 import { NAV_ITEMS, getIcon } from '@/lib/constants';
 import { useServerStore } from '@/stores/serverStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -50,13 +51,13 @@ export function Header({ connected }: HeaderProps) {
   const activeServer = servers.find(s => s.id === activeServerId);
 
   return (
-    <header className="glass-nav sticky top-0 z-40">
+    <header className="glass-nav sticky top-0 z-40 relative">
       <div className="max-w-[1600px] mx-auto px-4 lg:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo + Nav */}
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-accent/20 border border-accent/25 flex items-center justify-center animate-pulse-glow">
                 <Activity className="w-4.5 h-4.5 text-accent-light" />
               </div>
               <span className="text-base font-semibold hidden sm:block">Homelab</span>
@@ -71,15 +72,24 @@ export function Header({ connected }: HeaderProps) {
                     key={item.href}
                     href={item.href}
                     className={clsx(
-                      'flex items-center gap-2 px-2 lg:px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+                      'relative flex items-center gap-2 px-2 lg:px-3.5 py-2 rounded-lg text-sm font-medium transition-colors duration-200',
                       isActive
-                        ? 'bg-white/[0.08] text-white'
-                        : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+                        ? 'text-white'
+                        : 'text-white/50 hover:text-white/80'
                     )}
                     title={item.label}
                   >
-                    <Icon className="w-4 h-4" />
-                    <span className="hidden lg:inline">{item.label}</span>
+                    {isActive && (
+                      <motion.div
+                        layoutId="nav-indicator"
+                        className="absolute inset-0 bg-white/[0.08] rounded-lg"
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-2">
+                      <Icon className="w-4 h-4" />
+                      <span className="hidden lg:inline">{item.label}</span>
+                    </span>
                   </Link>
                 );
               })}
@@ -98,36 +108,44 @@ export function Header({ connected }: HeaderProps) {
                 <span className="hidden sm:block text-white/70">{activeServer?.name || 'Local'}</span>
               </button>
 
-              {showServerDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-56 glass-card p-2 z-50">
-                  <div className="relative z-10">
-                    {servers.map(server => (
-                      <button
-                        key={server.id}
-                        onClick={() => {
-                          setActiveServer(server.id);
-                          setShowServerDropdown(false);
-                        }}
-                        className={clsx(
-                          'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all',
-                          server.id === activeServerId
-                            ? 'bg-white/[0.08] text-white'
-                            : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
-                        )}
-                      >
-                        <span className={clsx(
-                          'w-2 h-2 rounded-full',
-                          server.status === 'connected' ? 'bg-emerald-400' : 'bg-red-400'
-                        )} />
-                        <span className="flex-1 text-left">{server.name}</span>
-                        {server.id === activeServerId && (
-                          <span className="text-xs text-accent-light">Aktiv</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <AnimatePresence>
+                {showServerDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    className="absolute right-0 top-full mt-2 w-56 glass-card p-2 z-50"
+                  >
+                    <div className="relative z-10">
+                      {servers.map(server => (
+                        <button
+                          key={server.id}
+                          onClick={() => {
+                            setActiveServer(server.id);
+                            setShowServerDropdown(false);
+                          }}
+                          className={clsx(
+                            'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all',
+                            server.id === activeServerId
+                              ? 'bg-white/[0.08] text-white'
+                              : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+                          )}
+                        >
+                          <span className={clsx(
+                            'w-2 h-2 rounded-full',
+                            server.status === 'connected' ? 'bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]' : 'bg-red-400'
+                          )} />
+                          <span className="flex-1 text-left">{server.name}</span>
+                          {server.id === activeServerId && (
+                            <span className="text-xs text-accent-light">Aktiv</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Connection Status */}
@@ -141,12 +159,14 @@ export function Header({ connected }: HeaderProps) {
             <NotificationDropdown />
 
             {/* Time */}
-            <span className="text-sm font-mono text-white/40 hidden lg:block">{time}</span>
+            <span className="text-sm font-mono text-white/40 hidden lg:block px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+              {time}
+            </span>
 
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-all duration-200"
               title="Abmelden"
             >
               <LogOut className="w-4 h-4 text-white/40 hover:text-white/70" />
@@ -154,6 +174,9 @@ export function Header({ connected }: HeaderProps) {
           </div>
         </div>
       </div>
+
+      {/* Gradient bottom border */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
     </header>
   );
 }

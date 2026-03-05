@@ -23,22 +23,27 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string }> =
 
 export function StatusBadge({ status, label, size = 'sm', pulse = true }: StatusBadgeProps) {
   const style = STATUS_STYLES[status.toLowerCase()] || STATUS_STYLES.offline;
+  const isActive = ['running', 'online', 'connected'].includes(status.toLowerCase());
 
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-1.5 rounded-full border',
+        'inline-flex items-center gap-1.5 rounded-full border backdrop-blur-sm',
         style.bg,
         style.text,
-        `border-current/20`,
+        'border-current/20',
         size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-3 py-1 text-sm'
       )}
     >
       <span className="relative flex h-2 w-2">
-        {pulse && (status === 'running' || status === 'online' || status === 'connected') && (
+        {pulse && isActive && (
           <span className={clsx('absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping', style.dot)} />
         )}
-        <span className={clsx('relative inline-flex rounded-full h-2 w-2', style.dot)} />
+        <span className={clsx(
+          'relative inline-flex rounded-full h-2 w-2',
+          style.dot,
+          isActive && 'shadow-[0_0_6px_currentColor]'
+        )} />
       </span>
       {label || status}
     </span>

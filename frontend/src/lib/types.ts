@@ -266,7 +266,7 @@ export interface TrackerTask {
   notes: string
   estimated_time: number
   actual_time: number
-  status: 'backlog' | 'inprogress' | 'done'
+  status: 'backlog' | 'inprogress' | 'paused' | 'done'
   category: string
   labels: string[]
   project_id: string | null

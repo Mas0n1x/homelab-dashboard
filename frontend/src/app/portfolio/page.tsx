@@ -1,7 +1,9 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Users, FileText, CreditCard, ExternalLink, ArrowUpRight, Receipt, Mail, Phone, Building } from 'lucide-react';
+import { Users, FileText, CreditCard, ExternalLink, ArrowUpRight, Receipt, Mail, Phone, Building, Briefcase } from 'lucide-react';
+import { PageTransition } from '@/components/ui/PageTransition';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import * as api from '@/lib/api';
@@ -79,23 +81,24 @@ export default function PortfolioPage() {
   const maxRevenue = Math.max(...revenueData.map(d => d.value), 1);
 
   return (
+    <PageTransition>
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">Portfolio</h1>
-          <p className="text-sm text-white/40 mt-0.5">mas0n1x.online Admin Panel</p>
-        </div>
-        <a
-          href="https://mas0n1x.online/admin"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-primary flex items-center gap-2"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Admin Panel öffnen
-        </a>
-      </div>
+      <PageHeader
+        title="Portfolio"
+        subtitle="mas0n1x.online Admin Panel"
+        icon={<Briefcase className="w-5 h-5" />}
+        actions={
+          <a
+            href="https://mas0n1x.online/admin"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary flex items-center gap-2"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Admin Panel öffnen
+          </a>
+        }
+      />
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -278,5 +281,6 @@ export default function PortfolioPage() {
         </div>
       </GlassCard>
     </div>
+    </PageTransition>
   );
 }

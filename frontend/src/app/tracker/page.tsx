@@ -1,8 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import { getTrackerTasks, getTrackerPlayer, getTrackerStatsToday } from '@/lib/api';
+import { PageTransition } from '@/components/ui/PageTransition';
 import { useTrackerStore } from '@/stores/trackerStore';
 import { Tabs } from '@/components/ui/Tabs';
 import { TrackerHeader } from '@/components/tracker/TrackerHeader';
@@ -53,11 +53,7 @@ export default function TrackerPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
+      <PageTransition>
         <h1 className="text-2xl font-bold mb-4">Tracker</h1>
 
         <TrackerHeader
@@ -91,7 +87,7 @@ export default function TrackerPage() {
         {activeTab === 'notizen' && <NotesPanel />}
         {activeTab === 'projekte' && <ProjectsPanel />}
         {activeTab === 'einstellungen' && <SettingsPanel />}
-      </motion.div>
+      </PageTransition>
 
       {/* Modals & Overlays */}
       <TaskModal

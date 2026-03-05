@@ -2,8 +2,10 @@
 
 import { useState, useCallback } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { Play, Square, RotateCcw, FileText, ChevronDown, ChevronRight } from 'lucide-react';
+import { Play, Square, RotateCcw, FileText, ChevronDown, ChevronRight, Boxes } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PageTransition } from '@/components/ui/PageTransition';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Tabs } from '@/components/ui/Tabs';
@@ -103,7 +105,10 @@ export default function DockerPage() {
   ];
 
   return (
+    <PageTransition>
     <div className="space-y-6">
+      <PageHeader title="Docker" subtitle="Container & Services verwalten" icon={<Boxes className="w-5 h-5" />} />
+
       {/* Stats bar */}
       <div className="flex flex-wrap items-center gap-3">
         <StatusBadge status="running" label={`${running} laufend`} size="md" />
@@ -355,5 +360,6 @@ export default function DockerPage() {
         </pre>
       </Modal>
     </div>
+    </PageTransition>
   );
 }

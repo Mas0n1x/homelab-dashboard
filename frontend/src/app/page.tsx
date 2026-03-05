@@ -16,8 +16,10 @@ import { BookmarksWidget } from '@/components/dashboard/BookmarksWidget';
 import { NotesWidget } from '@/components/dashboard/NotesWidget';
 import { DiskWidget } from '@/components/dashboard/DiskWidget';
 import { UptimeWidget } from '@/components/dashboard/UptimeWidget';
+import { GreetingHeader } from '@/components/dashboard/GreetingHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { PageTransition } from '@/components/ui/PageTransition';
 import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import type { SystemStats, DockerInfo, Container, PortfolioData } from '@/lib/types';
@@ -54,99 +56,113 @@ export default function DashboardPage() {
   const total = containers?.length || 0;
 
   return (
-    <div className="space-y-6">
-      {/* Search Bar */}
-      <SearchBar />
+    <PageTransition>
+      <div className="space-y-6">
+        {/* Greeting */}
+        <GreetingHeader
+          containersRunning={running}
+          cpuPercent={stats?.cpu.total}
+        />
 
-      {/* Favorites */}
-      <FavoritesBar />
+        {/* Search Bar */}
+        <SearchBar />
 
-      {/* System Stats */}
-      <SystemOverview stats={stats || null} />
+        {/* Favorites */}
+        <FavoritesBar />
 
-      {/* Docker + Uptime + Speedtest + Health */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <GlassCard delay={0.15} glow="cyan" hover>
-          <div className="flex items-center justify-between mb-2">
-            <span className="stat-label">Container</span>
-            <Box className="w-4 h-4 text-cyan-400/50" />
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="stat-value text-cyan-400">
-              <AnimatedNumber value={running} />
-            </span>
-            <span className="text-white/30 text-sm">/ {total}</span>
-          </div>
-          <p className="text-xs text-white/30 mt-1">laufend</p>
-        </GlassCard>
+        {/* System Stats */}
+        <SystemOverview stats={stats || null} />
 
-        <GlassCard delay={0.2} hover>
-          <div className="flex items-center justify-between mb-2">
-            <span className="stat-label">Images</span>
-            <Image className="w-4 h-4 text-white/30" />
-          </div>
-          <span className="stat-value">
-            <AnimatedNumber value={dockerInfo?.images || 0} />
-          </span>
-          <p className="text-xs text-white/30 mt-1">Docker v{dockerInfo?.dockerVersion || '?'}</p>
-        </GlassCard>
-
-        <GlassCard delay={0.25} glow="emerald" hover>
-          <div className="flex items-center justify-between mb-2">
-            <span className="stat-label">Uptime</span>
-            <Server className="w-4 h-4 text-emerald-400/50" />
-          </div>
-          <span className="text-xl font-semibold text-emerald-400">{stats?.uptime || 'N/A'}</span>
-        </GlassCard>
-
-        <UptimeWidget />
-        <SpeedtestWidget />
-      </div>
-
-      {/* Disk Storage */}
-      {stats?.disk && stats.disk.length > 0 && (
-        <DiskWidget disks={stats.disk} />
-      )}
-
-      {/* Weather + Calendar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <WeatherWidget />
-        <CalendarWidget />
-        {portfolio ? (
-          <GlassCard delay={0.3} glow="indigo" hover>
-            <div className="relative z-10 flex items-center justify-between">
-              <div>
-                <span className="stat-label">Portfolio Anfragen</span>
-                <span className="stat-value text-accent-light block mt-1">
-                  <AnimatedNumber value={portfolio.stats.openRequests} />
-                </span>
+        {/* Docker + Uptime + Speedtest + Health */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <GlassCard delay={0.15} glow="cyan" hover accentBorder="#06b6d4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="stat-label">Container</span>
+              <div className="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                <Box className="w-3.5 h-3.5 text-cyan-400" />
               </div>
-              <span className="text-sm text-white/30">{portfolio.stats.customers} Kunden</span>
             </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="stat-value text-cyan-400">
+                <AnimatedNumber value={running} />
+              </span>
+              <span className="text-white/30 text-sm">/ {total}</span>
+            </div>
+            <p className="text-xs text-white/30 mt-1">laufend</p>
           </GlassCard>
-        ) : (
-          <BookmarksWidget />
+
+          <GlassCard delay={0.2} hover>
+            <div className="flex items-center justify-between mb-2">
+              <span className="stat-label">Images</span>
+              <div className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center">
+                <Image className="w-3.5 h-3.5 text-white/40" />
+              </div>
+            </div>
+            <span className="stat-value">
+              <AnimatedNumber value={dockerInfo?.images || 0} />
+            </span>
+            <p className="text-xs text-white/30 mt-1">Docker v{dockerInfo?.dockerVersion || '?'}</p>
+          </GlassCard>
+
+          <GlassCard delay={0.25} glow="emerald" hover accentBorder="#10b981">
+            <div className="flex items-center justify-between mb-2">
+              <span className="stat-label">Uptime</span>
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <Server className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+            </div>
+            <span className="text-xl font-semibold text-emerald-400">{stats?.uptime || 'N/A'}</span>
+          </GlassCard>
+
+          <UptimeWidget />
+          <SpeedtestWidget />
+        </div>
+
+        {/* Disk Storage */}
+        {stats?.disk && stats.disk.length > 0 && (
+          <DiskWidget disks={stats.disk} />
         )}
-      </div>
 
-      {/* Bookmarks + Notes */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {portfolio && <BookmarksWidget />}
-        <NotesWidget />
-      </div>
+        {/* Weather + Calendar */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <WeatherWidget />
+          <CalendarWidget />
+          {portfolio ? (
+            <GlassCard delay={0.3} glow="indigo" hover accentBorder="#6366f1">
+              <div className="relative z-10 flex items-center justify-between">
+                <div>
+                  <span className="stat-label">Portfolio Anfragen</span>
+                  <span className="stat-value text-accent-light block mt-1">
+                    <AnimatedNumber value={portfolio.stats.openRequests} />
+                  </span>
+                </div>
+                <span className="text-sm text-white/30">{portfolio.stats.customers} Kunden</span>
+              </div>
+            </GlassCard>
+          ) : (
+            <BookmarksWidget />
+          )}
+        </div>
 
-      {/* GitHub */}
-      <GitHubWidget />
+        {/* Bookmarks + Notes */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {portfolio && <BookmarksWidget />}
+          <NotesWidget />
+        </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <CpuChart cpuTotal={stats?.cpu.total || 0} />
-        <MemoryChart memPercent={stats?.memory.percent || 0} />
-      </div>
+        {/* GitHub */}
+        <GitHubWidget />
 
-      <div className="grid grid-cols-1 gap-4">
-        <NetworkChart network={stats?.network || null} />
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <CpuChart cpuTotal={stats?.cpu.total || 0} />
+          <MemoryChart memPercent={stats?.memory.percent || 0} />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4">
+          <NetworkChart network={stats?.network || null} />
+        </div>
       </div>
-    </div>
+    </PageTransition>
   );
 }

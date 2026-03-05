@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { moveTrackerTask, completeTrackerTask } from '@/lib/api';
+import { moveTrackerTask, completeTrackerTask, updateTrackerTask } from '@/lib/api';
 import { useTrackerStore } from '@/stores/trackerStore';
 import { TaskCard } from './TaskCard';
 import { TaskForm } from './TaskForm';
@@ -17,7 +17,7 @@ interface KanbanColumnProps {
 
 export function KanbanColumn({ title, status, tasks, onTaskClick, accentColor }: KanbanColumnProps) {
   const queryClient = useQueryClient();
-  const { showNotification } = useTrackerStore();
+  const { showNotification, timer, resetTimer } = useTrackerStore();
 
   const moveMutation = useMutation({
     mutationFn: ({ id, newStatus }: { id: string; newStatus: string }) =>
@@ -44,15 +44,20 @@ export function KanbanColumn({ title, status, tasks, onTaskClick, accentColor }:
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      updateTrackerTask(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tracker-tasks'] });
+    },
+  });
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
     if (!taskId) return;
 
     if (status === 'done') {
-      const task = tasks.find(t => t.id === taskId) ||
-        // Task might come from another column
-        undefined;
       completeMutation.mutate({ id: taskId, actual_time: 0 });
     } else {
       moveMutation.mutate({ id: taskId, newStatus: status });
@@ -66,6 +71,36 @@ export function KanbanColumn({ title, status, tasks, onTaskClick, accentColor }:
       moveMutation.mutate({ id: taskId, newStatus });
     }
   };
+
+  const handleToggleSubtask = (task: TrackerTask, subtaskIndex: number) => {
+    const updatedSubtasks = task.subtasks.map((s, i) =>
+      i === subtaskIndex ? { ...s, completed: !s.completed } : s
+    );
+    updateMutation.mutate({ id: task.id, data: { subtasks: updatedSubtasks } });
+  };
+
+  const handlePause = (taskId: string) => {
+    // If timer is running for this task, reset it
+    if (timer.activeTaskId === taskId) {
+      resetTimer();
+    }
+    // Move task to paused status
+    moveMutation.mutate({ id: taskId, newStatus: 'paused' });
+  };
+
+  const handleResume = (taskId: string) => {
+    // Move task back to inprogress
+    moveMutation.mutate({ id: taskId, newStatus: 'inprogress' });
+  };
+
+  // Sort: active tasks first, paused tasks at the bottom
+  const sortedTasks = status === 'inprogress'
+    ? [...tasks].sort((a, b) => {
+        if (a.status === 'paused' && b.status !== 'paused') return 1;
+        if (a.status !== 'paused' && b.status === 'paused') return -1;
+        return 0;
+      })
+    : tasks;
 
   return (
     <div
@@ -84,13 +119,17 @@ export function KanbanColumn({ title, status, tasks, onTaskClick, accentColor }:
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto max-h-[500px]">
-        {tasks.map((task) => (
+        {sortedTasks.map((task) => (
           <TaskCard
             key={task.id}
             task={task}
             onClick={() => onTaskClick(task.id)}
             onMoveToColumn={(newStatus) => handleMoveToColumn(task.id, newStatus)}
+            onToggleSubtask={task.status === 'inprogress' ? (idx) => handleToggleSubtask(task, idx) : undefined}
+            onPause={task.status === 'inprogress' ? () => handlePause(task.id) : undefined}
+            onResume={task.status === 'paused' ? () => handleResume(task.id) : undefined}
             isDone={status === 'done'}
+            isPaused={task.status === 'paused'}
           />
         ))}
       </div>

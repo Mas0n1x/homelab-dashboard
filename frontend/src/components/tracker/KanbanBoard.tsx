@@ -23,7 +23,7 @@ export function KanbanBoard({ tasks }: KanbanBoardProps) {
   });
 
   const backlog = tasks.filter(t => t.status === 'backlog');
-  const inProgress = tasks.filter(t => t.status === 'inprogress');
+  const inProgress = tasks.filter(t => t.status === 'inprogress' || t.status === 'paused');
   const done = tasks.filter(t => t.status === 'done');
 
   return (

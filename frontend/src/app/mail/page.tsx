@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import { useMailStore } from '@/stores/mailStore';
+import { PageTransition } from '@/components/ui/PageTransition';
 import { getUserMailAccounts, jmapCall } from '@/lib/api';
 import { Tabs } from '@/components/ui/Tabs';
 import { MailSetup } from '@/components/mail/MailSetup';
@@ -75,11 +75,7 @@ export default function MailPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
+      <PageTransition>
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Mail</h1>
           <AccountSwitcher onAddAccount={() => setShowAddAccountModal(true)} />
@@ -116,7 +112,7 @@ export default function MailPage() {
         )}
 
         {activeTab === 'verwaltung' && <MailAdmin />}
-      </motion.div>
+      </PageTransition>
 
       <ComposeModal />
       {showAddAccountModal && (

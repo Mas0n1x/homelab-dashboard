@@ -49,20 +49,20 @@ export default function LoginPage() {
       <Background />
       <div className="flex items-center justify-center min-h-screen px-4">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          initial={{ opacity: 0, y: 30, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="w-full max-w-sm"
         >
           <div className="glass-card p-8">
             <div className="relative z-10">
               {/* Logo */}
               <div className="flex justify-center mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center animate-pulse-glow">
                   <Activity className="w-7 h-7 text-accent-light" />
                 </div>
               </div>
-              <h1 className="text-xl font-semibold text-center mb-1">Homelab Dashboard</h1>
+              <h1 className="text-xl font-semibold text-center mb-1 text-gradient">Homelab Dashboard</h1>
               <p className="text-sm text-white/40 text-center mb-8">Anmelden</p>
 
               {error && (
@@ -108,7 +108,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={!username || !password || loading}
-                  className="btn-primary w-full py-3 disabled:opacity-40 flex items-center justify-center gap-2"
+                  className="btn-primary w-full py-3 disabled:opacity-40 flex items-center justify-center gap-2 bg-gradient-to-r from-accent to-indigo-500 hover:from-accent-light hover:to-indigo-400 transition-all duration-300 hover:shadow-lg hover:shadow-accent/25"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
                   {loading ? 'Wird angemeldet...' : 'Anmelden'}
