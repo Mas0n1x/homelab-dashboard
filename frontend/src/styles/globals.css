@@ -148,6 +148,76 @@
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 4px 20px rgba(0, 0, 0, 0.3);
   }
 
+  /* ─── Sidebar Glass ─── */
+  .sidebar-glass {
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    background: rgba(5, 5, 16, 0.85);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .sidebar-logo-glow {
+    animation: sidebar-glow 3s ease-in-out infinite;
+  }
+
+  @keyframes sidebar-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0); }
+    50% { box-shadow: 0 0 16px 2px rgba(var(--accent-rgb), 0.2); }
+  }
+
+  /* ─── Status Pulse Animations ─── */
+  .status-pulse-healthy {
+    animation: pulse-healthy 2s ease-in-out infinite;
+  }
+
+  .status-pulse-warning {
+    animation: pulse-warning 1.5s ease-in-out infinite;
+  }
+
+  .status-pulse-critical {
+    animation: pulse-critical 1s ease-in-out infinite;
+  }
+
+  @keyframes pulse-healthy {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    50% { box-shadow: 0 0 8px 2px rgba(16, 185, 129, 0.4); }
+  }
+
+  @keyframes pulse-warning {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    50% { box-shadow: 0 0 8px 2px rgba(245, 158, 11, 0.4); }
+  }
+
+  @keyframes pulse-critical {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    50% { box-shadow: 0 0 8px 3px rgba(239, 68, 68, 0.5); }
+  }
+
+  /* ─── Bento Grid ─── */
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+
+  .bento-1x1 { grid-column: span 1; grid-row: span 1; }
+  .bento-2x1 { grid-column: span 2; grid-row: span 1; }
+  .bento-2x2 { grid-column: span 2; grid-row: span 2; }
+  .bento-3x1 { grid-column: span 3; grid-row: span 1; }
+  .bento-4x1 { grid-column: span 4; grid-row: span 1; }
+  .bento-full { grid-column: 1 / -1; }
+
+  @media (max-width: 1024px) {
+    .bento-grid { grid-template-columns: repeat(2, 1fr); }
+    .bento-3x1, .bento-4x1 { grid-column: span 2; }
+  }
+
+  @media (max-width: 640px) {
+    .bento-grid { grid-template-columns: 1fr; }
+    .bento-2x1, .bento-2x2, .bento-3x1, .bento-4x1 { grid-column: span 1; }
+    .bento-2x2 { grid-row: span 1; }
+  }
+
   /* ─── Inputs ─── */
   .glass-input {
     @apply rounded-xl px-4 py-2.5 text-sm outline-none backdrop-blur-[8px];
@@ -360,6 +430,62 @@
   :root {
     --glass-blur: 10px;
   }
+}
+
+/* ─── Particle Float ─── */
+@keyframes particle-float {
+  0%, 100% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translateY(-30px) translateX(10px) scale(1.2);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-15px) translateX(-15px) scale(0.8);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translateY(-40px) translateX(5px) scale(1.1);
+    opacity: 0.5;
+  }
+}
+
+/* ─── Data Flow Line Animation ─── */
+@keyframes data-flow {
+  0% { stroke-dashoffset: 20; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.data-flow-line {
+  stroke-dasharray: 4 4;
+  animation: data-flow 1s linear infinite;
+}
+
+/* ─── Glass Card Mouse Tracking ─── */
+.glass-card-interactive {
+  position: relative;
+}
+
+.glass-card-interactive::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(var(--accent-rgb), 0.06),
+    transparent 40%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.glass-card-interactive:hover::before {
+  opacity: 1;
 }
 
 /* ─── Reduced motion ─── */

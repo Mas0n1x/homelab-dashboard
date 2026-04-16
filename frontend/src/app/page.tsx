@@ -1,166 +1,52 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { Box, Image, Server } from 'lucide-react';
-import { SystemOverview } from '@/components/monitoring/SystemOverview';
-import { CpuChart } from '@/components/monitoring/CpuChart';
-import { MemoryChart } from '@/components/monitoring/MemoryChart';
-import { NetworkChart } from '@/components/monitoring/NetworkChart';
-import { FavoritesBar } from '@/components/dashboard/FavoritesBar';
-import { SpeedtestWidget } from '@/components/dashboard/SpeedtestWidget';
-import { SearchBar } from '@/components/dashboard/SearchBar';
-import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
-import { GitHubWidget } from '@/components/dashboard/GitHubWidget';
-import { CalendarWidget } from '@/components/dashboard/CalendarWidget';
-import { BookmarksWidget } from '@/components/dashboard/BookmarksWidget';
-import { NotesWidget } from '@/components/dashboard/NotesWidget';
-import { DiskWidget } from '@/components/dashboard/DiskWidget';
-import { UptimeWidget } from '@/components/dashboard/UptimeWidget';
-import { GreetingHeader } from '@/components/dashboard/GreetingHeader';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { motion } from 'framer-motion';
+import { FleetTopology } from '@/components/fleet/FleetTopology';
+import { FleetSummaryBar } from '@/components/fleet/FleetSummaryBar';
+import { FleetBentoGrid } from '@/components/fleet/FleetBentoGrid';
+import { useFleetWebSocket } from '@/hooks/useFleetWebSocket';
 import { PageTransition } from '@/components/ui/PageTransition';
-import { useServerStore } from '@/stores/serverStore';
-import * as api from '@/lib/api';
-import type { SystemStats, DockerInfo, Container, PortfolioData } from '@/lib/types';
 
-export default function DashboardPage() {
-  const { activeServerId, wsFallbackMode } = useServerStore();
-
-  const { data: stats } = useQuery<SystemStats>({
-    queryKey: ['systemStats', activeServerId],
-    queryFn: () => api.getSystemStats() as Promise<SystemStats>,
-    enabled: wsFallbackMode,
-    refetchInterval: wsFallbackMode ? 5000 : false,
-  });
-  const { data: dockerInfo } = useQuery<DockerInfo>({
-    queryKey: ['dockerInfo', activeServerId],
-    queryFn: () => api.getDockerInfo() as Promise<DockerInfo>,
-    enabled: wsFallbackMode,
-    refetchInterval: wsFallbackMode ? 5000 : false,
-  });
-  const { data: containers } = useQuery<Container[]>({
-    queryKey: ['containers', activeServerId],
-    queryFn: () => api.getContainers() as Promise<Container[]>,
-    enabled: wsFallbackMode,
-    refetchInterval: wsFallbackMode ? 5000 : false,
-  });
-  const { data: portfolio } = useQuery<PortfolioData>({
-    queryKey: ['portfolio'],
-    queryFn: () => api.getPortfolioDashboard() as Promise<PortfolioData>,
-    enabled: wsFallbackMode,
-    refetchInterval: wsFallbackMode ? 30000 : false,
-  });
-
-  const running = containers?.filter(c => c.state === 'running').length || 0;
-  const total = containers?.length || 0;
+export default function FleetOverviewPage() {
+  // Subscribe to all servers for real-time data
+  useFleetWebSocket();
 
   return (
     <PageTransition>
       <div className="space-y-6">
-        {/* Greeting */}
-        <GreetingHeader
-          containersRunning={running}
-          cpuPercent={stats?.cpu.total}
-        />
-
-        {/* Search Bar */}
-        <SearchBar />
-
-        {/* Favorites */}
-        <FavoritesBar />
-
-        {/* System Stats */}
-        <SystemOverview stats={stats || null} />
-
-        {/* Docker + Uptime + Speedtest + Health */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <GlassCard delay={0.15} glow="cyan" hover accentBorder="#06b6d4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="stat-label">Container</span>
-              <div className="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                <Box className="w-3.5 h-3.5 text-cyan-400" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="stat-value text-cyan-400">
-                <AnimatedNumber value={running} />
-              </span>
-              <span className="text-white/30 text-sm">/ {total}</span>
-            </div>
-            <p className="text-xs text-white/30 mt-1">laufend</p>
-          </GlassCard>
-
-          <GlassCard delay={0.2} hover>
-            <div className="flex items-center justify-between mb-2">
-              <span className="stat-label">Images</span>
-              <div className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center">
-                <Image className="w-3.5 h-3.5 text-white/40" />
-              </div>
-            </div>
-            <span className="stat-value">
-              <AnimatedNumber value={dockerInfo?.images || 0} />
-            </span>
-            <p className="text-xs text-white/30 mt-1">Docker v{dockerInfo?.dockerVersion || '?'}</p>
-          </GlassCard>
-
-          <GlassCard delay={0.25} glow="emerald" hover accentBorder="#10b981">
-            <div className="flex items-center justify-between mb-2">
-              <span className="stat-label">Uptime</span>
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <Server className="w-3.5 h-3.5 text-emerald-400" />
-              </div>
-            </div>
-            <span className="text-xl font-semibold text-emerald-400">{stats?.uptime || 'N/A'}</span>
-          </GlassCard>
-
-          <UptimeWidget />
-          <SpeedtestWidget />
+        {/* Page Header */}
+        <div>
+          <motion.h1
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="text-2xl font-bold"
+          >
+            Fleet <span className="text-gradient">Overview</span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="text-sm text-white/40 mt-1"
+          >
+            Alle Server auf einen Blick
+          </motion.p>
         </div>
 
-        {/* Disk Storage */}
-        {stats?.disk && stats.disk.length > 0 && (
-          <DiskWidget disks={stats.disk} />
-        )}
+        {/* Summary Stats Bar */}
+        <FleetSummaryBar />
 
-        {/* Weather + Calendar */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <WeatherWidget />
-          <CalendarWidget />
-          {portfolio ? (
-            <GlassCard delay={0.3} glow="indigo" hover accentBorder="#6366f1">
-              <div className="relative z-10 flex items-center justify-between">
-                <div>
-                  <span className="stat-label">Portfolio Anfragen</span>
-                  <span className="stat-value text-accent-light block mt-1">
-                    <AnimatedNumber value={portfolio.stats.openRequests} />
-                  </span>
-                </div>
-                <span className="text-sm text-white/30">{portfolio.stats.customers} Kunden</span>
-              </div>
-            </GlassCard>
-          ) : (
-            <BookmarksWidget />
-          )}
+        {/* Server Topology / Grid */}
+        <div>
+          <h2 className="text-xs uppercase tracking-widest text-white/25 font-medium mb-3">Server</h2>
+          <FleetTopology />
         </div>
 
-        {/* Bookmarks + Notes */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {portfolio && <BookmarksWidget />}
-          <NotesWidget />
-        </div>
-
-        {/* GitHub */}
-        <GitHubWidget />
-
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <CpuChart cpuTotal={stats?.cpu.total || 0} />
-          <MemoryChart memPercent={stats?.memory.percent || 0} />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4">
-          <NetworkChart network={stats?.network || null} />
+        {/* Bento Grid Widgets */}
+        <div>
+          <h2 className="text-xs uppercase tracking-widest text-white/25 font-medium mb-3">Dashboard</h2>
+          <FleetBentoGrid />
         </div>
       </div>
     </PageTransition>

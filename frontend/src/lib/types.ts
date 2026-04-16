@@ -419,3 +419,74 @@ export interface MailCredentials {
   password: string | null
   accountId: string | null
 }
+
+// ─── Maintenance ───
+
+export interface Process {
+  pid: number
+  name: string
+  username: string
+  cpuPercent: number
+  memPercent: number
+  memRss: number
+  status: string
+  numThreads: number
+  cmdline: string
+  nice: number
+  ioRead: number
+  ioWrite: number
+}
+
+export interface NetworkConfig {
+  interfaces: NetworkInterfaceDetail[]
+  publicIp: string | null
+  publicIpv6: string | null
+}
+
+export interface NetworkInterfaceDetail {
+  name: string
+  isUp: boolean
+  speed: number
+  rxBytes: number
+  txBytes: number
+  rxRate: number
+  txRate: number
+}
+
+export interface DiskHealthInfo {
+  disks: DiskDetail[]
+  io: DiskIO[]
+}
+
+export interface DiskDetail {
+  mountPoint: string
+  device: string
+  fsType: string
+  total: number
+  used: number
+  free: number
+  percent: number
+}
+
+export interface DiskIO {
+  name: string
+  readBytes: number
+  writeBytes: number
+  readRate: number
+  writeRate: number
+}
+
+export interface SystemdService {
+  name: string
+  status: string
+  cpu: number
+  mem: number
+}
+
+export interface UpdateStatus {
+  available: boolean
+  packages: { name: string; version: string }[]
+  count?: number
+  lastCheck: string | null
+  error: string | null
+}

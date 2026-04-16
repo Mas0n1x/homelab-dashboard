@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, Plus, Trash2, TestTube, Check, Loader2, Settings, Shield, AlertTriangle, Lock, ScrollText, Database, Archive } from 'lucide-react';
+import { Bell, Plus, Trash2, TestTube, Check, Loader2, Settings, Shield, AlertTriangle, Lock, ScrollText, Database, Archive, Server, Palette } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
 import { PageTransition } from '@/components/ui/PageTransition';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Modal } from '@/components/ui/Modal';
 import { useAuthStore } from '@/stores/authStore';
+import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import type { AlertChannel } from '@/lib/types';
 
@@ -21,10 +23,21 @@ const EVENT_OPTIONS = [
   { id: 'new_portfolio_customer', label: 'Neuer Kunde', icon: '👤' },
 ];
 
+const SETTINGS_TABS = [
+  { id: 'fleet', label: 'Fleet', icon: Server },
+  { id: 'alerts', label: 'Alerts', icon: Bell },
+  { id: 'backup', label: 'Backup', icon: Archive },
+  { id: 'account', label: 'Account', icon: Shield },
+] as const;
+
+type SettingsTab = typeof SETTINGS_TABS[number]['id'];
+
 export default function SettingsPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { setupCompleted, logout, refreshToken } = useAuthStore();
+  const { servers } = useServerStore();
+  const [activeTab, setActiveTab] = useState<SettingsTab>('fleet');
   const [showAddModal, setShowAddModal] = useState(false);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [form, setForm] = useState({ type: 'discord' as 'discord' | 'telegram', name: '', webhookUrl: '', events: ['container_crash', 'service_offline'] });
@@ -141,14 +154,40 @@ export default function SettingsPage() {
   return (
     <PageTransition>
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2">
-            <Settings className="w-5 h-5 text-white/50" />
-            Einstellungen
-          </h1>
-          <p className="text-sm text-white/40 mt-0.5">Alerting & Benachrichtigungen</p>
-        </div>
+      <div>
+        <h1 className="text-xl font-semibold flex items-center gap-2">
+          <Settings className="w-5 h-5 text-white/50" />
+          Einstellungen
+        </h1>
+        <p className="text-sm text-white/40 mt-0.5">Fleet, Alerts, Backups & Account</p>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-1 border-b border-white/[0.04] overflow-x-auto scrollbar-hide">
+        {SETTINGS_TABS.map(tab => {
+          const Icon = tab.icon;
+          const isActive = tab.id === activeTab;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={clsx(
+                'relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap',
+                isActive ? 'text-white' : 'text-white/40 hover:text-white/70'
+              )}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+              {isActive && (
+                <motion.div
+                  layoutId="settings-tab-indicator"
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent-light rounded-full"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Default Password Warning */}
@@ -166,7 +205,50 @@ export default function SettingsPage() {
         </motion.div>
       )}
 
-      {/* Security / Password Change */}
+      {/* Fleet Tab */}
+      {activeTab === 'fleet' && (
+        <div className="space-y-4">
+          <h2 className="text-sm font-medium flex items-center gap-2">
+            <Server className="w-4 h-4 text-emerald-400" />
+            Konfigurierte Server
+          </h2>
+          <div className="space-y-3">
+            {servers.map((server, i) => (
+              <GlassCard key={server.id} delay={i * 0.05}>
+                <div className="flex items-center gap-4">
+                  <div className={clsx(
+                    'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
+                    server.status === 'connected' ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'
+                  )}>
+                    <Server className={clsx('w-5 h-5', server.status === 'connected' ? 'text-emerald-400' : 'text-red-400')} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{server.name}</p>
+                    <p className="text-xs text-white/30">{server.host} {server.is_local ? '(Lokal)' : ''}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    {server.glances_url && (
+                      <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/15">Glances</span>
+                    )}
+                    <span className={clsx(
+                      'px-2 py-0.5 rounded-full',
+                      server.status === 'connected' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                    )}>
+                      {server.status === 'connected' ? 'Online' : 'Offline'}
+                    </span>
+                  </div>
+                </div>
+              </GlassCard>
+            ))}
+          </div>
+          <p className="text-xs text-white/20 text-center">
+            Server koennen ueber die API hinzugefuegt werden: POST /api/servers
+          </p>
+        </div>
+      )}
+
+      {/* Account Tab */}
+      {activeTab === 'account' && (
       <div>
         <h2 className="text-sm font-medium flex items-center gap-2 mb-3">
           <Shield className="w-4 h-4 text-indigo-400" />
@@ -226,7 +308,11 @@ export default function SettingsPage() {
           </div>
         </GlassCard>
       </div>
+      )}
 
+      {/* Alerts Tab */}
+      {activeTab === 'alerts' && (
+      <div className="space-y-6">
       {/* Alert Channels */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -334,6 +420,12 @@ export default function SettingsPage() {
         </div>
       )}
 
+      </div>
+      )}
+
+      {/* Backup Tab */}
+      {activeTab === 'backup' && (
+      <div className="space-y-6">
       {/* Backups */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -425,6 +517,9 @@ export default function SettingsPage() {
           </div>
         </GlassCard>
       </div>
+
+      </div>
+      )}
 
       {/* Add Channel Modal */}
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Kanal hinzufügen" size="sm">

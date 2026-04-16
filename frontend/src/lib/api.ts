@@ -351,3 +351,13 @@ export const updateMailAccountPassword = (username: string, password: string) =>
   fetchApi(`/mail/admin/accounts/${encodeURIComponent(username)}/password`, { method: 'PUT', body: JSON.stringify({ password }) });
 export const getMailDomains = () => fetchApi('/mail/admin/domains');
 export const getMailDkim = (domain: string) => fetchApi(`/mail/admin/dkim/${encodeURIComponent(domain)}`);
+
+// ─── Maintenance ───
+
+import type { Process, NetworkConfig, DiskHealthInfo, SystemdService, UpdateStatus } from '@/lib/types';
+
+export const getProcesses = (serverId: string) => fetchApi<Process[]>(`/maintenance/${serverId}/processes`);
+export const getNetworkConfig = (serverId: string) => fetchApi<NetworkConfig>(`/maintenance/${serverId}/network`);
+export const getDiskHealth = (serverId: string) => fetchApi<DiskHealthInfo>(`/maintenance/${serverId}/disk-health`);
+export const getSystemdServices = (serverId: string) => fetchApi<SystemdService[]>(`/maintenance/${serverId}/systemd`);
+export const getUpdateStatus = (serverId: string) => fetchApi<UpdateStatus>(`/maintenance/${serverId}/updates`);

@@ -4,9 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { getTrackerStatsToday, getTrackerStatsWeek, getTrackerAccuracy } from '@/lib/api';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { HeatmapGrid } from './HeatmapGrid';
+import { StreakVisualization } from './StreakVisualization';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { CheckCircle, Clock, Zap, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import type { TodayStats, DailyStats, AccuracyStats } from '@/lib/types';
+import { getTrackerPlayer } from '@/lib/api';
+import type { TodayStats, DailyStats, AccuracyStats, PlayerData } from '@/lib/types';
 
 const CATEGORY_COLORS: Record<string, string> = {
   arbeit: '#6366f1',
@@ -42,6 +44,11 @@ export function StatsPanel() {
     queryFn: getTrackerAccuracy as () => Promise<AccuracyStats>,
   });
 
+  const { data: player } = useQuery<PlayerData>({
+    queryKey: ['tracker-player'],
+    queryFn: getTrackerPlayer as () => Promise<PlayerData>,
+  });
+
   const weekData = (week || []).map(d => ({
     day: DAY_NAMES[new Date(d.date + 'T00:00:00').getDay()],
     tasks: d.completed,
@@ -50,6 +57,15 @@ export function StatsPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Streak */}
+      {player && (
+        <StreakVisualization
+          streak={player.streak}
+          dailyGoal={player.daily_goal}
+          todayMinutes={today?.total_minutes || 0}
+        />
+      )}
+
       {/* Today */}
       <div>
         <h3 className="text-sm font-medium text-white/60 mb-3">Heute</h3>

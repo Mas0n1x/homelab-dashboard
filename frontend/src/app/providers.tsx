@@ -5,9 +5,7 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useServerStore } from '@/stores/serverStore';
-import { Header } from '@/components/layout/Header';
-import { MobileNav } from '@/components/layout/MobileNav';
-import { Background } from '@/components/layout/Background';
+import { AppShell } from '@/components/layout/AppShell';
 import { ThemeCustomizer } from '@/components/dashboard/ThemeCustomizer';
 import { CommandPalette } from '@/components/dashboard/CommandPalette';
 import { AuthGuard } from '@/components/auth/AuthGuard';
@@ -26,12 +24,9 @@ function WebSocketManager({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <Background />
-      <Header connected={connected} />
-      <main className="max-w-[1600px] mx-auto px-4 lg:px-6 py-6 pb-24 md:pb-6">
+      <AppShell connected={connected}>
         {children}
-      </main>
-      <MobileNav />
+      </AppShell>
       <ThemeCustomizer />
       <CommandPalette />
     </>

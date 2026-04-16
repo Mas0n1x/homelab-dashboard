@@ -1,0 +1,19 @@
+'use client';
+
+import { useParams } from 'next/navigation';
+import { useEffect } from 'react';
+import { useServerStore } from '@/stores/serverStore';
+import DockerPage from '@/app/docker/page';
+
+export default function ServerDockerPage() {
+  const params = useParams();
+  const serverId = params.id as string;
+  const { setActiveServer } = useServerStore();
+
+  useEffect(() => {
+    setActiveServer(serverId);
+  }, [serverId, setActiveServer]);
+
+  // Reuse the existing Docker page - it reads from activeServerId
+  return <DockerPage />;
+}

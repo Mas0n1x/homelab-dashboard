@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
@@ -12,6 +13,7 @@ interface GlassCardProps {
   delay?: number;
   elevated?: boolean;
   accentBorder?: string;
+  mouseTracking?: boolean;
 }
 
 const glowShadows = {
@@ -32,9 +34,22 @@ export function GlassCard({
   delay = 0,
   elevated = false,
   accentBorder,
+  mouseTracking = true,
 }: GlassCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!mouseTracking || !cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    cardRef.current.style.setProperty('--mouse-x', `${x}%`);
+    cardRef.current.style.setProperty('--mouse-y', `${y}%`);
+  }, [mouseTracking]);
+
   return (
     <motion.div
+      ref={cardRef}
       initial={{ opacity: 0, y: 16, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{
@@ -42,9 +57,11 @@ export function GlassCard({
         delay,
         ease: [0.16, 1, 0.3, 1],
       }}
+      onMouseMove={handleMouseMove}
       className={clsx(
         elevated ? 'glass-card-elevated' : 'glass-card',
         hover && 'glass-card-hover cursor-pointer',
+        mouseTracking && 'glass-card-interactive',
         glow && glowShadows[glow],
         padding && 'p-4 sm:p-5',
         className
