@@ -1,3 +1,8 @@
+/*
+ * Homelab Dashboard
+ * Copyright (c) 2024-2026 DEV Mas0n1x.
+ * Licensed under the MIT License.
+ */
 import { useAuthStore } from '@/stores/authStore';
 
 const API_BASE = typeof window !== 'undefined'

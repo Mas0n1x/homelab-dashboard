@@ -1,3 +1,8 @@
+/*
+ * Homelab Dashboard
+ * Copyright (c) 2024-2026 DEV Mas0n1x.
+ * Licensed under the MIT License.
+ */
 const PORTFOLIO_API = process.env.PORTFOLIO_API_URL || 'http://host.docker.internal:3000';
 const PORTFOLIO_PASSWORD = process.env.PORTFOLIO_PASSWORD || 'admin';
 

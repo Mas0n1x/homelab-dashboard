@@ -1,3 +1,8 @@
+/*
+ * Homelab Dashboard
+ * Copyright (c) 2024-2026 DEV Mas0n1x.
+ * Licensed under the MIT License.
+ */
 import Docker from 'dockerode';
 import { getDb } from './database.js';
 import { createGlancesClient } from './glances.js';

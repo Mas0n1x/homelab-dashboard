@@ -1,3 +1,8 @@
+/*
+ * Homelab Dashboard
+ * Copyright (c) 2024-2026 DEV Mas0n1x.
+ * Licensed under the MIT License.
+ */
 import serverManager from './serverManager.js';
 
 let previousDiscovered = new Map();

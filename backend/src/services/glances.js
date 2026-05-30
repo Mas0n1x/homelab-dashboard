@@ -1,3 +1,8 @@
+/*
+ * Homelab Dashboard
+ * Copyright (c) 2024-2026 DEV Mas0n1x.
+ * Licensed under the MIT License.
+ */
 const DEFAULT_URL = process.env.GLANCES_URL || 'http://localhost:61208';
 
 export function createGlancesClient(baseUrl) {

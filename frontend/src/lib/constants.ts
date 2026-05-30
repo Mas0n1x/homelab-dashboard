@@ -1,3 +1,8 @@
+/*
+ * Homelab Dashboard
+ * Copyright (c) 2024-2026 DEV Mas0n1x.
+ * Licensed under the MIT License.
+ */
 import {
   Monitor, Shield, Server, Database, Cloud, HardDrive, Wifi, Settings,
   Terminal, Globe, Film, FileText, Box, Lock, BarChart3, Search,

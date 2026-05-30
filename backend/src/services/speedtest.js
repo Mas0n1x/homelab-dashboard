@@ -1,3 +1,8 @@
+/*
+ * Homelab Dashboard
+ * Copyright (c) 2024-2026 DEV Mas0n1x.
+ * Licensed under the MIT License.
+ */
 import { getDb } from './database.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';

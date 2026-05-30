@@ -1,3 +1,8 @@
+/*
+ * Homelab Dashboard
+ * Copyright (c) 2024-2026 DEV Mas0n1x.
+ * Licensed under the MIT License.
+ */
 'use client';
 
 import { Inbox, Send, FileEdit, Trash2, ShieldAlert, Folder, PenLine } from 'lucide-react';

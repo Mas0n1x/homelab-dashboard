@@ -1,3 +1,8 @@
+/*
+ * Homelab Dashboard
+ * Copyright (c) 2024-2026 DEV Mas0n1x.
+ * Licensed under the MIT License.
+ */
 import Database from 'better-sqlite3';
 import { existsSync } from 'fs';
 import { readFile, rename } from 'fs/promises';

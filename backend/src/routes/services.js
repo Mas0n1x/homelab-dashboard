@@ -1,3 +1,8 @@
+/*
+ * Homelab Dashboard
+ * Copyright (c) 2024-2026 DEV Mas0n1x.
+ * Licensed under the MIT License.
+ */
 import { Router } from 'express';
 import { getDb } from '../services/database.js';
 import { discoverServices } from '../services/discovery.js';
