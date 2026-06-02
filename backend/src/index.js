@@ -35,7 +35,7 @@ import mailRoutes from './routes/mail.js';
 import auditRoutes from './routes/audit.js';
 import backupRoutes from './routes/backup.js';
 import maintenanceRoutes from './routes/maintenance.js';
-import { checkAlerts } from './services/alerting.js';
+import { checkAlerts, sendStatusReport } from './services/alerting.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -104,6 +104,22 @@ const terminalSessions = new Map();
 const logSessions = new Map();
 // Previous container states for crash detection
 let previousContainerStates = new Map();
+// Previous uptime per server (seconds) for reboot detection
+let previousUptimeSeconds = new Map();
+
+// Glances-Uptime ("3 days, 4:05:06" o. "1:02:03") in Sekunden umrechnen.
+function parseUptimeSeconds(uptime) {
+  if (typeof uptime === 'number') return uptime;
+  if (!uptime || typeof uptime !== 'string') return null;
+  let days = 0;
+  let rest = uptime;
+  const dayMatch = rest.match(/(\d+)\s*day/i);
+  if (dayMatch) { days = parseInt(dayMatch[1], 10); rest = rest.split(',').pop(); }
+  const parts = rest.trim().split(':').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+  if (parts.length === 0) return days * 86400;
+  const [h = 0, m = 0, s = 0] = parts.length === 3 ? parts : [0, ...parts];
+  return days * 86400 + h * 3600 + m * 60 + s;
+}
 
 async function handleTerminalOpen(ws, data) {
   const serverId = data.serverId || 'local';
@@ -505,8 +521,9 @@ setInterval(async () => {
       const dockerMod = await import('./services/docker.js');
       const containers = dockerInst ? await dockerMod.getContainers(dockerInst).catch(() => []) : [];
 
-      // Detect crashed containers
+      // Detect crashed + restarted containers
       const crashedContainers = [];
+      const restartedContainers = [];
       const currentStates = new Map();
       containers.forEach(c => currentStates.set(c.id, c.state));
 
@@ -515,19 +532,68 @@ setInterval(async () => {
         if (prevState === 'running' && currentState && currentState !== 'running') {
           const c = containers.find(x => x.id === id);
           if (c) crashedContainers.push(c);
+        } else if (prevState && prevState !== 'running' && currentState === 'running') {
+          const c = containers.find(x => x.id === id);
+          if (c) restartedContainers.push(c);
         }
       }
       previousContainerStates = currentStates;
 
+      // Reboot-Erkennung über Uptime-Rückgang
+      let rebooted = false;
+      const upSec = parseUptimeSeconds(systemStats?.uptime);
+      if (upSec != null) {
+        const prevUp = previousUptimeSeconds.get(server.id);
+        if (prevUp != null && upSec + 60 < prevUp) rebooted = true; // Uptime gesunken
+        previousUptimeSeconds.set(server.id, upSec);
+      }
+
       await checkAlerts({
+        serverName: server.name || server.id,
+        systemStats,
         cpuPercent: systemStats?.cpu?.total || 0,
         memPercent: systemStats?.memory?.percent || 0,
         crashedContainers,
+        restartedContainers,
         offlineServices: [],
+        rebooted,
       });
     }
   } catch {}
 }, 30000);
+
+// Background: Periodischer Statusbericht (Intervall via STATUS_REPORT_HOURS, Standard 6h)
+const STATUS_REPORT_MS = (parseFloat(process.env.STATUS_REPORT_HOURS) || 6) * 60 * 60 * 1000;
+setInterval(async () => {
+  try {
+    const servers = serverManager.getAllServers();
+    const summaries = [];
+    for (const server of servers) {
+      const connection = serverManager.getConnection(server.id);
+      if (!connection) {
+        summaries.push({ name: server.name || server.id, online: false });
+        continue;
+      }
+      const systemStats = connection.glances ? await connection.glances.getSystemStats().catch(() => null) : null;
+      const dockerMod = await import('./services/docker.js');
+      const containers = connection.docker ? await dockerMod.getContainers(connection.docker).catch(() => []) : [];
+      const temps = systemStats?.temperature || [];
+      summaries.push({
+        name: server.name || server.id,
+        online: !!systemStats,
+        cpuPercent: systemStats?.cpu?.total || 0,
+        memPercent: systemStats?.memory?.percent || 0,
+        disks: systemStats?.disk || [],
+        maxTemp: temps.length ? Math.max(...temps.map(t => Number(t.value) || 0)) : null,
+        uptime: systemStats?.uptime,
+        containers: { running: containers.filter(c => c.state === 'running').length, total: containers.length },
+      });
+    }
+    await sendStatusReport({ servers: summaries });
+  } catch (error) {
+    console.error('Status report error:', error.message);
+  }
+}, STATUS_REPORT_MS);
 
 // Background: Cleanup old uptime data (daily)
 setInterval(() => {
