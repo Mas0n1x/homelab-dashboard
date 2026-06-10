@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Search, ArrowRight, Box, Settings, LogOut, Zap, Command,
-  Server, Terminal, FileText, Wrench, LayoutDashboard, Mail, Activity,
+  Server, Terminal, FileText, Wrench, LayoutDashboard, Mail,
   Cpu, HardDrive
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -100,7 +100,6 @@ export function CommandPalette() {
       { href: '/', label: 'Fleet Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
       { href: '/docker', label: 'Docker (Alle Server)', icon: <Box className="w-4 h-4" /> },
       { href: '/mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },
-      { href: '/tracker', label: 'Tracker', icon: <Activity className="w-4 h-4" /> },
       { href: '/settings', label: 'Einstellungen', icon: <Settings className="w-4 h-4" /> },
     ];
 
