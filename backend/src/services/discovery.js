@@ -67,7 +67,7 @@ export async function discoverServices(serverId = 'local') {
           state: c.State,
           status: c.Status,
           image: c.Image,
-          project: composeProject
+          project: composeProject || name
         };
       });
   } catch (error) {

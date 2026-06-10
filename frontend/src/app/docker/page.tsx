@@ -27,29 +27,7 @@ import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import type { Container, DockerInfo } from '@/lib/types';
 import { clsx } from 'clsx';
-
-// ── Projekt-Kategorien (feste Zuordnung; nicht gelistete Projekte → "Persönliches") ──
-const PROJECT_CATEGORIES: { name: string; projects: string[] }[] = [
-  {
-    name: 'Police Department-CC',
-    projects: ['personet-cc', 'leitstelle-max', 'asdhandbuch', 'gta-map', 'azubinet', 'lspd-dashboard', 'dienstblatt', 'diensthandbuch-pd', 'swat-handbuch'],
-  },
-  {
-    name: 'CC-Systeme',
-    projects: ['straftatenrechner-standalone', 'mednet'],
-  },
-  {
-    name: 'LawNet',
-    projects: ['salenet'],
-  },
-];
-const FALLBACK_CATEGORY = 'Persönliches';
-const CATEGORY_ORDER = [...PROJECT_CATEGORIES.map(c => c.name), FALLBACK_CATEGORY];
-
-function categoryOf(projectKey: string): string {
-  const hit = PROJECT_CATEGORIES.find(cat => cat.projects.includes(projectKey));
-  return hit ? hit.name : FALLBACK_CATEGORY;
-}
+import { CATEGORY_ORDER, categoryOf } from '@/lib/categories';
 
 export default function DockerPage() {
   const queryClient = useQueryClient();

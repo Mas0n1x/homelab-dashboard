@@ -15,6 +15,7 @@ import { getIcon } from '@/lib/constants';
 import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import type { Service, Favorite } from '@/lib/types';
+import { CATEGORY_ORDER, categoryOf } from '@/lib/categories';
 
 export function ServicesTab() {
   const { activeServerId } = useServerStore();
@@ -97,10 +98,10 @@ export function ServicesTab() {
     setEditModal({ open: true, service });
   };
 
-  // Group by category
+  // Group by project category (geteilt mit dem Docker-Container-Tab)
   const categories = new Map<string, Service[]>();
   services.forEach(s => {
-    const cat = s.category || 'Allgemein';
+    const cat = categoryOf(s.project || s.name);
     if (!categories.has(cat)) categories.set(cat, []);
     categories.get(cat)!.push(s);
   });
@@ -117,7 +118,9 @@ export function ServicesTab() {
         </button>
       </div>
 
-      {Array.from(categories.entries()).map(([category, catServices]) => (
+      {CATEGORY_ORDER.filter(cat => categories.has(cat)).map(category => {
+        const catServices = categories.get(category)!;
+        return (
         <div key={category}>
           <h2 className="text-sm font-medium text-white/40 mb-3 uppercase tracking-wider">{category}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -221,7 +224,8 @@ export function ServicesTab() {
             })}
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {/* Edit Service Modal */}
       <Modal isOpen={editModal.open} onClose={() => setEditModal({ open: false, service: null })} title="Service bearbeiten" size="sm">
