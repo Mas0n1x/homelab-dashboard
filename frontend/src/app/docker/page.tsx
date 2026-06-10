@@ -28,6 +28,29 @@ import * as api from '@/lib/api';
 import type { Container, DockerInfo } from '@/lib/types';
 import { clsx } from 'clsx';
 
+// ── Projekt-Kategorien (feste Zuordnung; nicht gelistete Projekte → "Persönliches") ──
+const PROJECT_CATEGORIES: { name: string; projects: string[] }[] = [
+  {
+    name: 'Police Department-CC',
+    projects: ['personet-cc', 'leitstelle-max', 'asdhandbuch', 'gta-map', 'azubinet', 'lspd-dashboard', 'dienstblatt', 'diensthandbuch-pd', 'swat-handbuch'],
+  },
+  {
+    name: 'CC-Systeme',
+    projects: ['straftatenrechner-standalone', 'mednet'],
+  },
+  {
+    name: 'LawNet',
+    projects: ['salenet'],
+  },
+];
+const FALLBACK_CATEGORY = 'Persönliches';
+const CATEGORY_ORDER = [...PROJECT_CATEGORIES.map(c => c.name), FALLBACK_CATEGORY];
+
+function categoryOf(projectKey: string): string {
+  const hit = PROJECT_CATEGORIES.find(cat => cat.projects.includes(projectKey));
+  return hit ? hit.name : FALLBACK_CATEGORY;
+}
+
 export default function DockerPage() {
   const queryClient = useQueryClient();
   const { activeServerId } = useServerStore();
@@ -77,13 +100,23 @@ export default function DockerPage() {
     }
   }, []);
 
-  // Group containers by project
+  // Group containers by project (label-less containers use their own name as key)
   const projects = new Map<string, Container[]>();
   containers.forEach(c => {
-    const key = c.project || 'Andere';
+    const key = c.project || c.name;
     if (!projects.has(key)) projects.set(key, []);
     projects.get(key)!.push(c);
   });
+
+  // Group projects into categories (preserving the category order, fallback last)
+  const categorizedProjects = new Map<string, [string, Container[]][]>();
+  Array.from(projects.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .forEach(entry => {
+      const cat = categoryOf(entry[0]);
+      if (!categorizedProjects.has(cat)) categorizedProjects.set(cat, []);
+      categorizedProjects.get(cat)!.push(entry);
+    });
 
   const toggleProject = (name: string) => {
     setExpandedProjects(prev => {
@@ -131,8 +164,19 @@ export default function DockerPage() {
 
       {/* Container Tab */}
       {activeTab === 'containers' && (
-        <div className="space-y-4">
-          {Array.from(projects.entries()).map(([projectName, projectContainers]) => (
+        <div className="space-y-8">
+          {CATEGORY_ORDER.filter(cat => categorizedProjects.has(cat)).map(categoryName => {
+            const catProjects = categorizedProjects.get(categoryName)!;
+            const catRunning = catProjects.reduce((sum, [, cs]) => sum + cs.filter(c => c.state === 'running').length, 0);
+            return (
+              <div key={categoryName} className="space-y-4">
+                {/* Kategorie-Überschrift */}
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-white/50">{categoryName}</h3>
+                  <span className="text-xs text-white/25">{catProjects.length} Projekte · {catRunning} laufend</span>
+                  <div className="flex-1 h-px bg-white/[0.06]" />
+                </div>
+                {catProjects.map(([projectName, projectContainers]) => (
             <GlassCard key={projectName} padding={false} delay={0.1}>
               <button
                 onClick={() => toggleProject(projectName)}
@@ -223,7 +267,10 @@ export default function DockerPage() {
                 )}
               </AnimatePresence>
             </GlassCard>
-          ))}
+                ))}
+              </div>
+            );
+          })}
         </div>
       )}
 
