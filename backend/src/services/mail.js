@@ -14,7 +14,10 @@ const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 // ─── Credential Encryption ───
 
 function getEncryptionKey() {
-  const secret = process.env.JWT_SECRET || 'homelab-dashboard-change-me';
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET ist nicht gesetzt — erforderlich zur Ver-/Entschlüsselung gespeicherter Mail-Zugangsdaten.');
+  }
   return crypto.createHash('sha256').update(secret).digest();
 }
 

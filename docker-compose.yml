@@ -25,8 +25,9 @@ services:
       - DB_PATH=/app/data/dashboard.db
       - CONFIG_PATH=/app/data/config.json
       - PORTFOLIO_API_URL=http://host.docker.internal:3000
-      - PORTFOLIO_PASSWORD=admin
-      - JWT_SECRET=${JWT_SECRET:-homelab-dashboard-change-me}
+      - PORTFOLIO_PASSWORD=${PORTFOLIO_PASSWORD:?PORTFOLIO_PASSWORD muss in der .env gesetzt sein}
+      - MAIL_ACCOUNT_PASSWORD=${MAIL_ACCOUNT_PASSWORD:?MAIL_ACCOUNT_PASSWORD muss in der .env gesetzt sein}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET muss in der .env gesetzt sein (stabiler Wert — verschluesselt gespeicherte Mail-Zugangsdaten)}
       - STALWART_URL=http://stalwart:8080
       - STALWART_ADMIN_USER=${STALWART_ADMIN_USER:-admin}
       - STALWART_ADMIN_PASSWORD=${STALWART_ADMIN_PASSWORD:-}

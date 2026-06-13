@@ -20,8 +20,7 @@ export function MailAdmin() {
   const [dkimDomain, setDkimDomain] = useState('mas0n1x.online');
   const [copiedDkim, setCopiedDkim] = useState(false);
 
-  // Fixed password for all mail accounts (user only accesses via dashboard)
-  const FIXED_PASSWORD = 'dashboardaccess';
+  // Mail-Account-Passwort wird serverseitig gesetzt (MAIL_ACCOUNT_PASSWORD) — nicht mehr im Client
 
   const { data: accounts = [] } = useQuery<MailAccount[]>({
     queryKey: ['mail-admin-accounts'],
@@ -41,7 +40,6 @@ export function MailAdmin() {
   const createMutation = useMutation({
     mutationFn: () => createMailAccount({
       username: newUsername,
-      password: FIXED_PASSWORD,
       displayName: newDisplayName,
       domain: selectedDomain
     }),

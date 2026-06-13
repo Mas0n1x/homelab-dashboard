@@ -138,9 +138,14 @@ router.get('/accounts', (req, res) => {
 
 router.post('/accounts', async (req, res) => {
   try {
-    const { email, password, displayName } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'E-Mail und Passwort erforderlich' });
+    const { email, displayName } = req.body;
+    // Mail-Account-Passwort serverseitig aus der Umgebung (nicht mehr aus dem Client-Bundle)
+    const password = process.env.MAIL_ACCOUNT_PASSWORD || req.body.password;
+    if (!email) {
+      return res.status(400).json({ error: 'E-Mail erforderlich' });
+    }
+    if (!password) {
+      return res.status(500).json({ error: 'MAIL_ACCOUNT_PASSWORD ist serverseitig nicht konfiguriert.' });
     }
 
     // Test connection first
@@ -325,8 +330,10 @@ router.get('/admin/accounts', async (req, res) => {
 
 router.post('/admin/accounts', async (req, res) => {
   try {
-    const { username, password, displayName, domain } = req.body;
-    if (!username || !password) return res.status(400).json({ error: 'Benutzername und Passwort erforderlich' });
+    const { username, displayName, domain } = req.body;
+    const password = process.env.MAIL_ACCOUNT_PASSWORD || req.body.password;
+    if (!username) return res.status(400).json({ error: 'Benutzername erforderlich' });
+    if (!password) return res.status(500).json({ error: 'MAIL_ACCOUNT_PASSWORD ist serverseitig nicht konfiguriert.' });
     const result = await mail.createAccount(username, password, displayName, domain);
     res.json(result);
   } catch (error) {

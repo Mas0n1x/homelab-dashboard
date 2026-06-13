@@ -4,7 +4,10 @@
  * Licensed under the MIT License.
  */
 const PORTFOLIO_API = process.env.PORTFOLIO_API_URL || 'http://host.docker.internal:3000';
-const PORTFOLIO_PASSWORD = process.env.PORTFOLIO_PASSWORD || 'admin';
+const PORTFOLIO_PASSWORD = process.env.PORTFOLIO_PASSWORD;
+if (!PORTFOLIO_PASSWORD) {
+  console.warn('[WARN] PORTFOLIO_PASSWORD ist nicht gesetzt — die Portfolio-Anbindung kann sich nicht einloggen. Bitte in der .env setzen.');
+}
 
 let lastKnownState = {
   requestCount: 0,

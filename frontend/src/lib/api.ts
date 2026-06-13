@@ -288,7 +288,7 @@ export interface MailAccount {
 }
 
 export const getUserMailAccounts = () => fetchApi<MailAccount[]>('/mail/accounts');
-export const addUserMailAccount = (data: { email: string; password: string; displayName?: string }) =>
+export const addUserMailAccount = (data: { email: string; displayName?: string }) =>
   fetchApi<MailAccount>('/mail/accounts', { method: 'POST', body: JSON.stringify(data) });
 export const activateUserMailAccount = (id: number) =>
   fetchApi<{ ok: boolean; email: string }>(`/mail/accounts/${id}/activate`, { method: 'PUT' });
@@ -297,7 +297,7 @@ export const deleteUserMailAccount = (id: number) =>
 
 // Admin (Stalwart Server Management)
 export const getMailAccounts = () => fetchApi('/mail/admin/accounts');
-export const createMailAccount = (data: { username: string; password: string; displayName?: string; domain?: string }) =>
+export const createMailAccount = (data: { username: string; displayName?: string; domain?: string }) =>
   fetchApi('/mail/admin/accounts', { method: 'POST', body: JSON.stringify(data) });
 export const deleteMailAccount = (username: string) =>
   fetchApi(`/mail/admin/accounts/${encodeURIComponent(username)}`, { method: 'DELETE' });

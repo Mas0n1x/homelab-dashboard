@@ -23,8 +23,7 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
   const { setAccounts, setActiveAccount } = useMailStore();
   const queryClient = useQueryClient();
 
-  // Fixed password for all mail accounts (same as in MailAdmin)
-  const FIXED_PASSWORD = 'dashboardaccess';
+  // Mail-Account-Passwort wird serverseitig gesetzt (MAIL_ACCOUNT_PASSWORD) — nicht mehr im Client
 
   const loginMutation = useMutation({
     mutationFn: async () => {
@@ -32,7 +31,6 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
       // Add account (includes JMAP session test)
       const result = await addUserMailAccount({
         email: email.trim(),
-        password: FIXED_PASSWORD,
         displayName: displayName.trim() || undefined,
       });
       return result;
