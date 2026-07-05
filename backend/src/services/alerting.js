@@ -5,16 +5,69 @@
  */
 import { getDb } from './database.js';
 
+// ── Discord-Embed-Branding ───────────────────────────────────────
+// Zentrale Optik für alle Alerts: einheitlicher Absender, verfeinerte
+// Discord-native Farbpalette, Severity-Author-Zeile und Kategorie-Label.
+const BRAND = {
+  name: process.env.HOMELAB_WEBHOOK_NAME || 'Homelab Monitor',
+  avatar: process.env.HOMELAB_WEBHOOK_AVATAR || null, // optional: URL zu einem Avatar-Bild
+};
+
+// Severity-Definitionen (Discord-native Töne wirken edler als grelle Vollfarben).
+const SEVERITY = {
+  critical: { color: 0xed4245, icon: '🔴', label: 'Kritisch' },
+  warning:  { color: 0xf0a020, icon: '🟠', label: 'Warnung' },
+  success:  { color: 0x57f287, icon: '🟢', label: 'Entwarnung' },
+  info:     { color: 0x5865f2, icon: '🔵', label: 'Info' },
+};
+
+// Alte Roh-Farben der Aufrufer auf ein Severity-Level abbilden.
+function severityFromColor(color) {
+  switch (color) {
+    case 0x00ff88:
+    case 0x10b981: return 'success';
+    case 0xff8800: return 'warning';
+    case 0x00d4ff:
+    case 0x6366f1: return 'info';
+    case 0xff4444: return 'critical';
+    default:       return 'info';
+  }
+}
+
+// Lesbares Kategorie-Label aus dem Event-Typ (Suffixe wie ::ok / ::/mnt weg).
+const EVENT_CATEGORY = {
+  cpu_high: 'System · CPU',
+  ram_high: 'System · Arbeitsspeicher',
+  disk_high: 'System · Speicherplatz',
+  temp_high: 'System · Temperatur',
+  reboot: 'System · Neustart',
+  container_crash: 'Docker · Container',
+  container_restart: 'Docker · Container',
+  service_offline: 'Dienste',
+  status_report: 'Statusbericht',
+  new_portfolio_request: 'Portfolio · Anfrage',
+  new_portfolio_customer: 'Portfolio · Kunde',
+  test: 'Verbindungstest',
+};
+function categoryFromEvent(event) {
+  const base = String(event || '').split('::')[0];
+  return EVENT_CATEGORY[base] || 'Homelab';
+}
+
 // Send webhook notification.
 // payload: { event, title, message, color, fields?: [{name,value,inline}], footer?, record? (default true) }
 async function sendWebhook(channel, payload) {
   try {
     let body;
     if (channel.type === 'discord') {
+      const sev = SEVERITY[severityFromColor(payload.color)] || SEVERITY.info;
+      const category = categoryFromEvent(payload.event);
+
       const embed = {
+        author: { name: `${sev.icon}  ${category}` },
         title: payload.title,
         description: payload.message,
-        color: payload.color ?? 0xff4444,
+        color: sev.color,
         timestamp: new Date().toISOString(),
       };
       if (Array.isArray(payload.fields) && payload.fields.length) {
@@ -24,8 +77,12 @@ async function sendWebhook(channel, payload) {
           inline: !!f.inline,
         }));
       }
-      embed.footer = { text: payload.footer || 'Homelab Dashboard' };
-      body = { embeds: [embed] };
+      embed.footer = { text: payload.footer || `${BRAND.name} · ${sev.label}` };
+      body = {
+        username: BRAND.name,
+        ...(BRAND.avatar ? { avatar_url: BRAND.avatar } : {}),
+        embeds: [embed],
+      };
     } else {
       // Telegram (Markdown)
       const extra = Array.isArray(payload.fields)
@@ -91,6 +148,19 @@ function progressBar(pct) {
   const p = Math.max(0, Math.min(100, Number(pct || 0)));
   const filled = Math.round(p / 10);
   return '█'.repeat(filled) + '░'.repeat(10 - filled);
+}
+// Rohe Image-Referenzen lesbar machen (nackte sha256-Hashes kürzen).
+function fmtImage(img) {
+  const s = String(img || '').trim();
+  const m = s.match(/^sha256:([0-9a-f]{12})/i);
+  if (m) return `\`${m[1]}\``;
+  return s.length > 48 ? `\`${s.substring(0, 45)}…\`` : `\`${s}\``;
+}
+// Container-Status mit Punkt-Indikator lesbar darstellen.
+function fmtContainerState(state) {
+  const s = String(state || 'unbekannt').toLowerCase();
+  const map = { running: '🟢 läuft', exited: '⚪ beendet', dead: '🔴 tot', created: '🔵 erstellt', paused: '🟠 pausiert', restarting: '🟠 startet neu' };
+  return map[s] || `⚪ ${s}`;
 }
 
 // Gemeinsame Kontext-Felder für System-Alerts.
@@ -248,9 +318,9 @@ export async function checkAlerts(data) {
             message: `Container **${c.name}** ist nicht mehr aktiv.`,
             color: 0xff4444,
             fields: [
-              { name: 'Status', value: c.state || 'unbekannt', inline: true },
-              ...(c.image ? [{ name: 'Image', value: String(c.image), inline: true }] : []),
+              { name: 'Status', value: fmtContainerState(c.state), inline: true },
               ...(data.serverName ? [{ name: '🖥️ Server', value: data.serverName, inline: true }] : []),
+              ...(c.image ? [{ name: 'Image', value: fmtImage(c.image), inline: false }] : []),
             ],
           });
         }
@@ -265,7 +335,10 @@ export async function checkAlerts(data) {
           title: '🟢 Container wieder aktiv',
           message: `Container **${c.name}** läuft wieder.`,
           color: 0x00ff88,
-          fields: data.serverName ? [{ name: '🖥️ Server', value: data.serverName, inline: true }] : [],
+          fields: [
+            { name: 'Status', value: fmtContainerState(c.state || 'running'), inline: true },
+            ...(data.serverName ? [{ name: '🖥️ Server', value: data.serverName, inline: true }] : []),
+          ],
         });
       }
     }
