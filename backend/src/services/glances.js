@@ -6,10 +6,19 @@
 const DEFAULT_URL = process.env.GLANCES_URL || 'http://localhost:61208';
 
 export function createGlancesClient(baseUrl) {
-  const url = baseUrl || DEFAULT_URL;
+  const rawUrl = baseUrl || DEFAULT_URL;
+  let url = rawUrl;
+  let authHeader = null;
+  try {
+    const u = new URL(rawUrl);
+    if (u.username || u.password) {
+      authHeader = 'Basic ' + Buffer.from(`${decodeURIComponent(u.username)}:${decodeURIComponent(u.password)}`).toString('base64');
+      url = u.origin;
+    }
+  } catch (e) {}
 
   async function fetchGlances(endpoint) {
-    const response = await fetch(`${url}${endpoint}`);
+    const response = await fetch(`${url}${endpoint}`, authHeader ? { headers: { Authorization: authHeader } } : undefined);
     if (!response.ok) {
       throw new Error(`Glances API error: ${response.status}`);
     }
