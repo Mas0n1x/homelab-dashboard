@@ -11,7 +11,8 @@ import { useState, useEffect } from 'react';
 import {
   Activity, Box, Mail, Settings, ChevronLeft, ChevronRight,
   Server, Terminal, FileText, Wrench, LayoutDashboard, ChevronDown,
-  Cpu
+  Cpu,
+  Gamepad2,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,6 +42,7 @@ const SERVER_SUB_NAV: ServerSubNav[] = [
 const TOOL_NAV: NavItem[] = [
   { href: '/docker', label: 'Docker', icon: <Box className="w-4 h-4" /> },
   { href: '/mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },
+  { href: '/minecraft', label: 'Minecraft', icon: <Gamepad2 className="w-4 h-4" /> },
 ];
 
 const SYSTEM_NAV: NavItem[] = [

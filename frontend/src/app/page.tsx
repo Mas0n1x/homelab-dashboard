@@ -6,6 +6,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { Plus } from 'lucide-react';
 import { FleetTopology } from '@/components/fleet/FleetTopology';
 import { FleetSummaryBar } from '@/components/fleet/FleetSummaryBar';
 import { FleetBentoGrid } from '@/components/fleet/FleetBentoGrid';
@@ -13,8 +15,8 @@ import { useFleetWebSocket } from '@/hooks/useFleetWebSocket';
 import { PageTransition } from '@/components/ui/PageTransition';
 
 export default function FleetOverviewPage() {
-  // Subscribe to all servers for real-time data
   useFleetWebSocket();
+  const router = useRouter();
 
   return (
     <PageTransition>
@@ -44,7 +46,15 @@ export default function FleetOverviewPage() {
 
         {/* Server Topology / Grid */}
         <div>
-          <h2 className="text-xs uppercase tracking-widest text-white/25 font-medium mb-3">Server</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs uppercase tracking-widest text-white/25 font-medium">Server</h2>
+            <button
+              onClick={() => router.push('/settings')}
+              className="flex items-center gap-1 text-[11px] text-white/30 hover:text-white/70 transition-colors"
+            >
+              <Plus className="w-3 h-3" /> Server hinzufügen
+            </button>
+          </div>
           <FleetTopology />
         </div>
 
