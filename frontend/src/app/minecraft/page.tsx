@@ -372,7 +372,7 @@ export default function MinecraftPage() {
           <div className="space-y-4">
             <div className="glass-card rounded-2xl p-4 flex items-center gap-3">
               <Puzzle className="w-4 h-4 text-orange-400/70 flex-shrink-0" />
-              <input value={pluginUrl} onChange={e => setPluginUrl(e.target.value)} placeholder="Plugin-URL (.jar, z. B. von Modrinth/Spigot) einfügen…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/25 outline-none focus:border-orange-400/40" />
+              <input value={pluginUrl} onChange={e => setPluginUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && installPlugin()} placeholder="Plugin-Name (z. B. luckperms) oder Modrinth-Link…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/25 outline-none focus:border-orange-400/40" />
               <button disabled={busy || !pluginUrl.trim()} onClick={installPlugin} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm bg-orange-500/15 border border-orange-500/25 text-orange-300 hover:bg-orange-500/25 disabled:opacity-30 transition"><Plus className="w-4 h-4" /> Installieren</button>
             </div>
             <div className="glass-card rounded-2xl divide-y divide-white/[0.04]">
@@ -386,7 +386,7 @@ export default function MinecraftPage() {
                 </div>
               ))}
             </div>
-            <p className="text-[11px] text-white/25">Nach Installieren/Aktivieren ist ein Server-Neustart nötig.</p>
+            <p className="text-[11px] text-white/25">Gib den Modrinth-Namen (z. B. <span className="font-mono text-white/40">coreprotect</span>) oder einen direkten <span className="font-mono text-white/40">.jar</span>-Link an — die passende Version für MC 26.2 wird automatisch geholt. Nach Installieren/Aktivieren ist ein Server-Neustart nötig.</p>
           </div>
         )}
 
