@@ -68,4 +68,50 @@ router.put('/config/:file', async (req, res) => {
   res.status(r.status).json(r.data);
 });
 
+// Backups
+router.get('/backups', async (req, res) => {
+  const r = await agentFetch('/backups');
+  res.status(r.status).json(r.data);
+});
+router.post('/backups', async (req, res) => {
+  const r = await agentFetch('/backups', { method: 'POST' });
+  res.status(r.status).json(r.data);
+});
+router.post('/backups/:name/restore', async (req, res) => {
+  const r = await agentFetch(`/backups/${encodeURIComponent(req.params.name)}/restore`, { method: 'POST' });
+  res.status(r.status).json(r.data);
+});
+router.delete('/backups/:name', async (req, res) => {
+  const r = await agentFetch(`/backups/${encodeURIComponent(req.params.name)}`, { method: 'DELETE' });
+  res.status(r.status).json(r.data);
+});
+
+// Plugins
+router.get('/plugins', async (req, res) => {
+  const r = await agentFetch('/plugins');
+  res.status(r.status).json(r.data);
+});
+router.post('/plugins/toggle', async (req, res) => {
+  const r = await agentFetch('/plugins/toggle', { method: 'POST', body: JSON.stringify(req.body) });
+  res.status(r.status).json(r.data);
+});
+router.post('/plugins/install', async (req, res) => {
+  const r = await agentFetch('/plugins/install', { method: 'POST', body: JSON.stringify(req.body) });
+  res.status(r.status).json(r.data);
+});
+router.delete('/plugins/:name', async (req, res) => {
+  const r = await agentFetch(`/plugins/${encodeURIComponent(req.params.name)}`, { method: 'DELETE' });
+  res.status(r.status).json(r.data);
+});
+
+// World
+router.get('/world', async (req, res) => {
+  const r = await agentFetch('/world');
+  res.status(r.status).json(r.data);
+});
+router.post('/world/reset', async (req, res) => {
+  const r = await agentFetch('/world/reset', { method: 'POST' });
+  res.status(r.status).json(r.data);
+});
+
 export default router;

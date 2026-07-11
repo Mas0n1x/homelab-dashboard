@@ -11,6 +11,7 @@ import { Plus } from 'lucide-react';
 import { FleetTopology } from '@/components/fleet/FleetTopology';
 import { FleetSummaryBar } from '@/components/fleet/FleetSummaryBar';
 import { FleetBentoGrid } from '@/components/fleet/FleetBentoGrid';
+import { RequestsWidget } from '@/components/dashboard/RequestsWidget';
 import { useFleetWebSocket } from '@/hooks/useFleetWebSocket';
 import { PageTransition } from '@/components/ui/PageTransition';
 
@@ -56,6 +57,12 @@ export default function FleetOverviewPage() {
             </button>
           </div>
           <FleetTopology />
+        </div>
+
+        {/* Business — Neue Anfragen (SaleNet + Portfolio) */}
+        <div>
+          <h2 className="text-xs uppercase tracking-widest text-white/25 font-medium mb-3">Business</h2>
+          <RequestsWidget />
         </div>
 
         {/* Bento Grid Widgets */}
