@@ -13,6 +13,7 @@ import {
   Server, Terminal, FileText, Wrench, LayoutDashboard, ChevronDown,
   Cpu,
   Gamepad2,
+  Globe,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,6 +44,7 @@ const TOOL_NAV: NavItem[] = [
   { href: '/docker', label: 'Docker', icon: <Box className="w-4 h-4" /> },
   { href: '/mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },
   { href: '/minecraft', label: 'Minecraft', icon: <Gamepad2 className="w-4 h-4" /> },
+  { href: '/traffic', label: 'Traffic', icon: <Globe className="w-4 h-4" /> },
 ];
 
 const SYSTEM_NAV: NavItem[] = [

@@ -35,6 +35,7 @@ import auditRoutes from './routes/audit.js';
 import backupRoutes from './routes/backup.js';
 import maintenanceRoutes from './routes/maintenance.js';
 import minecraftRoutes from './routes/minecraft.js';
+import trafficRoutes from './routes/traffic.js';
 import salenetRoutes from './routes/salenet.js';
 import { checkAlerts, sendStatusReport } from './services/alerting.js';
 
@@ -76,6 +77,7 @@ app.use('/api/docker', dockerRoutes);
 app.use('/api/services', servicesRoutes);
 app.use('/api/servers', serversRoutes);
 app.use('/api/minecraft', minecraftRoutes);
+app.use('/api/traffic', trafficRoutes);
 app.use('/api/salenet', salenetRoutes);
 app.use('/api/uptime', uptimeRoutes);
 app.use('/api/portfolio', portfolioRoutes);
