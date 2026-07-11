@@ -108,7 +108,7 @@ function Avatar({ name, size = 32 }: { name: string; size?: number }) {
 }
 
 type Tab = 'console' | 'performance' | 'players' | 'world' | 'config' | 'files' | 'plugins' | 'backups' | 'automation' | 'map';
-const MAP_URL = 'http://45.133.9.70:8123';
+const MAP_URL = 'https://map.mas0n1x.online';
 
 function StatCard({ icon: Icon, label, value, sub, percent, color }: { icon: any; label: string; value: string; sub?: string; percent?: number; color: string }) {
   return (
@@ -186,6 +186,8 @@ export default function MinecraftPage() {
   // Datei-Manager
   const [fmPath, setFmPath] = useState('');
   const [fmEntries, setFmEntries] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [fmFile, setFmFile] = useState('');
   const [fmContent, setFmContent] = useState('');
   const [fmDirty, setFmDirty] = useState(false);
@@ -252,6 +254,20 @@ export default function MinecraftPage() {
   const loadFiles = (p: string) => { setFmFile(''); mcApi(`/files?path=${encodeURIComponent(p)}`).then(r => { setFmEntries(r.entries || []); setFmPath(r.path ?? p); }); };
   const openFile = async (p: string) => { const r = await mcApi(`/file?path=${encodeURIComponent(p)}`); if (typeof r.content === 'string') { setFmFile(p); setFmContent(r.content); setFmDirty(false); setFmRawMode(false); } else flash(r.error || 'Datei nicht lesbar'); };
   const saveFile = async () => { setBusy(true); await mcApi(`/file?path=${encodeURIComponent(fmFile)}`, { method: 'PUT', body: JSON.stringify({ content: fmContent }) }); setBusy(false); setFmDirty(false); flash('Datei gespeichert — evtl. Neustart nötig'); };
+  const uploadFile = (file: File) => {
+    if (!file) return;
+    if (file.size > 40 * 1024 * 1024) { flash('Datei zu groß (max. 40 MB)'); return; }
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const b64 = String(reader.result).split(',')[1] || '';
+      const r = await mcApi('/upload', { method: 'POST', body: JSON.stringify({ path: fmPath, name: file.name, dataBase64: b64 }) });
+      setUploading(false);
+      if (r.ok) { flash(`${r.name} hochgeladen (${fmtSize(r.size)})`); loadFiles(fmPath); } else flash(r.error || 'Upload fehlgeschlagen');
+    };
+    reader.onerror = () => { setUploading(false); flash('Datei nicht lesbar'); };
+    reader.readAsDataURL(file);
+  };
 
   const loadConfig = async (file: string) => { setActiveConfig(file); setRawMode(false); const r = await mcApi(`/config/${file}`); const c = r.content ?? ''; setRawContent(c); if (file === 'server.properties') setProps(parseProps(c)); setDirty(false); };
   const setProp = (k: string, v: string) => { setProps(prev => { const n = new Map(prev); n.set(k, v); return n; }); setDirty(true); };
@@ -573,6 +589,12 @@ export default function MinecraftPage() {
                 <div className="ml-auto flex items-center gap-3">
                   {fmIsYaml && <button onClick={() => setFmRawMode(m => !m)} className="flex items-center gap-1 text-[11px] text-white/30 hover:text-white/60 transition"><Code2 className="w-3 h-3" /> {fmRawMode ? 'Formular' : 'Rohtext'}</button>}
                   <button disabled={busy || !fmDirty} onClick={saveFile} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-30 transition"><Save className="w-3.5 h-3.5" /> Speichern</button>
+                </div>
+              )}
+              {!fmFile && (
+                <div className="ml-auto flex items-center gap-2">
+                  <input ref={fileInputRef} type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f); e.currentTarget.value = ''; }} />
+                  <button disabled={uploading} onClick={() => fileInputRef.current?.click()} title="Datei in diesen Ordner hochladen (z. B. .schem/.schematic, .jar)" className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] bg-orange-500/15 border border-orange-500/25 text-orange-300 hover:bg-orange-500/25 disabled:opacity-40 transition">{uploading ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Hochladen</button>
                 </div>
               )}
             </div>

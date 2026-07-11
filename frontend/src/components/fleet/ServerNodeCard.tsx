@@ -95,7 +95,6 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
   const totalCt = containers?.length ?? 0;
 
   const disks = system?.disk ?? [];
-  const rootDisk = disks.find(d => d.mountPoint === '/') ?? disks[0] ?? null;
   const net = system?.network ?? [];
   const rxRate = net.reduce((s, n) => s + (n.rxRate || 0), 0);
   const txRate = net.reduce((s, n) => s + (n.txRate || 0), 0);
@@ -103,8 +102,6 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
   const isOnline = server.status === 'connected';
   const hasData = system !== null;
   const memColor = memPercent > 90 ? '#ef4444' : memPercent > 70 ? '#f59e0b' : '#8b5cf6';
-  const diskPercent = rootDisk?.percent ?? 0;
-  const diskColor = diskPercent > 90 ? '#ef4444' : diskPercent > 75 ? '#f59e0b' : '#06b6d4';
 
   const tempColor = temp !== null
     ? temp >= 75 ? 'text-red-400' : temp >= 60 ? 'text-amber-400' : 'text-emerald-400'
@@ -175,9 +172,31 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
               {/* RAM + Disk */}
               <div className="space-y-3">
                 <StatBar label="RAM" percent={memPercent} right={`${formatBytes(memUsed)} / ${formatBytes(memTotal)}`} color={memColor} icon={<span className="w-2.5 h-2.5 rounded-sm bg-violet-400/60" />} />
-                {rootDisk && (
-                  <StatBar label="Disk" percent={diskPercent} right={`${formatBytes(rootDisk.used)} / ${formatBytes(rootDisk.total)}`} color={diskColor} icon={<HardDrive className="w-2.5 h-2.5 text-cyan-400/60" />} />
-                )}
+                {disks.length > 0 && (() => {
+                  const totalCap = disks.reduce((s, d) => s + (d.total || 0), 0);
+                  const totalUsed = disks.reduce((s, d) => s + (d.used || 0), 0);
+                  const aggPct = totalCap ? Math.round((totalUsed / totalCap) * 100) : 0;
+                  const aggColor = aggPct > 90 ? '#ef4444' : aggPct > 75 ? '#f59e0b' : '#06b6d4';
+                  const barColor = (p: number) => p > 90 ? '#ef4444' : p > 75 ? '#f59e0b' : '#06b6d4';
+                  return (
+                    <>
+                      <StatBar label="Speicher" percent={aggPct} right={`${formatBytes(totalUsed)} / ${formatBytes(totalCap)}`} color={aggColor} icon={<HardDrive className="w-2.5 h-2.5 text-cyan-400/60" />} />
+                      {disks.length > 1 && (
+                        <div className="space-y-1 pl-4">
+                          {disks.map(d => (
+                            <div key={d.device} className="flex items-center gap-2 text-[10px] text-white/35">
+                              <span className="font-mono text-white/50 w-14 truncate" title={`${d.mountPoint} (${d.device})`}>{d.mountPoint}</span>
+                              <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                                <div className="h-full rounded-full" style={{ width: `${Math.min(d.percent || 0, 100)}%`, background: barColor(d.percent || 0) }} />
+                              </div>
+                              <span className="tabular-nums text-right whitespace-nowrap">{formatBytes(d.used)} / {formatBytes(d.total)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Uptime */}

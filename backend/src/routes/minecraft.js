@@ -125,6 +125,10 @@ router.put('/file', async (req, res) => {
   const r = await agentFetch(`/file?path=${encodeURIComponent(req.query.path || '')}`, { method: 'PUT', body: JSON.stringify(req.body) });
   res.status(r.status).json(r.data);
 });
+router.post('/upload', async (req, res) => {
+  const r = await agentFetch('/upload', { method: 'POST', body: JSON.stringify(req.body) });
+  res.status(r.status).json(r.data);
+});
 
 // Spieler & Gamerules
 router.get('/players', async (req, res) => {

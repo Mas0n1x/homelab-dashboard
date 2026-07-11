@@ -50,14 +50,24 @@ export function createGlancesClient(baseUrl) {
             free: mem.free || 0,
             percent: mem.percent || 0
           },
-          disk: Array.isArray(disk) ? disk.map(d => ({
-            mountPoint: d.mnt_point,
-            device: d.device_name,
-            total: d.size,
-            used: d.used,
-            free: d.free,
-            percent: d.percent
-          })) : [],
+          disk: (() => {
+            if (!Array.isArray(disk)) return [];
+            // Nur echte Block-Devices, Host-Mount-Praefix (/hostfs/root) entfernen,
+            // pro Device den kuerzesten Mountpoint behalten (echte Partition statt Bind-Mount-Datei)
+            const byDev = new Map();
+            for (const d of disk) {
+              const device = d.device_name || '';
+              if (!device.startsWith('/dev/')) continue;
+              let mnt = d.mnt_point || '';
+              for (const pre of ['/hostfs/root', '/hostfs']) {
+                if (mnt.startsWith(pre)) mnt = mnt.slice(pre.length) || '/';
+              }
+              const entry = { mountPoint: mnt, device, total: d.size, used: d.used, free: d.free, percent: d.percent };
+              const prev = byDev.get(device);
+              if (!prev || mnt.length < prev.mountPoint.length) byDev.set(device, entry);
+            }
+            return Array.from(byDev.values()).sort((a, b) => (b.total || 0) - (a.total || 0));
+          })(),
           network: Array.isArray(network) ? network.filter(n => n.interface_name !== 'lo').map(n => ({
             interface: n.interface_name,
             rxBytes: n.bytes_recv || 0,
