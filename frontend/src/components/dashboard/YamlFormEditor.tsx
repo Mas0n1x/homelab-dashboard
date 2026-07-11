@@ -14,7 +14,22 @@ function humanize(key: string): string {
 }
 function cleanComment(raw?: string | null): string {
   if (!raw) return '';
-  return raw.split('\n').map(s => s.replace(/^\s*#?\s?/, '').trim()).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().slice(0, 180);
+  const lines = raw.split('\n')
+    .map(s => s.replace(/^\s*#+/, ''))              // führende Rauten weg
+    .map(s => s.replace(/[|#*>]+/g, ' '))            // Banner-Zeichen | # * > -> Leerzeichen
+    .map(s => s.replace(/[-=+_~]{2,}/g, ' '))        // ASCII-Linien (---, ===, +++) -> Leerzeichen
+    .map(s => s.replace(/\s+/g, ' ').trim())
+    .filter(s => /[a-zA-ZäöüÄÖÜ]{2,}/.test(s))       // nur Zeilen mit echten Wörtern
+    .filter(s => !/^[A-Z0-9 .:'-]{4,}$/.test(s));    // reine GROSSBUCHSTABEN-Banner (Sektionstitel) raus
+  const text = lines.join(' ').replace(/\s+/g, ' ').replace(/\s+([.,;:])/g, '$1').trim();
+  if (text.replace(/[^a-zA-ZäöüÄÖÜ]/g, '').length < 3) return '';
+  return text;
+}
+function shortComment(c: string): string {
+  if (c.length <= 130) return c;
+  const cut = c.slice(0, 130);
+  const lastDot = cut.lastIndexOf('. ');
+  return (lastDot > 60 ? cut.slice(0, lastDot + 1) : cut.trimEnd() + '…');
 }
 function keyOf(pair: any): string { return String(pair.key?.value ?? pair.key ?? ''); }
 function commentOf(pair: any): string { return cleanComment(pair.key?.commentBefore || pair.value?.commentBefore || pair.commentBefore); }
@@ -40,7 +55,7 @@ function Row({ label, comment, children }: { label: string; comment: string; chi
     <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-2 hover:bg-white/[0.02] transition">
       <div className="min-w-0 flex-1">
         <p className="text-[13px] text-white/75 truncate">{label}</p>
-        {comment && <p className="text-[11px] text-white/30 leading-snug mt-0.5 line-clamp-2">{comment}</p>}
+        {comment && <p title={comment} className="text-[11px] text-white/30 leading-snug mt-0.5 line-clamp-2">{shortComment(comment)}</p>}
       </div>
       <div className="flex-shrink-0">{children}</div>
     </div>
@@ -69,14 +84,14 @@ function ArrayRow({ label, comment, value, onChange }: { label: string; comment:
   if (!simple) return (
     <div className="rounded-lg px-3 py-2">
       <p className="text-[13px] text-white/75">{label}</p>
-      {comment && <p className="text-[11px] text-white/30 mt-0.5">{comment}</p>}
+      {comment && <p title={comment} className="text-[11px] text-white/30 mt-0.5 line-clamp-2">{shortComment(comment)}</p>}
       <p className="text-[11px] text-white/25 mt-1">Komplexe Liste ({value.length}) — im Rohtext bearbeiten.</p>
     </div>
   );
   return (
     <div className="rounded-lg px-3 py-2">
       <p className="text-[13px] text-white/75">{label}</p>
-      {comment && <p className="text-[11px] text-white/30 leading-snug mt-0.5 mb-1.5">{comment}</p>}
+      {comment && <p title={comment} className="text-[11px] text-white/30 leading-snug mt-0.5 mb-1.5 line-clamp-2">{shortComment(comment)}</p>}
       <div className="flex flex-wrap gap-1.5 mb-2">
         {value.map((v, i) => (
           <span key={i} className="flex items-center gap-1 text-[12px] text-white/70 bg-white/[0.05] border border-white/[0.08] rounded-md pl-2 pr-1 py-0.5">
@@ -103,7 +118,7 @@ function Section({ title, comment, depth, filtering, children }: { title: string
         {isOpen ? <ChevronDown className="w-4 h-4 text-white/30 mt-0.5 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-white/30 mt-0.5 flex-shrink-0" />}
         <span className="min-w-0">
           <span className="block text-xs uppercase tracking-widest text-orange-400/70 font-medium group-hover:text-orange-400 transition">{title}</span>
-          {comment && !isOpen && <span className="block text-[11px] text-white/25 truncate">{comment}</span>}
+          {comment && !isOpen && <span title={comment} className="block text-[11px] text-white/25 truncate">{shortComment(comment)}</span>}
         </span>
       </button>
       {isOpen && <div className="pb-1.5">{children}</div>}
