@@ -72,32 +72,34 @@ function ContainerOverview() {
 }
 
 export function FleetBentoGrid() {
+  // Anordnung: kurze Widgets in eine Reihe, hohe in die naechste — plus
+  // [&>*]:h-full, damit alle Karten ihre Rasterzelle fuellen (keine Luecken).
   return (
     <div className="bento-grid">
-      {/* Row 1: Container + Speedtest + Uptime */}
-      <div className="bento-2x1">
+      {/* Reihe 1: kurze Widgets */}
+      <div className="bento-2x1 [&>*]:h-full">
         <ContainerOverview />
       </div>
-      <div className="bento-1x1">
-        <SpeedtestWidget />
-      </div>
-      <div className="bento-1x1">
+      <div className="bento-1x1 [&>*]:h-full">
         <UptimeWidget />
       </div>
-
-      {/* Row 2: Wetter + Kalender (breiter) */}
-      <div className="bento-1x1">
+      <div className="bento-1x1 [&>*]:h-full">
         <WeatherWidget />
       </div>
-      <div className="bento-3x1">
+
+      {/* Reihe 2: hohe Widgets (Chart / Kalender) */}
+      <div className="bento-2x1 [&>*]:h-full">
+        <SpeedtestWidget />
+      </div>
+      <div className="bento-2x1 [&>*]:h-full">
         <CalendarWidget />
       </div>
 
-      {/* Row 3: Bookmarks + Notes */}
-      <div className="bento-2x1">
+      {/* Reihe 3: Listen */}
+      <div className="bento-2x1 [&>*]:h-full">
         <BookmarksWidget />
       </div>
-      <div className="bento-2x1">
+      <div className="bento-2x1 [&>*]:h-full">
         <NotesWidget />
       </div>
     </div>
