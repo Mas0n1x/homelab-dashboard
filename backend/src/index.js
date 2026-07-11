@@ -5,7 +5,7 @@
  */
 import express from 'express';
 import cors from 'cors';
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
 import { createServer } from 'http';
 
 import { initDatabase, migrateFromConfigJson, cleanupOldUptimeData } from './services/database.js';
@@ -94,8 +94,43 @@ app.use('/api/maintenance', maintenanceRoutes);
 // Create HTTP server
 const server = createServer(app);
 
-// WebSocket server for real-time updates
-const wss = new WebSocketServer({ server, path: '/ws' });
+// WebSocket server for real-time updates (noServer: Upgrades werden unten geroutet)
+const wss = new WebSocketServer({ noServer: true });
+
+// Minecraft-Live-Konsole: WebSocket-Proxy zum MC-Agent (Agent-Token bleibt server-seitig)
+const mcConsoleWss = new WebSocketServer({ noServer: true });
+const MC_AGENT_URL = process.env.MC_AGENT_URL || '';
+const MC_AGENT_TOKEN = process.env.MC_AGENT_TOKEN || '';
+mcConsoleWss.on('connection', (client, req) => {
+  try {
+    const u = new URL(req.url, `http://${req.headers.host}`);
+    verifyToken(u.searchParams.get('token') || '');
+  } catch { client.close(4001, 'Unauthorized'); return; }
+  if (!MC_AGENT_URL || !MC_AGENT_TOKEN) { client.close(4002, 'Agent nicht konfiguriert'); return; }
+  const agentWsUrl = MC_AGENT_URL.replace(/^http/, 'ws') + '/console?token=' + encodeURIComponent(MC_AGENT_TOKEN);
+  const upstream = new WebSocket(agentWsUrl);
+  const queue = [];
+  upstream.on('open', () => { queue.forEach(m => upstream.send(m)); queue.length = 0; });
+  upstream.on('message', (data) => { if (client.readyState === client.OPEN) client.send(data.toString()); });
+  upstream.on('close', () => { try { client.close(); } catch { /* */ } });
+  upstream.on('error', () => { try { client.close(); } catch { /* */ } });
+  client.on('message', (data) => { const m = data.toString(); if (upstream.readyState === upstream.OPEN) upstream.send(m); else queue.push(m); });
+  client.on('close', () => { try { upstream.close(); } catch { /* */ } });
+  client.on('error', () => { try { upstream.close(); } catch { /* */ } });
+});
+
+// Upgrade-Router: /ws (Dashboard) und /api/minecraft/console (MC-Konsole)
+server.on('upgrade', (req, socket, head) => {
+  let pathname = '/';
+  try { pathname = new URL(req.url, `http://${req.headers.host}`).pathname; } catch { /* */ }
+  if (pathname === '/ws') {
+    wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
+  } else if (pathname === '/api/minecraft/console') {
+    mcConsoleWss.handleUpgrade(req, socket, head, (ws) => mcConsoleWss.emit('connection', ws, req));
+  } else {
+    socket.destroy();
+  }
+});
 
 // Track all connected clients
 const clients = new Map();

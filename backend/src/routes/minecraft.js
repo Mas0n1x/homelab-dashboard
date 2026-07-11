@@ -99,6 +99,14 @@ router.post('/plugins/install', async (req, res) => {
   const r = await agentFetch('/plugins/install', { method: 'POST', body: JSON.stringify(req.body) });
   res.status(r.status).json(r.data);
 });
+router.get('/plugins/browse', async (req, res) => {
+  const r = await agentFetch(`/plugins/browse?q=${encodeURIComponent(req.query.q || '')}`);
+  res.status(r.status).json(r.data);
+});
+router.get('/plugins/updates', async (req, res) => {
+  const r = await agentFetch('/plugins/updates');
+  res.status(r.status).json(r.data);
+});
 router.delete('/plugins/:name', async (req, res) => {
   const r = await agentFetch(`/plugins/${encodeURIComponent(req.params.name)}`, { method: 'DELETE' });
   res.status(r.status).json(r.data);
@@ -123,6 +131,14 @@ router.get('/players', async (req, res) => {
   const r = await agentFetch('/players');
   res.status(r.status).json(r.data);
 });
+router.get('/players/known', async (req, res) => {
+  const r = await agentFetch('/players/known');
+  res.status(r.status).json(r.data);
+});
+router.get('/performance', async (req, res) => {
+  const r = await agentFetch('/performance');
+  res.status(r.status).json(r.data);
+});
 router.get('/gamerules', async (req, res) => {
   const r = await agentFetch('/gamerules');
   res.status(r.status).json(r.data);
@@ -135,6 +151,28 @@ router.get('/world', async (req, res) => {
 });
 router.post('/world/reset', async (req, res) => {
   const r = await agentFetch('/world/reset', { method: 'POST' });
+  res.status(r.status).json(r.data);
+});
+
+// Automatisierung (Auto-Backups + geplante Befehle)
+router.get('/automation', async (req, res) => {
+  const r = await agentFetch('/automation');
+  res.status(r.status).json(r.data);
+});
+router.put('/automation/backup', async (req, res) => {
+  const r = await agentFetch('/automation/backup', { method: 'PUT', body: JSON.stringify(req.body) });
+  res.status(r.status).json(r.data);
+});
+router.post('/automation/commands', async (req, res) => {
+  const r = await agentFetch('/automation/commands', { method: 'POST', body: JSON.stringify(req.body) });
+  res.status(r.status).json(r.data);
+});
+router.put('/automation/commands/:id', async (req, res) => {
+  const r = await agentFetch(`/automation/commands/${encodeURIComponent(req.params.id)}`, { method: 'PUT', body: JSON.stringify(req.body) });
+  res.status(r.status).json(r.data);
+});
+router.delete('/automation/commands/:id', async (req, res) => {
+  const r = await agentFetch(`/automation/commands/${encodeURIComponent(req.params.id)}`, { method: 'DELETE' });
   res.status(r.status).json(r.data);
 });
 
