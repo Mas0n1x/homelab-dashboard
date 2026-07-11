@@ -100,7 +100,7 @@ router.post('/plugins/install', async (req, res) => {
   res.status(r.status).json(r.data);
 });
 router.get('/plugins/browse', async (req, res) => {
-  const r = await agentFetch(`/plugins/browse?q=${encodeURIComponent(req.query.q || '')}`);
+  const r = await agentFetch(`/plugins/browse?q=${encodeURIComponent(req.query.q || '')}&offset=${encodeURIComponent(req.query.offset || '0')}`);
   res.status(r.status).json(r.data);
 });
 router.get('/plugins/updates', async (req, res) => {

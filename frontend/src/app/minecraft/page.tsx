@@ -160,6 +160,7 @@ export default function MinecraftPage() {
   const [checkingUpdates, setCheckingUpdates] = useState(false);
   const [browseQuery, setBrowseQuery] = useState('');
   const [browseResults, setBrowseResults] = useState<any[]>([]);
+  const [browseTotal, setBrowseTotal] = useState(0);
   const [browsing, setBrowsing] = useState(false);
   const [pluginBusy, setPluginBusy] = useState('');
   const [world, setWorld] = useState<any>(null);
@@ -286,7 +287,7 @@ export default function MinecraftPage() {
   const installPlugin = async () => { if (!pluginUrl.trim()) return; setBusy(true); const r = await mcApi('/plugins/install', { method: 'POST', body: JSON.stringify({ url: pluginUrl.trim() }) }); setBusy(false); if (r.ok) { setPluginUrl(''); flash(`${r.name} installiert${r.note || ''} — Neustart nötig`); loadPlugins(); } else flash(r.error || 'Fehler'); };
   const checkUpdates = async () => { setCheckingUpdates(true); const r = await mcApi('/plugins/updates'); setCheckingUpdates(false); setPluginUpdates(r.updates || []); flash(r.updates?.length ? `${r.updates.length} Update${r.updates.length !== 1 ? 's' : ''} verfügbar` : 'Alles aktuell'); };
   const installBySlug = async (slug: string, label?: string) => { setPluginBusy(slug); const r = await mcApi('/plugins/install', { method: 'POST', body: JSON.stringify({ url: slug }) }); setPluginBusy(''); if (r.ok) { flash(`${label || r.name} installiert${r.note || ''} — Neustart nötig`); loadPlugins(); setPluginUpdates(u => u.filter(x => x.slug !== slug)); } else flash(r.error || 'Fehler'); };
-  const browsePlugins = async () => { setBrowsing(true); const r = await mcApi(`/plugins/browse?q=${encodeURIComponent(browseQuery.trim())}`); setBrowsing(false); setBrowseResults(r.results || []); };
+  const browsePlugins = async (append = false) => { setBrowsing(true); const offset = append ? browseResults.length : 0; const r = await mcApi(`/plugins/browse?q=${encodeURIComponent(browseQuery.trim())}&offset=${offset}`); setBrowsing(false); setBrowseResults(prev => append ? [...prev, ...(r.results || [])] : (r.results || [])); setBrowseTotal(r.total || 0); };
   const resetWorld = async () => { if (!confirm('Welt WIRKLICH zurücksetzen? Alles geht verloren! (Server startet neu)')) return; setBusy(true); await mcApi('/world/reset', { method: 'POST' }); setBusy(false); flash('Welt zurückgesetzt'); setTimeout(() => mcApi('/world').then(setWorld), 3000); };
   const createBackup = async () => { setBusy(true); const r = await mcApi('/backups', { method: 'POST' }); setBusy(false); if (r.ok) { flash(`Backup erstellt (${fmtSize(r.size)})`); loadBackups(); } else flash(r.error || 'Fehler'); };
   const restoreBackup = async (b: any) => { if (!confirm(`Backup "${b.name}" wiederherstellen? Aktuelle Welt wird überschrieben!`)) return; setBusy(true); await mcApi(`/backups/${encodeURIComponent(b.name)}/restore`, { method: 'POST' }); setBusy(false); flash('Backup wiederhergestellt'); };
@@ -645,7 +646,7 @@ export default function MinecraftPage() {
               <div className="glass-card rounded-2xl p-4 flex items-center gap-3">
                 <Sparkles className="w-4 h-4 text-orange-400/70 flex-shrink-0" />
                 <input value={browseQuery} onChange={e => setBrowseQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && browsePlugins()} placeholder="Modrinth durchsuchen (z. B. economy, protection, chat)…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/25 outline-none focus:border-orange-400/40" />
-                <button disabled={browsing} onClick={browsePlugins} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm bg-orange-500/15 border border-orange-500/25 text-orange-300 hover:bg-orange-500/25 disabled:opacity-30 transition">{browsing ? <RotateCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Suchen</button>
+                <button disabled={browsing} onClick={() => browsePlugins()} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm bg-orange-500/15 border border-orange-500/25 text-orange-300 hover:bg-orange-500/25 disabled:opacity-30 transition">{browsing ? <RotateCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Suchen</button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {browseResults.length === 0 && !browsing && <p className="text-sm text-white/30 p-5 text-center md:col-span-2">Keine Treffer.</p>}
@@ -673,6 +674,11 @@ export default function MinecraftPage() {
                   );
                 })}
               </div>
+              {browseResults.length > 0 && browseResults.length < browseTotal && (
+                <button disabled={browsing} onClick={() => browsePlugins(true)} className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white/90 hover:bg-white/[0.06] disabled:opacity-40 transition">
+                  {browsing ? <RotateCw className="w-4 h-4 animate-spin" /> : <ChevronDown className="w-4 h-4" />} Mehr laden ({browseResults.length} von {browseTotal.toLocaleString('de-DE')})
+                </button>
+              )}
               <p className="text-[11px] text-white/25">Quelle: Modrinth · passende Version für MC 26.2 wird automatisch geholt. Nach dem Installieren Server neu starten.</p>
             </>)}
           </div>
