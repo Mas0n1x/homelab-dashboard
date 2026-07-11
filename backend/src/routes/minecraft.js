@@ -104,6 +104,30 @@ router.delete('/plugins/:name', async (req, res) => {
   res.status(r.status).json(r.data);
 });
 
+// Datei-Manager
+router.get('/files', async (req, res) => {
+  const r = await agentFetch(`/files?path=${encodeURIComponent(req.query.path || '')}`);
+  res.status(r.status).json(r.data);
+});
+router.get('/file', async (req, res) => {
+  const r = await agentFetch(`/file?path=${encodeURIComponent(req.query.path || '')}`);
+  res.status(r.status).json(r.data);
+});
+router.put('/file', async (req, res) => {
+  const r = await agentFetch(`/file?path=${encodeURIComponent(req.query.path || '')}`, { method: 'PUT', body: JSON.stringify(req.body) });
+  res.status(r.status).json(r.data);
+});
+
+// Spieler & Gamerules
+router.get('/players', async (req, res) => {
+  const r = await agentFetch('/players');
+  res.status(r.status).json(r.data);
+});
+router.get('/gamerules', async (req, res) => {
+  const r = await agentFetch('/gamerules');
+  res.status(r.status).json(r.data);
+});
+
 // World
 router.get('/world', async (req, res) => {
   const r = await agentFetch('/world');
