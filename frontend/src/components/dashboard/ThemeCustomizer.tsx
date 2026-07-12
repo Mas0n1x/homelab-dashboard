@@ -7,78 +7,33 @@
 
 import { useState, useEffect } from 'react';
 import { Palette, X, RotateCcw } from 'lucide-react';
-
-interface ThemeSettings {
-  accentColor: string;
-  orbsEnabled: boolean;
-  orbIntensity: number;
-  blurStrength: number;
-}
-
-const ACCENT_PRESETS = [
-  { name: 'Indigo', color: '#6366f1', bg: 'bg-indigo-500' },
-  { name: 'Emerald', color: '#10b981', bg: 'bg-emerald-500' },
-  { name: 'Cyan', color: '#06b6d4', bg: 'bg-cyan-500' },
-  { name: 'Purple', color: '#8b5cf6', bg: 'bg-purple-500' },
-  { name: 'Pink', color: '#ec4899', bg: 'bg-pink-500' },
-  { name: 'Amber', color: '#f59e0b', bg: 'bg-amber-500' },
-  { name: 'Red', color: '#ef4444', bg: 'bg-red-500' },
-  { name: 'Blue', color: '#3b82f6', bg: 'bg-blue-500' },
-];
-
-const DEFAULT_SETTINGS: ThemeSettings = {
-  accentColor: '#6366f1',
-  orbsEnabled: true,
-  orbIntensity: 50,
-  blurStrength: 16,
-};
-
-function getStoredTheme(): ThemeSettings {
-  if (typeof window === 'undefined') return DEFAULT_SETTINGS;
-  try {
-    const stored = localStorage.getItem('dashboard-theme');
-    return stored ? { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } : DEFAULT_SETTINGS;
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
-}
-
-function applyTheme(settings: ThemeSettings) {
-  const root = document.documentElement;
-  root.style.setProperty('--accent-color', settings.accentColor);
-  root.style.setProperty('--orb-opacity', settings.orbsEnabled ? String(settings.orbIntensity / 100) : '0');
-  root.style.setProperty('--glass-blur', `${settings.blurStrength}px`);
-
-  // Compute lighter variant
-  const hex = settings.accentColor;
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  root.style.setProperty('--accent-light', `rgb(${Math.min(r + 30, 255)}, ${Math.min(g + 30, 255)}, ${Math.min(b + 30, 255)})`);
-  root.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
-}
+import { ThemeSettings, ACCENT_PRESETS, DEFAULT_THEME, getStoredTheme, applyTheme, saveTheme, resetTheme } from '@/lib/theme';
 
 export function ThemeCustomizer() {
   const [open, setOpen] = useState(false);
-  const [settings, setSettings] = useState<ThemeSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<ThemeSettings>(DEFAULT_THEME);
 
   useEffect(() => {
-    const stored = getStoredTheme();
-    setSettings(stored);
-    applyTheme(stored);
+    const onStorage = () => { const s = getStoredTheme(); setSettings(s); applyTheme(s); };
+    onStorage();
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('theme-changed', onStorage);
+    return () => { window.removeEventListener('storage', onStorage); window.removeEventListener('theme-changed', onStorage); };
   }, []);
 
   const update = (partial: Partial<ThemeSettings>) => {
     const next = { ...settings, ...partial };
     setSettings(next);
     applyTheme(next);
-    localStorage.setItem('dashboard-theme', JSON.stringify(next));
+    saveTheme(next);
+    window.dispatchEvent(new Event('theme-changed'));
   };
 
   const reset = () => {
-    setSettings(DEFAULT_SETTINGS);
-    applyTheme(DEFAULT_SETTINGS);
-    localStorage.removeItem('dashboard-theme');
+    setSettings(DEFAULT_THEME);
+    applyTheme(DEFAULT_THEME);
+    resetTheme();
+    window.dispatchEvent(new Event('theme-changed'));
   };
 
   return (
