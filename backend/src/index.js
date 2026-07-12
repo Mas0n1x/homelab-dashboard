@@ -60,7 +60,7 @@ await ensureDefaultUser();
 serverManager.init();
 
 // Middleware
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
+app.use(cors({ origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()) : true, credentials: true }));
 app.use(express.json({ limit: '48mb' }));
 
 // Public routes (no auth required)
@@ -537,9 +537,10 @@ setInterval(async () => {
   }
 }, 30000);
 
-// Background: Container stats (every 5 seconds)
+// Background: Container stats (every 5 seconds) — nur wenn jemand zuschaut (spart SSH-Last)
 setInterval(async () => {
   try {
+    if (wss.clients.size === 0) return;
     const dockerMod = await import('./services/docker.js');
     const servers = serverManager.getAllServers();
     for (const server of servers) {

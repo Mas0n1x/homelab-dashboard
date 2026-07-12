@@ -21,6 +21,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - CORS_ORIGIN=${CORS_ORIGIN:-}
       - GLANCES_URL=http://host.docker.internal:61208
       - DB_PATH=/app/data/dashboard.db
       - CONFIG_PATH=/app/data/config.json

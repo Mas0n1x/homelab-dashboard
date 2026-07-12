@@ -11,9 +11,34 @@ import { logAudit } from '../services/audit.js';
 
 const router = Router();
 
+// Einfaches In-Memory-Rate-Limit fuer Login (Brute-Force-Schutz)
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 8;
+const WINDOW_MS = 15 * 60 * 1000;
+function clientIp(req) {
+  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+}
+function loginRateLimited(ip) {
+  const rec = loginAttempts.get(ip);
+  if (!rec) return false;
+  if (Date.now() - rec.first > WINDOW_MS) { loginAttempts.delete(ip); return false; }
+  return rec.count >= MAX_ATTEMPTS;
+}
+function recordLoginFail(ip) {
+  const now = Date.now();
+  let rec = loginAttempts.get(ip);
+  if (!rec || now - rec.first > WINDOW_MS) rec = { count: 0, first: now };
+  rec.count++;
+  loginAttempts.set(ip, rec);
+}
+
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
+    const ip = clientIp(req);
+    if (loginRateLimited(ip)) {
+      return res.status(429).json({ error: 'Zu viele Fehlversuche. Bitte in 15 Minuten erneut versuchen.' });
+    }
     const { username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ error: 'Benutzername und Passwort erforderlich' });
@@ -22,13 +47,16 @@ router.post('/login', async (req, res) => {
     const db = getDb();
     const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
     if (!user) {
+      recordLoginFail(ip);
       return res.status(401).json({ error: 'Ungültige Anmeldedaten' });
     }
 
     const valid = await authService.verifyPassword(password, user.password_hash);
     if (!valid) {
+      recordLoginFail(ip);
       return res.status(401).json({ error: 'Ungültige Anmeldedaten' });
     }
+    loginAttempts.delete(ip);
 
     const accessToken = authService.generateAccessToken(user);
     const refreshToken = authService.generateRefreshToken();
