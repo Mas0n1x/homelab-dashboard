@@ -138,6 +138,14 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
     refetchInterval: 60000,
   });
 
+  // Konfigurierbare Alert-Schwellen (geteilter Fetch)
+  const { data: thresholds } = useQuery<{ cpu: number; ram: number; disk: number; temp: number }>({
+    queryKey: ['alertThresholds'],
+    queryFn: () => api.getAlertThresholds() as Promise<any>,
+    staleTime: 60000,
+  });
+  const TH = thresholds ?? { cpu: 90, ram: 90, disk: 90, temp: 75 };
+
   const cpuPercent = system?.cpu.total ?? 0;
   const memPercent = system?.memory.percent ?? 0;
   const memUsed = system?.memory.used ?? 0;
@@ -183,10 +191,10 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
   })();
   const activeAlerts: string[] = [];
   if (hasData) {
-    if (cpuPercent > 90) activeAlerts.push('CPU > 90%');
-    if (memPercent > 90) activeAlerts.push('RAM > 90%');
-    if (diskAgg > 90) activeAlerts.push('Speicher > 90%');
-    if (temp !== null && temp > 75) activeAlerts.push(`Temperatur ${temp.toFixed(0)}°C`);
+    if (cpuPercent > TH.cpu) activeAlerts.push(`CPU > ${TH.cpu}%`);
+    if (memPercent > TH.ram) activeAlerts.push(`RAM > ${TH.ram}%`);
+    if (diskAgg > TH.disk) activeAlerts.push(`Speicher > ${TH.disk}%`);
+    if (temp !== null && temp > TH.temp) activeAlerts.push(`Temperatur ${temp.toFixed(0)}°C`);
   }
   const hasAlert = activeAlerts.length > 0;
 

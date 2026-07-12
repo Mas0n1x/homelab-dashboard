@@ -175,17 +175,41 @@ function contextFields(data) {
   return f;
 }
 
-// Thresholds (mit Hysterese: alarmieren über X, Entwarnung unter Y)
-const TH = {
+// Standard-Schwellen (mit Hysterese: alarmieren über high, Entwarnung unter ok)
+const DEFAULT_TH = {
   cpu: { high: 90, ok: 80 },
   ram: { high: 90, ok: 80 },
   disk: { high: 90, ok: 85 },
   temp: { high: 75, ok: 65 },
 };
 
+// Konfigurierbare Schwellen aus den Settings (nur die "high"-Werte; ok = high - gap).
+export function getThresholds() {
+  try {
+    const db = getDb();
+    const row = db.prepare("SELECT value FROM settings WHERE key = 'alert_thresholds'").get();
+    if (!row?.value) return DEFAULT_TH;
+    const cfg = JSON.parse(row.value);
+    const clamp = (v, d) => (typeof v === 'number' && v > 0 && v <= 200 ? v : d);
+    const mk = (key, defHigh, gap) => {
+      const high = clamp(cfg[key], defHigh);
+      return { high, ok: Math.max(0, high - gap) };
+    };
+    return {
+      cpu: mk('cpu', 90, 10),
+      ram: mk('ram', 90, 10),
+      disk: mk('disk', 90, 5),
+      temp: mk('temp', 75, 10),
+    };
+  } catch {
+    return DEFAULT_TH;
+  }
+}
+
 // Check and fire alerts
 export async function checkAlerts(data) {
   const db = getDb();
+  const TH = getThresholds();
   const channels = db.prepare('SELECT * FROM alert_channels WHERE enabled = 1').all();
   if (channels.length === 0) return;
 

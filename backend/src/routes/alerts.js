@@ -5,8 +5,38 @@
  */
 import { Router } from 'express';
 import * as alerting from '../services/alerting.js';
+import { getDb } from '../services/database.js';
 
 const router = Router();
+
+// Alert-Schwellen (konfigurierbar) lesen/setzen
+router.get('/thresholds', (req, res) => {
+  try {
+    const db = getDb();
+    const row = db.prepare("SELECT value FROM settings WHERE key = 'alert_thresholds'").get();
+    const cfg = row?.value ? JSON.parse(row.value) : {};
+    res.json({ cpu: cfg.cpu ?? 90, ram: cfg.ram ?? 90, disk: cfg.disk ?? 90, temp: cfg.temp ?? 75 });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/thresholds', (req, res) => {
+  try {
+    const num = (v, d) => (typeof v === 'number' && v > 0 && v <= 200 ? v : d);
+    const cfg = {
+      cpu: num(req.body.cpu, 90),
+      ram: num(req.body.ram, 90),
+      disk: num(req.body.disk, 90),
+      temp: num(req.body.temp, 75),
+    };
+    const db = getDb();
+    db.prepare("INSERT INTO settings (key, value) VALUES ('alert_thresholds', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify(cfg));
+    res.json(cfg);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Get all alert channels
 router.get('/channels', (req, res) => {

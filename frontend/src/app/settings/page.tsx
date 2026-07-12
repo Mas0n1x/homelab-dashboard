@@ -255,6 +255,15 @@ export default function SettingsPage() {
     queryFn: () => api.getAlertHistory(20) as Promise<any[]>,
   });
 
+  // Alert-Schwellen (konfigurierbar)
+  const { data: thresholds } = useQuery({ queryKey: ['alertThresholds'], queryFn: () => api.getAlertThresholds() });
+  const [thForm, setThForm] = useState<{ cpu: number; ram: number; disk: number; temp: number } | null>(null);
+  const th = thForm ?? thresholds ?? { cpu: 90, ram: 90, disk: 90, temp: 75 };
+  const thMutation = useMutation({
+    mutationFn: () => api.setAlertThresholds(th),
+    onSuccess: (d: any) => { queryClient.setQueryData(['alertThresholds'], d); setThForm(null); queryClient.invalidateQueries({ queryKey: ['alertThresholds'] }); },
+  });
+
   const { data: auditLog } = useQuery<any[]>({
     queryKey: ['audit-log'],
     queryFn: () => api.getAuditLog(50) as Promise<any[]>,
@@ -531,6 +540,35 @@ export default function SettingsPage() {
           {/* Alerts Tab */}
           {activeTab === 'alerts' && (
             <>
+              <GlassCard>
+                <div className="relative z-10">
+                  <SectionHeader
+                    icon={AlertTriangle}
+                    tint="bg-amber-500/10 border-amber-500/20 text-amber-400"
+                    title="Schwellenwerte"
+                    desc="Ab wann Alarme feuern und die Server-Karten rot werden"
+                    action={
+                      <button onClick={() => thMutation.mutate()} disabled={thMutation.isPending} className="btn-primary text-xs flex items-center gap-1.5">
+                        {thMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null} Speichern
+                      </button>
+                    }
+                  />
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { key: 'cpu', label: 'CPU', unit: '%' },
+                      { key: 'ram', label: 'RAM', unit: '%' },
+                      { key: 'disk', label: 'Speicher', unit: '%' },
+                      { key: 'temp', label: 'Temperatur', unit: '°C' },
+                    ].map(f => (
+                      <div key={f.key}>
+                        <label className="text-xs text-white/40 block mb-1.5">{f.label} <span className="text-white/25">&gt; {f.unit}</span></label>
+                        <input type="number" className="glass-input w-full" value={(th as any)[f.key]} onChange={e => setThForm({ ...th, [f.key]: Number(e.target.value) })} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </GlassCard>
+
               <GlassCard>
                 <div className="relative z-10">
                   <SectionHeader

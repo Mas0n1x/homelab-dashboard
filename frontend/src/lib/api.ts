@@ -212,6 +212,9 @@ export const deleteAlertChannel = (id: string) =>
 export const testAlertChannel = (id: string) =>
   fetchApi(`/alerts/channels/${id}/test`, { method: 'POST' });
 export const getAlertHistory = (limit = 50) => fetchApi(`/alerts/history?limit=${limit}`);
+export const getAlertThresholds = () => fetchApi<{ cpu: number; ram: number; disk: number; temp: number }>('/alerts/thresholds');
+export const setAlertThresholds = (data: { cpu: number; ram: number; disk: number; temp: number }) =>
+  fetchApi('/alerts/thresholds', { method: 'PUT', body: JSON.stringify(data) });
 
 // Audit
 export const getAuditLog = (limit = 50) => fetchApi(`/audit?limit=${limit}`);
