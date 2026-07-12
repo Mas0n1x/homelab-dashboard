@@ -10,19 +10,21 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, RefreshCw, Check, Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import type { ImageUpdate } from '@/lib/types';
 
 export function ImageUpdates() {
   const queryClient = useQueryClient();
+  const { activeServerId } = useServerStore();
   const [checking, setChecking] = useState(false);
 
   const { data: updates } = useQuery<ImageUpdate[]>({
-    queryKey: ['image-updates'],
+    queryKey: ['image-updates', activeServerId],
     queryFn: async () => {
       setChecking(true);
       try {
-        return await api.checkImageUpdates() as ImageUpdate[];
+        return await api.checkImageUpdates(activeServerId) as ImageUpdate[];
       } finally {
         setChecking(false);
       }
@@ -32,15 +34,15 @@ export function ImageUpdates() {
   });
 
   const pullMutation = useMutation({
-    mutationFn: (containerId: string) => api.pullAndRecreate(containerId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['image-updates'] }),
+    mutationFn: (containerId: string) => api.pullAndRecreate(containerId, activeServerId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['image-updates', activeServerId] }),
   });
 
   const handleCheck = async () => {
     setChecking(true);
     try {
-      const result = await api.checkImageUpdates();
-      queryClient.setQueryData(['image-updates'], result);
+      const result = await api.checkImageUpdates(activeServerId);
+      queryClient.setQueryData(['image-updates', activeServerId], result);
     } finally {
       setChecking(false);
     }

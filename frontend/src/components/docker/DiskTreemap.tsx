@@ -8,6 +8,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { HardDrive } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import type { DiskUsage } from '@/lib/types';
 
@@ -33,9 +34,10 @@ const TYPE_COLORS = {
 };
 
 export function DiskTreemap() {
+  const { activeServerId } = useServerStore();
   const { data: usage } = useQuery<DiskUsage>({
-    queryKey: ['disk-usage'],
-    queryFn: () => api.getDiskUsage() as Promise<DiskUsage>,
+    queryKey: ['disk-usage', activeServerId],
+    queryFn: () => api.getDiskUsage(activeServerId) as Promise<DiskUsage>,
     staleTime: 60000,
   });
 

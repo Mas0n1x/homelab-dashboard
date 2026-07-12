@@ -24,12 +24,12 @@ export function ContainerQuickList({ containers, serverId }: ContainerQuickListP
   const handleAction = useCallback(async (id: string, action: string) => {
     setLoading(prev => ({ ...prev, [id]: true }));
     try {
-      await api.containerAction(id, action);
+      await api.containerAction(id, action, serverId);
     } catch (e) {
       console.error(e);
     }
     setLoading(prev => ({ ...prev, [id]: false }));
-  }, []);
+  }, [serverId]);
 
   const running = containers.filter(c => c.state === 'running');
   const stopped = containers.filter(c => c.state !== 'running');

@@ -10,24 +10,26 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileCode, Save, Loader2, AlertTriangle } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Modal } from '@/components/ui/Modal';
+import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import type { ComposeProject } from '@/lib/types';
 
 export function ComposeEditor() {
   const queryClient = useQueryClient();
+  const { activeServerId } = useServerStore();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [content, setContent] = useState('');
   const [originalContent, setOriginalContent] = useState('');
   const [confirmSave, setConfirmSave] = useState(false);
 
   const { data: projects } = useQuery<ComposeProject[]>({
-    queryKey: ['compose-projects'],
-    queryFn: () => api.getComposeProjects() as Promise<ComposeProject[]>,
+    queryKey: ['compose-projects', activeServerId],
+    queryFn: () => api.getComposeProjects(activeServerId) as Promise<ComposeProject[]>,
   });
 
   const { data: fileData, isLoading: fileLoading } = useQuery({
-    queryKey: ['compose-file', selectedProject],
-    queryFn: () => api.getComposeFile(selectedProject!),
+    queryKey: ['compose-file', activeServerId, selectedProject],
+    queryFn: () => api.getComposeFile(selectedProject!, activeServerId),
     enabled: !!selectedProject,
   });
 
@@ -39,11 +41,11 @@ export function ComposeEditor() {
   }
 
   const saveMutation = useMutation({
-    mutationFn: () => api.saveComposeFile(selectedProject!, content),
+    mutationFn: () => api.saveComposeFile(selectedProject!, content, activeServerId),
     onSuccess: () => {
       setOriginalContent(content);
       setConfirmSave(false);
-      queryClient.invalidateQueries({ queryKey: ['compose-file', selectedProject] });
+      queryClient.invalidateQueries({ queryKey: ['compose-file', activeServerId, selectedProject] });
     },
   });
 

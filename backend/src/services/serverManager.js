@@ -4,6 +4,7 @@
  * Licensed under the MIT License.
  */
 import Docker from 'dockerode';
+import fs from 'fs';
 import { getDb } from './database.js';
 import { createGlancesClient } from './glances.js';
 
@@ -23,17 +24,37 @@ class ServerManager {
 
   connect(serverConfig) {
     let dockerInstance;
-    if (serverConfig.is_local || serverConfig.docker_socket) {
-      dockerInstance = new Docker({
-        socketPath: serverConfig.docker_socket || '/var/run/docker.sock'
-      });
-    } else if (serverConfig.docker_host) {
-      const url = new URL(serverConfig.docker_host);
-      dockerInstance = new Docker({
-        host: url.hostname,
-        port: url.port || 2376,
-        protocol: url.protocol === 'https:' ? 'https' : 'http'
-      });
+    try {
+      if (serverConfig.ssh_host) {
+        // Sicherer Remote-Zugriff über SSH — kein offener Docker-Port nötig.
+        // dockerode tunnelt `docker system dial-stdio` über die SSH-Verbindung.
+        const keyPath = serverConfig.ssh_key_path || process.env.SSH_KEY_PATH;
+        const sshOptions = {};
+        if (keyPath && fs.existsSync(keyPath)) {
+          sshOptions.privateKey = fs.readFileSync(keyPath);
+        }
+        dockerInstance = new Docker({
+          protocol: 'ssh',
+          host: serverConfig.ssh_host,
+          port: serverConfig.ssh_port || 22,
+          username: serverConfig.ssh_user || 'root',
+          sshOptions,
+        });
+      } else if (serverConfig.is_local || serverConfig.docker_socket) {
+        dockerInstance = new Docker({
+          socketPath: serverConfig.docker_socket || '/var/run/docker.sock'
+        });
+      } else if (serverConfig.docker_host) {
+        const url = new URL(serverConfig.docker_host);
+        dockerInstance = new Docker({
+          host: url.hostname,
+          port: url.port || 2376,
+          protocol: url.protocol === 'https:' ? 'https' : 'http'
+        });
+      }
+    } catch (err) {
+      console.error(`[serverManager] Docker-Verbindung für ${serverConfig.id} fehlgeschlagen:`, err.message);
+      dockerInstance = undefined;
     }
 
     const glancesClient = serverConfig.glances_url
@@ -44,7 +65,8 @@ class ServerManager {
       config: serverConfig,
       docker: dockerInstance,
       glances: glancesClient,
-      status: 'connected',
+      // 'connected' = Docker-Zugriff, 'monitoring' = nur Glances, sonst 'disconnected'
+      status: dockerInstance ? 'connected' : (glancesClient ? 'monitoring' : 'disconnected'),
       lastSeen: new Date().toISOString()
     });
   }
@@ -75,8 +97,12 @@ class ServerManager {
     const db = getDb();
     const id = config.id || `server-${Date.now()}`;
     db.prepare(
-      'INSERT INTO servers (id, name, host, is_local, glances_url, docker_socket, docker_host) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, config.name, config.host, 0, config.glancesUrl || null, config.dockerSocket || null, config.dockerHost || null);
+      'INSERT INTO servers (id, name, host, is_local, glances_url, docker_socket, docker_host, ssh_host, ssh_port, ssh_user, ssh_key_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(
+      id, config.name, config.host, 0,
+      config.glancesUrl || null, config.dockerSocket || null, config.dockerHost || null,
+      config.sshHost || null, config.sshPort || null, config.sshUser || null, config.sshKeyPath || null
+    );
 
     const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(id);
     this.connect(server);
@@ -98,7 +124,7 @@ class ServerManager {
     const values = [];
 
     for (const [key, value] of Object.entries(updates)) {
-      if (['name', 'host', 'glances_url', 'docker_socket', 'docker_host'].includes(key)) {
+      if (['name', 'host', 'glances_url', 'docker_socket', 'docker_host', 'ssh_host', 'ssh_port', 'ssh_user', 'ssh_key_path'].includes(key)) {
         fields.push(`${key} = ?`);
         values.push(value);
       }

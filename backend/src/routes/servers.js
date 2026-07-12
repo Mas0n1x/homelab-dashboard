@@ -21,11 +21,11 @@ router.get('/', (req, res) => {
 // Add a server
 router.post('/', (req, res) => {
   try {
-    const { name, host, glancesUrl, dockerSocket, dockerHost } = req.body;
+    const { name, host, glancesUrl, dockerSocket, dockerHost, sshHost, sshPort, sshUser, sshKeyPath } = req.body;
     if (!name || !host) {
       return res.status(400).json({ error: 'Name and host are required' });
     }
-    const server = serverManager.addServer({ name, host, glancesUrl, dockerSocket, dockerHost });
+    const server = serverManager.addServer({ name, host, glancesUrl, dockerSocket, dockerHost, sshHost, sshPort, sshUser, sshKeyPath });
     res.status(201).json(server);
   } catch (error) {
     res.status(500).json({ error: 'Failed to add server', message: error.message });

@@ -75,24 +75,25 @@ export const getSystemStats = () => fetchApi('/system/stats');
 export const getCpu = () => fetchApi('/system/cpu');
 export const getMemory = () => fetchApi('/system/memory');
 
-// Docker
-export const getDockerInfo = () => fetchApi('/docker/info');
-export const getContainers = () => fetchApi('/docker/containers');
-export const getContainerStats = (id: string) => fetchApi(`/docker/containers/${id}/stats`);
-export const getContainerDetails = (id: string) => fetchApi(`/docker/containers/${id}/details`);
-export const getContainerLogs = (id: string, tail = 100) => fetchApi<{ logs: string }>(`/docker/containers/${id}/logs?tail=${tail}`);
-export const containerAction = (id: string, action: string) => fetchApi(`/docker/containers/${id}/${action}`, { method: 'POST' });
-export const updateRestartPolicy = (id: string, policy: string) =>
-  fetchApi(`/docker/containers/${id}/restart-policy`, { method: 'PUT', body: JSON.stringify({ policy }) });
-export const getImages = () => fetchApi('/docker/images');
-export const deleteImage = (id: string, force = false) => fetchApi(`/docker/images/${encodeURIComponent(id)}?force=${force}`, { method: 'DELETE' });
-export const pruneImages = () => fetchApi('/docker/images/prune', { method: 'POST' });
-export const getVolumes = () => fetchApi('/docker/volumes');
-export const deleteVolume = (name: string, force = false) => fetchApi(`/docker/volumes/${name}?force=${force}`, { method: 'DELETE' });
-export const pruneVolumes = () => fetchApi('/docker/volumes/prune', { method: 'POST' });
-export const getNetworks = () => fetchApi('/docker/networks');
-export const getPorts = () => fetchApi('/docker/ports');
-export const systemPrune = (options: Record<string, boolean>) => fetchApi('/docker/system/prune', { method: 'POST', body: JSON.stringify(options) });
+// Docker — alle Aufrufe tragen serverId (Default: lokaler Server), damit
+// Container-Aktionen auf dem korrekten Server (z. B. VPS) landen.
+export const getDockerInfo = (serverId = 'local') => fetchApi(`/docker/info?serverId=${serverId}`);
+export const getContainers = (serverId = 'local') => fetchApi(`/docker/containers?serverId=${serverId}`);
+export const getContainerStats = (id: string, serverId = 'local') => fetchApi(`/docker/containers/${id}/stats?serverId=${serverId}`);
+export const getContainerDetails = (id: string, serverId = 'local') => fetchApi(`/docker/containers/${id}/details?serverId=${serverId}`);
+export const getContainerLogs = (id: string, tail = 100, serverId = 'local') => fetchApi<{ logs: string }>(`/docker/containers/${id}/logs?tail=${tail}&serverId=${serverId}`);
+export const containerAction = (id: string, action: string, serverId = 'local') => fetchApi(`/docker/containers/${id}/${action}?serverId=${serverId}`, { method: 'POST' });
+export const updateRestartPolicy = (id: string, policy: string, serverId = 'local') =>
+  fetchApi(`/docker/containers/${id}/restart-policy?serverId=${serverId}`, { method: 'PUT', body: JSON.stringify({ policy }) });
+export const getImages = (serverId = 'local') => fetchApi(`/docker/images?serverId=${serverId}`);
+export const deleteImage = (id: string, force = false, serverId = 'local') => fetchApi(`/docker/images/${encodeURIComponent(id)}?force=${force}&serverId=${serverId}`, { method: 'DELETE' });
+export const pruneImages = (serverId = 'local') => fetchApi(`/docker/images/prune?serverId=${serverId}`, { method: 'POST' });
+export const getVolumes = (serverId = 'local') => fetchApi(`/docker/volumes?serverId=${serverId}`);
+export const deleteVolume = (name: string, force = false, serverId = 'local') => fetchApi(`/docker/volumes/${name}?force=${force}&serverId=${serverId}`, { method: 'DELETE' });
+export const pruneVolumes = (serverId = 'local') => fetchApi(`/docker/volumes/prune?serverId=${serverId}`, { method: 'POST' });
+export const getNetworks = (serverId = 'local') => fetchApi(`/docker/networks?serverId=${serverId}`);
+export const getPorts = (serverId = 'local') => fetchApi(`/docker/ports?serverId=${serverId}`);
+export const systemPrune = (options: Record<string, boolean>, serverId = 'local') => fetchApi(`/docker/system/prune?serverId=${serverId}`, { method: 'POST', body: JSON.stringify(options) });
 
 // Services
 export const getServices = (serverId = 'local') => fetchApi(`/services?serverId=${serverId}`);
@@ -107,8 +108,10 @@ export const updateServiceOverride = (serviceId: string, data: Record<string, un
 
 // Servers
 export const getServers = () => fetchApi('/servers');
-export const addServer = (data: { name: string; host: string; glancesUrl?: string; dockerHost?: string }) =>
+export const addServer = (data: { name: string; host: string; glancesUrl?: string; dockerHost?: string; sshHost?: string; sshPort?: number; sshUser?: string; sshKeyPath?: string }) =>
   fetchApi('/servers', { method: 'POST', body: JSON.stringify(data) });
+export const updateServer = (id: string, data: Record<string, unknown>) =>
+  fetchApi(`/servers/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteServer = (id: string) =>
   fetchApi(`/servers/${id}`, { method: 'DELETE' });
 
@@ -141,24 +144,24 @@ export const runSpeedtest = () => fetchApi('/speedtest/run', { method: 'POST' })
 export const getSpeedtestStatus = () => fetchApi<{ running: boolean }>('/speedtest/status');
 
 // Docker Compose
-export const getComposeProjects = () => fetchApi('/docker/compose/projects');
-export const composeAction = (project: string, action: string) =>
-  fetchApi(`/docker/compose/${encodeURIComponent(project)}/${action}`, { method: 'POST' });
-export const getComposeFile = (project: string) =>
-  fetchApi<{ content: string; path: string; workingDir: string }>(`/docker/compose/${encodeURIComponent(project)}/file`);
-export const saveComposeFile = (project: string, content: string) =>
-  fetchApi(`/docker/compose/${encodeURIComponent(project)}/file`, { method: 'PUT', body: JSON.stringify({ content }) });
+export const getComposeProjects = (serverId = 'local') => fetchApi(`/docker/compose/projects?serverId=${serverId}`);
+export const composeAction = (project: string, action: string, serverId = 'local') =>
+  fetchApi(`/docker/compose/${encodeURIComponent(project)}/${action}?serverId=${serverId}`, { method: 'POST' });
+export const getComposeFile = (project: string, serverId = 'local') =>
+  fetchApi<{ content: string; path: string; workingDir: string }>(`/docker/compose/${encodeURIComponent(project)}/file?serverId=${serverId}`);
+export const saveComposeFile = (project: string, content: string, serverId = 'local') =>
+  fetchApi(`/docker/compose/${encodeURIComponent(project)}/file?serverId=${serverId}`, { method: 'PUT', body: JSON.stringify({ content }) });
 
 // Docker Disk Usage
-export const getDiskUsage = () => fetchApi('/docker/disk-usage');
+export const getDiskUsage = (serverId = 'local') => fetchApi(`/docker/disk-usage?serverId=${serverId}`);
 
 // Container Stats (batch)
-export const getAllContainerStats = () => fetchApi('/docker/stats/all');
+export const getAllContainerStats = (serverId = 'local') => fetchApi(`/docker/stats/all?serverId=${serverId}`);
 
 // Image Updates
-export const checkImageUpdates = () => fetchApi('/docker/updates/check');
-export const pullAndRecreate = (containerId: string) =>
-  fetchApi(`/docker/updates/pull/${containerId}`, { method: 'POST' });
+export const checkImageUpdates = (serverId = 'local') => fetchApi(`/docker/updates/check?serverId=${serverId}`);
+export const pullAndRecreate = (containerId: string, serverId = 'local') =>
+  fetchApi(`/docker/updates/pull/${containerId}?serverId=${serverId}`, { method: 'POST' });
 
 // Alerts
 export const getAlertChannels = () => fetchApi('/alerts/channels');

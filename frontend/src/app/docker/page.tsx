@@ -43,10 +43,10 @@ export default function DockerPage() {
   const containers = containersData || [];
   const dockerInfo = dockerInfoData;
 
-  const { data: images } = useQuery({ queryKey: ['images'], queryFn: () => api.getImages(), enabled: activeTab === 'images' });
-  const { data: volumes } = useQuery({ queryKey: ['volumes'], queryFn: () => api.getVolumes(), enabled: activeTab === 'volumes' });
-  const { data: networks } = useQuery({ queryKey: ['networks'], queryFn: () => api.getNetworks(), enabled: activeTab === 'networks' });
-  const { data: ports } = useQuery({ queryKey: ['ports'], queryFn: () => api.getPorts(), enabled: activeTab === 'ports' });
+  const { data: images } = useQuery({ queryKey: ['images', activeServerId], queryFn: () => api.getImages(activeServerId), enabled: activeTab === 'images' });
+  const { data: volumes } = useQuery({ queryKey: ['volumes', activeServerId], queryFn: () => api.getVolumes(activeServerId), enabled: activeTab === 'volumes' });
+  const { data: networks } = useQuery({ queryKey: ['networks', activeServerId], queryFn: () => api.getNetworks(activeServerId), enabled: activeTab === 'networks' });
+  const { data: ports } = useQuery({ queryKey: ['ports', activeServerId], queryFn: () => api.getPorts(activeServerId), enabled: activeTab === 'ports' });
 
   const running = containers.filter(c => c.state === 'running').length;
   const stopped = containers.filter(c => c.state === 'exited').length;
@@ -54,12 +54,12 @@ export default function DockerPage() {
   const handleAction = useCallback(async (id: string, action: string) => {
     setLoading(prev => ({ ...prev, [id]: true }));
     try {
-      await api.containerAction(id, action);
+      await api.containerAction(id, action, activeServerId);
     } catch (e) {
       console.error(e);
     }
     setLoading(prev => ({ ...prev, [id]: false }));
-  }, []);
+  }, [activeServerId]);
 
   const requestAction = useCallback((id: string, name: string, action: string) => {
     if (action === 'start') {
@@ -71,12 +71,12 @@ export default function DockerPage() {
 
   const viewLogs = useCallback(async (id: string, name: string) => {
     try {
-      const result = await api.getContainerLogs(id);
+      const result = await api.getContainerLogs(id, 100, activeServerId);
       setLogsModal({ open: true, containerId: id, name, logs: result.logs });
     } catch {
       setLogsModal({ open: true, containerId: id, name, logs: 'Fehler beim Laden der Logs' });
     }
-  }, []);
+  }, [activeServerId]);
 
   // Group containers by project (label-less containers use their own name as key)
   const projects = new Map<string, Container[]>();

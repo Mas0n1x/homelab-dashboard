@@ -229,6 +229,20 @@ export function initDatabase() {
     );
   `);
 
+  // Migration: SSH-Spalten für sicheren Remote-Docker-Zugriff (ohne offenen Port)
+  const serverCols = db.prepare('PRAGMA table_info(servers)').all().map(c => c.name);
+  const sshCols = [
+    ['ssh_host', 'TEXT'],
+    ['ssh_port', 'INTEGER'],
+    ['ssh_user', 'TEXT'],
+    ['ssh_key_path', 'TEXT'],
+  ];
+  for (const [col, type] of sshCols) {
+    if (!serverCols.includes(col)) {
+      db.exec(`ALTER TABLE servers ADD COLUMN ${col} ${type}`);
+    }
+  }
+
   // Ensure local server exists
   const localServer = db.prepare('SELECT id FROM servers WHERE id = ?').get('local');
   if (!localServer) {

@@ -10,25 +10,27 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Play, Square, RotateCcw, Layers, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import type { ComposeProject } from '@/lib/types';
 
 export function ComposeActions() {
   const queryClient = useQueryClient();
+  const { activeServerId } = useServerStore();
   const [loadingAction, setLoadingAction] = useState<string>('');
 
   const { data: projects } = useQuery<ComposeProject[]>({
-    queryKey: ['compose-projects'],
-    queryFn: () => api.getComposeProjects() as Promise<ComposeProject[]>,
+    queryKey: ['compose-projects', activeServerId],
+    queryFn: () => api.getComposeProjects(activeServerId) as Promise<ComposeProject[]>,
     staleTime: 30000,
   });
 
   const actionMutation = useMutation({
-    mutationFn: ({ project, action }: { project: string; action: string }) => api.composeAction(project, action),
+    mutationFn: ({ project, action }: { project: string; action: string }) => api.composeAction(project, action, activeServerId),
     onMutate: ({ project, action }) => setLoadingAction(`${project}-${action}`),
     onSettled: () => {
       setLoadingAction('');
-      queryClient.invalidateQueries({ queryKey: ['compose-projects'] });
+      queryClient.invalidateQueries({ queryKey: ['compose-projects', activeServerId] });
     },
   });
 

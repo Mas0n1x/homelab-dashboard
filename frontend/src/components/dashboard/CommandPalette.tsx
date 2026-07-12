@@ -164,7 +164,7 @@ export function CommandPalette() {
             icon: <Box className="w-4 h-4 text-red-400" />,
             serverName: server.name,
             serverColor: color,
-            action: async () => { await api.containerAction(c.id, 'stop'); setOpen(false); },
+            action: async () => { await api.containerAction(c.id, 'stop', server.id); setOpen(false); },
           });
           items.push({
             id: `ctr-restart-${server.id}-${c.id}`,
@@ -174,7 +174,7 @@ export function CommandPalette() {
             icon: <Box className="w-4 h-4 text-amber-400" />,
             serverName: server.name,
             serverColor: color,
-            action: async () => { await api.containerAction(c.id, 'restart'); setOpen(false); },
+            action: async () => { await api.containerAction(c.id, 'restart', server.id); setOpen(false); },
           });
         } else {
           items.push({
@@ -185,7 +185,7 @@ export function CommandPalette() {
             icon: <Box className="w-4 h-4 text-emerald-400" />,
             serverName: server.name,
             serverColor: color,
-            action: async () => { await api.containerAction(c.id, 'start'); setOpen(false); },
+            action: async () => { await api.containerAction(c.id, 'start', server.id); setOpen(false); },
           });
         }
       });
@@ -206,7 +206,7 @@ export function CommandPalette() {
             serverColor: color,
             action: async () => {
               const action = c.state === 'running' ? 'stop' : 'start';
-              await api.containerAction(c.id, action);
+              await api.containerAction(c.id, action, server.id);
               setOpen(false);
             },
           });

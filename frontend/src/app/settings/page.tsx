@@ -228,9 +228,14 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-4">
                   <div className={clsx(
                     'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-                    server.status === 'connected' ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'
+                    server.status === 'connected' ? 'bg-emerald-500/10 border border-emerald-500/20'
+                      : server.status === 'monitoring' ? 'bg-amber-500/10 border border-amber-500/20'
+                      : 'bg-red-500/10 border border-red-500/20'
                   )}>
-                    <Server className={clsx('w-5 h-5', server.status === 'connected' ? 'text-emerald-400' : 'text-red-400')} />
+                    <Server className={clsx('w-5 h-5',
+                      server.status === 'connected' ? 'text-emerald-400'
+                        : server.status === 'monitoring' ? 'text-amber-400'
+                        : 'text-red-400')} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{server.name}</p>
@@ -242,9 +247,13 @@ export default function SettingsPage() {
                     )}
                     <span className={clsx(
                       'px-2 py-0.5 rounded-full',
-                      server.status === 'connected' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                      server.status === 'connected' ? 'bg-emerald-500/10 text-emerald-400'
+                        : server.status === 'monitoring' ? 'bg-amber-500/10 text-amber-400'
+                        : 'bg-red-500/10 text-red-400'
                     )}>
-                      {server.status === 'connected' ? 'Online' : 'Offline'}
+                      {server.status === 'connected' ? 'Online'
+                        : server.status === 'monitoring' ? 'Nur Monitoring'
+                        : 'Offline'}
                     </span>
                   </div>
                 </div>
@@ -252,7 +261,7 @@ export default function SettingsPage() {
             ))}
           </div>
           <p className="text-xs text-white/20 text-center">
-            Server koennen ueber die API hinzugefuegt werden: POST /api/servers
+            Server können über die API hinzugefügt werden: POST /api/servers
           </p>
         </div>
       )}
