@@ -70,6 +70,32 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
   return res.json();
 }
 
+// Wie fetchApi, gibt aber die rohe Response zurück (kein throw), damit Aufrufer
+// Status + Fehler-Body selbst auswerten können — inkl. automatischem 401-Refresh.
+export async function authedFetch(endpoint: string, options?: RequestInit): Promise<Response> {
+  const { accessToken } = useAuthStore.getState();
+  const headers: Record<string, string> = {
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    ...(options?.headers as Record<string, string> || {}),
+  };
+
+  let res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+
+  if (res.status === 401 && !endpoint.startsWith('/auth/')) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      refreshPromise = refreshAccessToken().finally(() => { isRefreshing = false; });
+    }
+    const success = await refreshPromise;
+    if (success) {
+      headers.Authorization = `Bearer ${useAuthStore.getState().accessToken}`;
+      res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+    }
+  }
+
+  return res;
+}
+
 // System
 export const getSystemStats = () => fetchApi('/system/stats');
 export const getCpu = () => fetchApi('/system/cpu');

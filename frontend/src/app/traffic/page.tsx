@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Globe, Activity, Database, Users, ShieldAlert, Zap, ExternalLink, RotateCw, AlertTriangle } from 'lucide-react';
 import { PageTransition } from '@/components/ui/PageTransition';
-import { useAuthStore } from '@/stores/authStore';
+import { authedFetch } from '@/lib/api';
 
 type Range = '24h' | '7d' | '30d';
 const RANGES: [Range, string][] = [['24h', '24 Stunden'], ['7d', '7 Tage'], ['30d', '30 Tage']];
@@ -63,8 +63,7 @@ export default function TrafficPage() {
   const load = useCallback(async (r: Range) => {
     setLoading(true); setErr(null);
     try {
-      const { accessToken } = useAuthStore.getState();
-      const res = await fetch(`/api/traffic?range=${r}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+      const res = await authedFetch(`/traffic?range=${r}`);
       const j = await res.json();
       if (!res.ok) { setErr(j); setData(null); } else { setData(j); }
     } catch (e: any) { setErr({ message: e.message }); }
