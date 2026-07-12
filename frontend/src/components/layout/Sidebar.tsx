@@ -108,7 +108,7 @@ export function Sidebar() {
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                     className="text-base font-semibold whitespace-nowrap overflow-hidden"
                   >
-                    Mission Control
+                    Masons Control Center
                   </motion.span>
                 )}
               </AnimatePresence>

@@ -107,6 +107,10 @@ export interface Server {
   glances_url: string | null
   docker_socket: string | null
   docker_host: string | null
+  ssh_host?: string | null
+  ssh_port?: number | null
+  ssh_user?: string | null
+  ssh_key_path?: string | null
   status: string
   lastSeen: string | null
 }

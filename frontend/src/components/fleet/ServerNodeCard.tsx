@@ -90,7 +90,7 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
   const memTotal = system?.memory.total ?? 0;
   const temp = system?.temperature?.[0]?.value ?? null;
 
-  const hasDocker = !!(server.is_local || server.docker_socket || server.docker_host);
+  const hasDocker = !!(server.is_local || server.docker_socket || server.docker_host || server.ssh_host);
   const running = containers?.filter(c => c.state === 'running').length ?? 0;
   const totalCt = containers?.length ?? 0;
 
@@ -146,12 +146,12 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
               <div className="flex items-center gap-4 mb-4">
                 <CpuRingGauge percent={cpuPercent} />
                 <div className="flex-1 space-y-1.5">
-                  {temp !== null && (
-                    <div className="flex items-center gap-1.5">
-                      <Thermometer className={clsx('w-3.5 h-3.5', tempColor)} />
-                      <span className={clsx('text-sm font-semibold tabular-nums', tempColor)}>{temp.toFixed(1)}°C</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    <Thermometer className={clsx('w-3.5 h-3.5', tempColor)} />
+                    <span className={clsx('text-sm font-semibold tabular-nums', tempColor)}>
+                      {temp !== null ? `${temp.toFixed(1)}°C` : 'n/a'}
+                    </span>
+                  </div>
                   {hasDocker && (
                     <div className="flex items-center gap-1.5">
                       <Box className="w-3.5 h-3.5 text-cyan-400/60" />
@@ -181,7 +181,7 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
                   return (
                     <>
                       <StatBar label="Speicher" percent={aggPct} right={`${formatBytes(totalUsed)} / ${formatBytes(totalCap)}`} color={aggColor} icon={<HardDrive className="w-2.5 h-2.5 text-cyan-400/60" />} />
-                      {disks.length > 1 && (
+                      {disks.length >= 1 && (
                         <div className="space-y-1 pl-4">
                           {disks.map(d => (
                             <div key={d.device} className="flex items-center gap-2 text-[10px] text-white/35">

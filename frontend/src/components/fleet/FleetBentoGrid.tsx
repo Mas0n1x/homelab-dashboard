@@ -10,12 +10,7 @@ import { Activity, Eye } from 'lucide-react';
 import { useServerStore } from '@/stores/serverStore';
 import { useFleetStore } from '@/stores/fleetStore';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { SpeedtestWidget } from '@/components/dashboard/SpeedtestWidget';
 import { UptimeWidget } from '@/components/dashboard/UptimeWidget';
-import { CalendarWidget } from '@/components/dashboard/CalendarWidget';
-import { NotesWidget } from '@/components/dashboard/NotesWidget';
-import { BookmarksWidget } from '@/components/dashboard/BookmarksWidget';
-import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
 
 function ContainerOverview() {
   const { servers } = useServerStore();
@@ -31,7 +26,7 @@ function ContainerOverview() {
       </div>
       <div className="space-y-2.5">
         {servers.map(server => {
-          const hasDocker = !!(server.is_local || server.docker_socket || server.docker_host);
+          const hasDocker = !!(server.is_local || server.docker_socket || server.docker_host || server.ssh_host);
           const data = serverData[server.id];
           const containers = data?.containers || [];
           const running = containers.filter(c => c.state === 'running').length;
@@ -76,31 +71,12 @@ export function FleetBentoGrid() {
   // [&>*]:h-full, damit alle Karten ihre Rasterzelle fuellen (keine Luecken).
   return (
     <div className="bento-grid">
-      {/* Reihe 1: kurze Widgets */}
+      {/* Container-Uebersicht + Service-Health + Wetter */}
       <div className="bento-2x1 [&>*]:h-full">
         <ContainerOverview />
       </div>
       <div className="bento-1x1 [&>*]:h-full">
         <UptimeWidget />
-      </div>
-      <div className="bento-1x1 [&>*]:h-full">
-        <WeatherWidget />
-      </div>
-
-      {/* Reihe 2: hohe Widgets (Chart / Kalender) */}
-      <div className="bento-2x1 [&>*]:h-full">
-        <SpeedtestWidget />
-      </div>
-      <div className="bento-2x1 [&>*]:h-full">
-        <CalendarWidget />
-      </div>
-
-      {/* Reihe 3: Listen */}
-      <div className="bento-2x1 [&>*]:h-full">
-        <BookmarksWidget />
-      </div>
-      <div className="bento-2x1 [&>*]:h-full">
-        <NotesWidget />
       </div>
     </div>
   );
