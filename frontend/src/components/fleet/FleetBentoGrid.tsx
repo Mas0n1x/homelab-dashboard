@@ -11,6 +11,9 @@ import { useServerStore } from '@/stores/serverStore';
 import { useFleetStore } from '@/stores/fleetStore';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { UptimeWidget } from '@/components/dashboard/UptimeWidget';
+import { FleetHealthWidget } from '@/components/dashboard/FleetHealthWidget';
+import { CostWidget } from '@/components/dashboard/CostWidget';
+import { EventsWidget } from '@/components/dashboard/EventsWidget';
 
 function ContainerOverview() {
   const { servers } = useServerStore();
@@ -71,12 +74,23 @@ export function FleetBentoGrid() {
   // [&>*]:h-full, damit alle Karten ihre Rasterzelle fuellen (keine Luecken).
   return (
     <div className="bento-grid">
-      {/* Container-Uebersicht + Service-Health + Wetter */}
-      <div className="bento-2x1 [&>*]:h-full">
-        <ContainerOverview />
+      {/* Reihe 1: Kennzahlen */}
+      <div className="bento-1x1 [&>*]:h-full">
+        <FleetHealthWidget />
       </div>
       <div className="bento-1x1 [&>*]:h-full">
         <UptimeWidget />
+      </div>
+      <div className="bento-1x1 [&>*]:h-full">
+        <CostWidget />
+      </div>
+
+      {/* Reihe 2: Listen */}
+      <div className="bento-2x1 [&>*]:h-full">
+        <ContainerOverview />
+      </div>
+      <div className="bento-2x1 [&>*]:h-full">
+        <EventsWidget />
       </div>
     </div>
   );
