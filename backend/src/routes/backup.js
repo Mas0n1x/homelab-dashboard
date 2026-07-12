@@ -12,9 +12,30 @@ import {
   getBackupFile,
   getBackupSchedule,
   setBackupSchedule,
+  restoreBackup,
+  getOffsiteConfig,
+  setOffsiteConfig,
 } from '../services/backup.js';
 
 const router = Router();
+
+// Off-Site-Konfiguration
+router.get('/offsite', (req, res) => {
+  try { res.json(getOffsiteConfig()); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.put('/offsite', (req, res) => {
+  try { res.json(setOffsiteConfig(req.body || {})); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Backup wiederherstellen
+router.post('/:id/restore', async (req, res) => {
+  try {
+    const result = await restoreBackup(parseInt(req.params.id), req.user?.id);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Wiederherstellung fehlgeschlagen', message: error.message });
+  }
+});
 
 // Get backup history
 router.get('/', (req, res) => {

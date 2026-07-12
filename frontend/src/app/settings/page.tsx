@@ -322,6 +322,21 @@ export default function SettingsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['backups'] }),
   });
 
+  // Restore + Off-Site
+  const [confirmRestore, setConfirmRestore] = useState<any | null>(null);
+  const [restoreDone, setRestoreDone] = useState(false);
+  const restoreMutation = useMutation({
+    mutationFn: (id: number) => api.restoreBackup(id),
+    onSuccess: () => { setConfirmRestore(null); setRestoreDone(true); },
+  });
+  const { data: offsite } = useQuery({ queryKey: ['offsite'], queryFn: () => api.getOffsiteConfig() });
+  const [offsiteForm, setOffsiteForm] = useState<api.OffsiteConfig | null>(null);
+  const os = offsiteForm ?? offsite ?? { enabled: false, serverId: '', path: '/root/dashboard-backups' };
+  const offsiteMutation = useMutation({
+    mutationFn: () => api.setOffsiteConfig(os),
+    onSuccess: (d: any) => { queryClient.setQueryData(['offsite'], d); setOffsiteForm(null); },
+  });
+
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const handleDownloadBackup = async (id: number) => {
     setDownloadingId(id);
@@ -772,6 +787,11 @@ export default function SettingsPage() {
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <span className="text-white/20">{new Date(b.started_at + 'Z').toLocaleString('de-DE')}</span>
                             {b.status === 'completed' && (
+                              <button onClick={() => setConfirmRestore(b)} className="p-1.5 rounded-lg hover:bg-amber-500/10 text-white/30 hover:text-amber-400 transition-all" title="Wiederherstellen">
+                                <RotateCcw className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {b.status === 'completed' && (
                               <button onClick={() => handleDownloadBackup(b.id)} disabled={downloadingId === b.id} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-emerald-400 transition-all" title="Herunterladen">
                                 {downloadingId === b.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                               </button>
@@ -786,6 +806,32 @@ export default function SettingsPage() {
                       ))}
                     </div>
                   )}
+                </div>
+              </GlassCard>
+
+              <GlassCard>
+                <div className="relative z-10">
+                  <SectionHeader
+                    icon={Server} tint="bg-blue-500/10 border-blue-500/20 text-blue-400" title="Off-Site-Kopie"
+                    desc="Backups nach jedem Lauf per SFTP auf einen Fleet-Server sichern"
+                    action={
+                      <button onClick={() => offsiteMutation.mutate()} disabled={offsiteMutation.isPending} className="btn-primary text-xs flex items-center gap-1.5">
+                        {offsiteMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null} Speichern
+                      </button>
+                    }
+                  />
+                  <SettingRow title="Off-Site aktiviert" desc="Kopiert jedes neue Backup auf den Zielserver">
+                    <Toggle on={os.enabled} onClick={() => setOffsiteForm({ ...os, enabled: !os.enabled })} />
+                  </SettingRow>
+                  <SettingRow title="Zielserver" desc="Server mit SSH-Zugriff aus deiner Fleet">
+                    <select className="glass-input text-xs py-1.5" value={os.serverId} onChange={e => setOffsiteForm({ ...os, serverId: e.target.value })}>
+                      <option value="">– wählen –</option>
+                      {servers.filter(s => !s.is_local && s.ssh_host).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </SettingRow>
+                  <SettingRow title="Zielpfad" desc="Verzeichnis auf dem Zielserver" last>
+                    <input className="glass-input text-xs py-1.5 w-56" value={os.path} onChange={e => setOffsiteForm({ ...os, path: e.target.value })} />
+                  </SettingRow>
                 </div>
               </GlassCard>
 
@@ -972,6 +1018,28 @@ export default function SettingsPage() {
             {serviceAddMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Hinzufügen
           </button>
         </div>
+      </Modal>
+
+      {/* Backup wiederherstellen */}
+      <Modal isOpen={!!confirmRestore} onClose={() => { if (!restoreDone) setConfirmRestore(null); }} title="Backup wiederherstellen?" size="sm">
+        {restoreDone ? (
+          <div className="space-y-3 text-center py-3">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto text-accent-light" />
+            <p className="text-sm text-white/70">Wird wiederhergestellt, das Dashboard startet neu…</p>
+            <p className="text-xs text-white/40">Bitte die Seite in ~20 Sekunden neu laden.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-white/60">Der aktuelle Stand wird durch das Backup vom <span className="text-white/90">{confirmRestore && new Date(confirmRestore.started_at + 'Z').toLocaleString('de-DE')}</span> ersetzt.</p>
+            <p className="text-xs text-amber-400/80">Vorher wird automatisch eine Sicherheitskopie angelegt. Das Backend startet danach neu.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmRestore(null)} className="btn-glass flex-1">Abbrechen</button>
+              <button onClick={() => confirmRestore && restoreMutation.mutate(confirmRestore.id)} disabled={restoreMutation.isPending} className="flex-1 py-2 rounded-xl text-sm font-medium bg-amber-500/15 border border-amber-500/25 text-amber-400 hover:bg-amber-500/25 transition-all disabled:opacity-40 flex items-center justify-center gap-2">
+                {restoreMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />} Wiederherstellen
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Add Channel Modal */}

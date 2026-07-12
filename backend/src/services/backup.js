@@ -5,8 +5,9 @@
  */
 import { getDb } from './database.js';
 import { execSync } from 'child_process';
-import { existsSync, mkdirSync, statSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, statSync, unlinkSync, copyFileSync, readFileSync } from 'fs';
 import { basename, join } from 'path';
+import { Client as SSHClient } from 'ssh2';
 import { logAudit } from './audit.js';
 import { notify } from './alerting.js';
 
@@ -91,6 +92,9 @@ export async function runBackup(type, userId = null) {
     // Cleanup old backups (keep MAX_BACKUPS)
     cleanupOldBackups(type);
 
+    // Off-Site-Kopie (falls konfiguriert), nicht-blockierend
+    copyOffsite(backupPath).catch(e => console.error('Offsite-Kopie fehlgeschlagen:', e.message));
+
     // Erfolgs-Benachrichtigung an alle Kanäle mit dem Event 'backup_completed'.
     notify('backup_completed', {
       title: '💾 Backup erstellt',
@@ -166,6 +170,91 @@ export function getBackupFile(id) {
 // ==================== AUTOMATISCHE BACKUPS (ZEITPLAN) ====================
 
 const DEFAULT_SCHEDULE = { enabled: false, type: 'database', intervalHours: 24 };
+
+// Backup wiederherstellen. Legt vorher eine Sicherheitskopie an und startet
+// das Backend neu, damit die DB frisch geoeffnet wird.
+export async function restoreBackup(id, userId = null) {
+  const db = getDb();
+  const backup = db.prepare('SELECT * FROM backups WHERE id = ?').get(id);
+  if (!backup) throw new Error('Backup nicht gefunden');
+  if (backup.status !== 'completed' || !backup.path || !existsSync(backup.path)) {
+    throw new Error('Backup-Datei nicht verfuegbar');
+  }
+  const dbPath = process.env.DB_PATH || '/app/data/dashboard.db';
+  ensureBackupDir();
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+
+  // Sicherheitskopie des aktuellen Standes
+  try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch { /* egal */ }
+  try { execSync(`sqlite3 "${dbPath}" ".backup '${join(BACKUP_DIR, `pre-restore-${ts}.db`)}'"`, { timeout: 30000 }); } catch { /* egal */ }
+
+  logAudit('backup.restore', backup.type, { id, path: backup.path }, userId);
+
+  if (backup.type === 'database') {
+    copyFileSync(backup.path, dbPath);
+    // Alte WAL/SHM entfernen, sonst wird die wiederhergestellte DB ueberschrieben
+    for (const ext of ['-wal', '-shm']) {
+      try { if (existsSync(dbPath + ext)) unlinkSync(dbPath + ext); } catch { /* egal */ }
+    }
+  } else if (backup.type === 'full') {
+    execSync(`tar -xzf "${backup.path}" -C /app/data`, { timeout: 120000 });
+  } else {
+    throw new Error('Unbekannter Backup-Typ');
+  }
+
+  // Neustart erzwingen (Container hat restart: unless-stopped)
+  setTimeout(() => process.exit(0), 800);
+  return { success: true, restart: true };
+}
+
+// Off-Site-Kopie eines Backups auf einen Fleet-Server via SFTP (ssh2).
+async function copyOffsite(localPath) {
+  const db = getDb();
+  const cfg = getOffsiteConfig();
+  if (!cfg.enabled || !cfg.serverId) return;
+  const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(cfg.serverId);
+  if (!server?.ssh_host) return;
+  const keyPath = server.ssh_key_path || process.env.SSH_KEY_PATH || '/app/ssh/id_ed25519';
+  if (!existsSync(keyPath)) return;
+  const remoteDir = cfg.path || '/root/dashboard-backups';
+  const remotePath = `${remoteDir.replace(/\/$/, '')}/${basename(localPath)}`;
+
+  await new Promise((resolve, reject) => {
+    const conn = new SSHClient();
+    conn.on('ready', () => {
+      conn.exec(`mkdir -p ${remoteDir}`, (err) => {
+        if (err) { conn.end(); return reject(err); }
+        conn.sftp((err2, sftp) => {
+          if (err2) { conn.end(); return reject(err2); }
+          sftp.fastPut(localPath, remotePath, (err3) => {
+            conn.end();
+            err3 ? reject(err3) : resolve();
+          });
+        });
+      });
+    }).on('error', reject).connect({
+      host: server.ssh_host,
+      port: server.ssh_port || 22,
+      username: server.ssh_user || 'root',
+      privateKey: readFileSync(keyPath),
+      readyTimeout: 15000,
+    });
+  });
+  logAudit('backup.offsite', basename(localPath), { server: cfg.serverId }, null);
+}
+
+export function getOffsiteConfig() {
+  const db = getDb();
+  const row = db.prepare("SELECT value FROM settings WHERE key = 'offsite_config'").get();
+  return row?.value ? JSON.parse(row.value) : { enabled: false, serverId: '', path: '/root/dashboard-backups' };
+}
+
+export function setOffsiteConfig(cfg = {}) {
+  const db = getDb();
+  const clean = { enabled: !!cfg.enabled, serverId: cfg.serverId || '', path: cfg.path || '/root/dashboard-backups' };
+  db.prepare("INSERT INTO settings (key, value) VALUES ('offsite_config', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify(clean));
+  return clean;
+}
 
 export function getBackupSchedule() {
   const db = getDb();

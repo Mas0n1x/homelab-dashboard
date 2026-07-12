@@ -228,6 +228,11 @@ export type BackupSchedule = { enabled: boolean; type: 'database' | 'full'; inte
 export const getBackupSchedule = () => fetchApi<BackupSchedule>('/backup/schedule');
 export const setBackupSchedule = (cfg: Partial<BackupSchedule>) =>
   fetchApi<BackupSchedule>('/backup/schedule', { method: 'PUT', body: JSON.stringify(cfg) });
+export const restoreBackup = (id: number | string) => fetchApi(`/backup/${id}/restore`, { method: 'POST' });
+export type OffsiteConfig = { enabled: boolean; serverId: string; path: string };
+export const getOffsiteConfig = () => fetchApi<OffsiteConfig>('/backup/offsite');
+export const setOffsiteConfig = (cfg: OffsiteConfig) =>
+  fetchApi<OffsiteConfig>('/backup/offsite', { method: 'PUT', body: JSON.stringify(cfg) });
 
 // Backup-Datei herunterladen (Blob über authedFetch, damit der Bearer-Token mitgeht)
 export async function downloadBackup(id: number | string): Promise<void> {
