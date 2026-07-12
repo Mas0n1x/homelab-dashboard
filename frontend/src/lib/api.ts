@@ -124,7 +124,9 @@ export const systemPrune = (options: Record<string, boolean>, serverId = 'local'
 
 // Services
 export const getServices = (serverId = 'local') => fetchApi(`/services?serverId=${serverId}`);
-export const addService = (data: { name: string; url: string; icon?: string; description?: string; category?: string }) =>
+export const getManagedServices = (serverId = 'local') =>
+  fetchApi<{ services: any[] }>(`/services?serverId=${serverId}&includeHidden=1`);
+export const addService = (data: { name: string; url: string; icon?: string; description?: string; category?: string; serverId?: string }) =>
   fetchApi('/services', { method: 'POST', body: JSON.stringify(data) });
 export const updateService = (id: string, data: Record<string, unknown>) =>
   fetchApi(`/services/${id}`, { method: 'PUT', body: JSON.stringify(data) });

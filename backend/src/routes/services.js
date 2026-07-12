@@ -15,6 +15,7 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const serverId = req.query.serverId || 'local';
+    const includeHidden = req.query.includeHidden === '1' || req.query.includeHidden === 'true';
     const db = getDb();
 
     // Get auto-discovered services
@@ -39,7 +40,7 @@ router.get('/', async (req, res) => {
     const mergedDiscovered = discovered
       .map(s => {
         const override = overrideMap.get(s.id);
-        if (override?.hidden) return null;
+        if (override?.hidden && !includeHidden) return null;
         return {
           ...s,
           name: override?.name || s.name,
@@ -48,6 +49,7 @@ router.get('/', async (req, res) => {
           description: override?.description || s.description,
           category: override?.category || s.category,
           order: override?.sort_order ?? s.order,
+          hidden: !!override?.hidden,
           uptime: uptimeSummary[s.id] || null
         };
       })
