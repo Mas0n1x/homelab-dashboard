@@ -13,6 +13,7 @@ import { CpuChart } from '@/components/monitoring/CpuChart';
 import { MemoryChart } from '@/components/monitoring/MemoryChart';
 import { NetworkChart } from '@/components/monitoring/NetworkChart';
 import { DiskWidget } from '@/components/dashboard/DiskWidget';
+import { MetricsHistoryPanel } from '@/components/monitoring/MetricsHistoryPanel';
 import { motion } from 'framer-motion';
 
 export default function ServerOverviewPage() {
@@ -31,6 +32,9 @@ export default function ServerOverviewPage() {
     >
       {/* System Gauges */}
       <SystemGauges stats={system} />
+
+      {/* Metrik-Verlauf (persistiert) + Speicher-Prognose */}
+      <MetricsHistoryPanel serverId={serverId} />
 
       {/* Container List + Disk */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
