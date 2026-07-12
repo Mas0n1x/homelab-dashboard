@@ -48,3 +48,9 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+# SSH-Keys für Remote-Docker (NIE committen)
+ssh/
+*.pem
+id_ed25519
+id_rsa
