@@ -30,6 +30,9 @@ services:
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET muss in der .env gesetzt sein (stabiler Wert — verschluesselt gespeicherte Mail-Zugangsdaten)}
       - MC_AGENT_URL=${MC_AGENT_URL:-}
       - MC_AGENT_TOKEN=${MC_AGENT_TOKEN:-}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
+      # SSH-Key für sicheren Remote-Docker-Zugriff (z. B. VPS) — Pfad IM Container
+      - SSH_KEY_PATH=${SSH_KEY_PATH:-/app/ssh/id_ed25519}
       - STALWART_URL=http://stalwart:8080
       - STALWART_ADMIN_USER=${STALWART_ADMIN_USER:-admin}
       - STALWART_ADMIN_PASSWORD=${STALWART_ADMIN_PASSWORD:-}
@@ -38,6 +41,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - homelab-data:/app/data
       - /srv:/host/srv:rw
+      # SSH-Key (read-only) für Remote-Docker via SSH — Host-Pfad in der .env setzen
+      - ${SSH_KEY_HOST_PATH:-./ssh}:/app/ssh:ro
     networks:
       - homelab-network
     extra_hosts:
