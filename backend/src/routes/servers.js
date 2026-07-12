@@ -18,6 +18,56 @@ router.get('/', (req, res) => {
   }
 });
 
+// Kompakte Live-Übersicht aller Server (Specs + Auslastung + Online-Status)
+// für externe Anzeigen wie den Portfolio-Discord-Bot.
+router.get('/status-summary', async (req, res) => {
+  try {
+    const servers = serverManager.getAllServers();
+    const summaries = await Promise.all(servers.map(async (server) => {
+      const connection = serverManager.getConnection(server.id);
+      const glances = connection?.glances || null;
+
+      let systemStats = null;
+      let cores = null;
+      if (glances) {
+        systemStats = await glances.getSystemStats().catch(() => null);
+        if (systemStats && typeof glances.getCore === 'function') {
+          const core = await glances.getCore().catch(() => null);
+          cores = core?.log ?? core?.phys ?? null;
+        }
+      }
+
+      const online = !!systemStats;
+      const disks = systemStats?.disk || [];
+      const rootDisk = disks.find(d => d.mountPoint === '/') || disks[0] || null;
+      const temps = systemStats?.temperature || [];
+
+      return {
+        id: server.id,
+        name: server.name || server.id,
+        host: server.host || null,
+        status: server.status,                 // connected | monitoring | disconnected
+        online,
+        cores,
+        cpuPercent: online ? Math.round(systemStats.cpu?.total || 0) : null,
+        memPercent: online ? Math.round(systemStats.memory?.percent || 0) : null,
+        memTotal: online ? (systemStats.memory?.total || 0) : null,
+        memUsed: online ? (systemStats.memory?.used || 0) : null,
+        diskTotal: rootDisk ? rootDisk.total : null,
+        diskUsed: rootDisk ? rootDisk.used : null,
+        diskPercent: rootDisk ? Math.round(rootDisk.percent || 0) : null,
+        maxTemp: temps.length ? Math.max(...temps.map(t => Number(t.value) || 0)) : null,
+        uptime: systemStats?.uptime || null,
+        lastSeen: connection?.lastSeen || null,
+      };
+    }));
+
+    res.json({ servers: summaries, timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to build status summary', message: error.message });
+  }
+});
+
 // Add a server
 router.post('/', (req, res) => {
   try {

@@ -91,7 +91,9 @@ export function createGlancesClient(baseUrl) {
     getMemory: () => fetchGlances('/api/4/mem'),
     getDisk: () => fetchGlances('/api/4/fs'),
     getNetwork: () => fetchGlances('/api/4/network'),
-    getSensors: () => fetchGlances('/api/4/sensors')
+    getSensors: () => fetchGlances('/api/4/sensors'),
+    // Anzahl CPU-Kerne (logisch/physisch) — für Hardware-Specs
+    getCore: () => fetchGlances('/api/4/core')
   };
 }
 
