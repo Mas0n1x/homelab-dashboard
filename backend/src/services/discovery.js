@@ -28,6 +28,10 @@ export async function discoverServices(serverId = 'local') {
   const docker = serverManager.getDocker(serverId);
   if (!docker) return [];
 
+  // Host fuer die anklickbaren Service-URLs: echter Host des jeweiligen Servers
+  // (lokal = Pi-LAN-IP, remote = dessen oeffentliche IP) statt hardcoded.
+  const host = serverManager.getConnection(serverId)?.config?.host || '192.168.2.103';
+
   try {
     const containers = await docker.listContainers({ all: true });
 
@@ -60,7 +64,7 @@ export async function discoverServices(serverId = 'local') {
           serverId,
           name: c.Labels?.['dashboard.name'] || formatContainerName(composeService || name),
           icon: c.Labels?.['dashboard.icon'] || guessIcon(composeService || name, c.Image),
-          url: c.Labels?.['dashboard.url'] || detectUrlFromPorts(c.Ports),
+          url: c.Labels?.['dashboard.url'] || detectUrlFromPorts(c.Ports, host),
           description: c.Labels?.['dashboard.description'] || formatDescription(composeProject, composeService, c.Image),
           category: c.Labels?.['dashboard.category'] || guessCategory(composeProject, composeService, name),
           order: parseInt(c.Labels?.['dashboard.order'] || '999'),
@@ -128,7 +132,7 @@ function guessCategory(project, service, name) {
   return 'Dienste';
 }
 
-function detectUrlFromPorts(ports) {
+function detectUrlFromPorts(ports, host = '192.168.2.103') {
   if (!ports || ports.length === 0) return null;
 
   // Find the best web port
@@ -141,7 +145,7 @@ function detectUrlFromPorts(ports) {
 
   if (webPort) {
     const protocol = webPort.PrivatePort === 443 || webPort.PrivatePort === 8443 ? 'https' : 'http';
-    return `${protocol}://192.168.2.103:${webPort.PublicPort}`;
+    return `${protocol}://${host}:${webPort.PublicPort}`;
   }
 
   return null;

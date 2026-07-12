@@ -39,6 +39,9 @@ import trafficRoutes from './routes/traffic.js';
 import salenetRoutes from './routes/salenet.js';
 import { checkAlerts, sendStatusReport } from './services/alerting.js';
 import { runDueBackups } from './services/backup.js';
+import { recordMetric, pruneMetrics } from './services/metrics.js';
+import metricsRoutes from './routes/metrics.js';
+import tunnelsRoutes from './routes/tunnels.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -93,6 +96,8 @@ app.use('/api/mail', mailRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/metrics', metricsRoutes);
+app.use('/api/tunnels', tunnelsRoutes);
 
 // Create HTTP server
 const server = createServer(app);
@@ -558,6 +563,23 @@ setInterval(async () => {
       const dockerInst = connection.docker;
       const systemStats = glances ? await glances.getSystemStats().catch(() => null) : null;
 
+      // Metrik-Sample fuer Sparklines/Verlauf persistieren (Fleet-Historie)
+      if (systemStats) {
+        const net = systemStats.network || [];
+        const disks = systemStats.disk || [];
+        const dcap = disks.reduce((s, d) => s + (d.total || 0), 0);
+        const dused = disks.reduce((s, d) => s + (d.used || 0), 0);
+        try {
+          recordMetric(server.id, {
+            cpu: systemStats.cpu?.total || 0,
+            mem: systemStats.memory?.percent || 0,
+            disk: dcap ? (dused / dcap) * 100 : 0,
+            rx: net.reduce((s, n) => s + (n.rxRate || 0), 0),
+            tx: net.reduce((s, n) => s + (n.txRate || 0), 0),
+          });
+        } catch { /* Sampling darf das Alerting nie stoppen */ }
+      }
+
       const dockerMod = await import('./services/docker.js');
       const containers = dockerInst ? await dockerMod.getContainers(dockerInst).catch(() => []) : [];
 
@@ -644,6 +666,7 @@ setInterval(() => {
 setInterval(() => {
   try {
     cleanupOldUptimeData();
+    pruneMetrics(48); // Metrik-Verlauf: 48h behalten
   } catch (error) {
     console.error('Cleanup error:', error.message);
   }

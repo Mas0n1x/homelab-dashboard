@@ -4,6 +4,7 @@
  * Licensed under the MIT License.
  */
 import { useAuthStore } from '@/stores/authStore';
+import type { MetricSample, TunnelInfo, ServiceStatusEntry } from './types';
 
 const API_BASE = typeof window !== 'undefined'
   ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api`
@@ -141,10 +142,19 @@ export const updateServer = (id: string, data: Record<string, unknown>) =>
 export const deleteServer = (id: string) =>
   fetchApi(`/servers/${id}`, { method: 'DELETE' });
 
+// Metrik-Verlauf (Sparklines/Charts)
+export const getMetrics = (serverId = 'local', minutes = 60) =>
+  fetchApi<MetricSample[]>(`/metrics/${serverId}?minutes=${minutes}`);
+
+// Cloudflare-Tunnel-Status
+export const getTunnels = () => fetchApi<TunnelInfo[]>('/tunnels');
+
 // Uptime
 export const getUptimeSummary = (serverId = 'local') => fetchApi(`/uptime/summary?serverId=${serverId}`);
 export const getUptimeHistory = (serviceId: string, hours = 24) => fetchApi(`/uptime/${serviceId}?hours=${hours}`);
 export const getUptimeTimeline = (serviceId: string, days = 30) => fetchApi(`/uptime/timeline/${serviceId}?days=${days}`);
+export const getUptimeStatus = (serverId = 'local', days = 30) =>
+  fetchApi<Record<string, ServiceStatusEntry>>(`/uptime/status?serverId=${serverId}&days=${days}`);
 
 // Portfolio
 export const getPortfolioDashboard = () => fetchApi('/portfolio/dashboard');

@@ -13,6 +13,7 @@ import { FleetSummaryBar } from '@/components/fleet/FleetSummaryBar';
 import { FleetBentoGrid } from '@/components/fleet/FleetBentoGrid';
 import { RequestsWidget } from '@/components/dashboard/RequestsWidget';
 import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
+import { FleetActions } from '@/components/fleet/FleetActions';
 import { useFleetWebSocket } from '@/hooks/useFleetWebSocket';
 import { PageTransition } from '@/components/ui/PageTransition';
 
@@ -53,14 +54,17 @@ export default function FleetOverviewPage() {
 
         {/* Server Topology / Grid */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs uppercase tracking-widest text-white/25 font-medium">Server</h2>
-            <button
-              onClick={() => router.push('/settings')}
-              className="flex items-center gap-1 text-[11px] text-white/30 hover:text-white/70 transition-colors"
-            >
-              <Plus className="w-3 h-3" /> Server hinzufügen
-            </button>
+          <div className="flex items-center justify-between mb-3 gap-3">
+            <h2 className="text-xs uppercase tracking-widest text-white/25 font-medium flex-shrink-0">Server</h2>
+            <div className="flex items-center gap-1 flex-wrap justify-end">
+              <FleetActions />
+              <button
+                onClick={() => router.push('/settings')}
+                className="flex items-center gap-1 text-[11px] text-white/30 hover:text-white/70 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/[0.04]"
+              >
+                <Plus className="w-3 h-3" /> Server hinzufügen
+              </button>
+            </div>
           </div>
           <FleetTopology />
         </div>

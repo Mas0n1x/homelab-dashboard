@@ -57,34 +57,27 @@ function getWeatherEmoji(code: number, isDay: boolean): string {
   return '\u26A1';
 }
 
+// Fester Standort: 35080 Hartenrod (Bad Endbach)
+const GEO: GeoLocation = { latitude: 50.7539, longitude: 8.4869, city: '35080 Hartenrod' };
+
 export function WeatherWidget() {
-  const { data: geo } = useQuery<GeoLocation>({
-    queryKey: ['geolocation'],
-    queryFn: async () => {
-      const res = await fetch('https://ipapi.co/json/');
-      if (!res.ok) throw new Error('Geo lookup failed');
-      const data = await res.json();
-      return { latitude: data.latitude, longitude: data.longitude, city: data.city };
-    },
-    staleTime: 3600000,
-  });
+  const geo = GEO;
 
   const { data: weather } = useQuery<WeatherData>({
-    queryKey: ['weather', geo?.latitude, geo?.longitude],
+    queryKey: ['weather', geo.latitude, geo.longitude],
     queryFn: async () => {
       const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${geo!.latitude}&longitude=${geo!.longitude}&current_weather=true`
+        `https://api.open-meteo.com/v1/forecast?latitude=${geo.latitude}&longitude=${geo.longitude}&current_weather=true`
       );
       if (!res.ok) throw new Error('Weather API error');
       const data = await res.json();
       return data.current_weather;
     },
-    enabled: !!geo,
     staleTime: 600000,
     refetchInterval: 600000,
   });
 
-  if (!weather || !geo) return null;
+  if (!weather) return null;
 
   const emoji = getWeatherEmoji(weather.weathercode, weather.is_day === 1);
   const description = WEATHER_ICONS[weather.weathercode] || 'Unbekannt';

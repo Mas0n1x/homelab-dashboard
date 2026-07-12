@@ -111,8 +111,40 @@ export interface Server {
   ssh_port?: number | null
   ssh_user?: string | null
   ssh_key_path?: string | null
+  provider?: string | null
+  location?: string | null
+  monthly_cost?: number | null
+  currency?: string | null
+  expires_at?: string | null
+  tunnel_name?: string | null
+  notes?: string | null
   status: string
   lastSeen: string | null
+}
+
+export interface MetricSample {
+  cpu: number | null
+  mem: number | null
+  disk: number | null
+  rx: number | null
+  tx: number | null
+  ts: string
+}
+
+export interface TunnelInfo {
+  id: string
+  name: string
+  status: string
+  connections: number
+}
+
+export interface ServiceStatusEntry {
+  uptime24h: number | null
+  uptime7d: number | null
+  avgResponseTime: number
+  current: boolean | null
+  lastCheck: string | null
+  timeline: { date: string; uptime: number | null; checks: number }[]
 }
 
 export interface PortfolioData {

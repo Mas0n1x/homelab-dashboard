@@ -123,9 +123,30 @@ class ServerManager {
     const fields = [];
     const values = [];
 
+    // camelCase (Frontend) und snake_case (DB) auf die DB-Spalte abbilden.
+    const COL_MAP = {
+      name: 'name', host: 'host',
+      glancesUrl: 'glances_url', glances_url: 'glances_url',
+      dockerSocket: 'docker_socket', docker_socket: 'docker_socket',
+      dockerHost: 'docker_host', docker_host: 'docker_host',
+      sshHost: 'ssh_host', ssh_host: 'ssh_host',
+      sshPort: 'ssh_port', ssh_port: 'ssh_port',
+      sshUser: 'ssh_user', ssh_user: 'ssh_user',
+      sshKeyPath: 'ssh_key_path', ssh_key_path: 'ssh_key_path',
+      provider: 'provider',
+      location: 'location',
+      monthlyCost: 'monthly_cost', monthly_cost: 'monthly_cost',
+      currency: 'currency',
+      expiresAt: 'expires_at', expires_at: 'expires_at',
+      tunnelName: 'tunnel_name', tunnel_name: 'tunnel_name',
+      notes: 'notes',
+    };
+    const seen = new Set();
     for (const [key, value] of Object.entries(updates)) {
-      if (['name', 'host', 'glances_url', 'docker_socket', 'docker_host', 'ssh_host', 'ssh_port', 'ssh_user', 'ssh_key_path'].includes(key)) {
-        fields.push(`${key} = ?`);
+      const col = COL_MAP[key];
+      if (col && !seen.has(col)) {
+        seen.add(col);
+        fields.push(`${col} = ?`);
         values.push(value);
       }
     }

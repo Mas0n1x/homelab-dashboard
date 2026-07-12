@@ -75,6 +75,19 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_uptime_service_time ON uptime_checks(service_id, checked_at);
     CREATE INDEX IF NOT EXISTS idx_uptime_server_time ON uptime_checks(server_id, checked_at);
 
+    CREATE TABLE IF NOT EXISTS metrics_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      server_id TEXT NOT NULL,
+      cpu REAL,
+      mem REAL,
+      disk REAL,
+      rx REAL,
+      tx REAL,
+      ts TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_metrics_server_time ON metrics_history(server_id, ts);
+
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT
@@ -238,6 +251,22 @@ export function initDatabase() {
     ['ssh_key_path', 'TEXT'],
   ];
   for (const [col, type] of sshCols) {
+    if (!serverCols.includes(col)) {
+      db.exec(`ALTER TABLE servers ADD COLUMN ${col} ${type}`);
+    }
+  }
+
+  // Migration: Betriebs-/Kosten-Metadaten je Server (Fleet-Betriebskarte)
+  const metaCols = [
+    ['provider', 'TEXT'],
+    ['location', 'TEXT'],
+    ['monthly_cost', 'REAL'],
+    ['currency', 'TEXT'],
+    ['expires_at', 'TEXT'],
+    ['tunnel_name', 'TEXT'],
+    ['notes', 'TEXT'],
+  ];
+  for (const [col, type] of metaCols) {
     if (!serverCols.includes(col)) {
       db.exec(`ALTER TABLE servers ADD COLUMN ${col} ${type}`);
     }
