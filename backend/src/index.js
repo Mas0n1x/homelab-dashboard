@@ -38,6 +38,7 @@ import minecraftRoutes from './routes/minecraft.js';
 import trafficRoutes from './routes/traffic.js';
 import salenetRoutes from './routes/salenet.js';
 import { checkAlerts, sendStatusReport } from './services/alerting.js';
+import { runDueBackups } from './services/backup.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -633,6 +634,11 @@ setInterval(async () => {
     console.error('Status report error:', error.message);
   }
 }, STATUS_REPORT_MS);
+
+// Background: Geplante Backups prüfen (alle 5 Minuten; Fälligkeit anhand Intervall)
+setInterval(() => {
+  runDueBackups().catch(error => console.error('Scheduled backup error:', error.message));
+}, 5 * 60 * 1000);
 
 // Background: Cleanup old uptime data (daily)
 setInterval(() => {

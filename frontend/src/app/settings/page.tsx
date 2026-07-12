@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, Plus, Trash2, TestTube, Check, Loader2, Settings, Shield, AlertTriangle, Lock, ScrollText, Database, Archive, Server, Palette } from 'lucide-react';
+import { Bell, Plus, Trash2, TestTube, Check, Loader2, Settings, Shield, AlertTriangle, Lock, ScrollText, Database, Archive, Server, Palette, Download, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { PageTransition } from '@/components/ui/PageTransition';
@@ -31,6 +31,8 @@ const EVENT_OPTIONS = [
   { id: 'status_report', label: 'Statusbericht (periodisch)', icon: '📊' },
   { id: 'new_portfolio_request', label: 'Neue Anfrage', icon: '📩' },
   { id: 'new_portfolio_customer', label: 'Neuer Kunde', icon: '👤' },
+  { id: 'backup_completed', label: 'Backup erfolgreich', icon: '💾' },
+  { id: 'backup_failed', label: 'Backup fehlgeschlagen', icon: '⚠️' },
 ];
 
 const SETTINGS_TABS = [
@@ -121,6 +123,33 @@ export default function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ['backup-status'] });
     },
   });
+
+  const { data: schedule } = useQuery<api.BackupSchedule>({
+    queryKey: ['backup-schedule'],
+    queryFn: () => api.getBackupSchedule(),
+  });
+
+  const scheduleMutation = useMutation({
+    mutationFn: (cfg: Partial<api.BackupSchedule>) => api.setBackupSchedule(cfg),
+    onSuccess: (data) => queryClient.setQueryData(['backup-schedule'], data),
+  });
+
+  const deleteBackupMutation = useMutation({
+    mutationFn: (id: number) => api.deleteBackup(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['backups'] }),
+  });
+
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const handleDownloadBackup = async (id: number) => {
+    setDownloadingId(id);
+    try {
+      await api.downloadBackup(id);
+    } catch {
+      // Fehler bewusst still — der Button reaktiviert sich einfach wieder
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const addMutation = useMutation({
     mutationFn: () => api.addAlertChannel(form),
@@ -445,6 +474,68 @@ export default function SettingsPage() {
       {/* Backup Tab */}
       {activeTab === 'backup' && (
       <div className="space-y-6">
+      {/* Automatische Backups (Zeitplan) */}
+      <div>
+        <h2 className="text-sm font-medium flex items-center gap-2 mb-3">
+          <Clock className="w-4 h-4 text-indigo-400" />
+          Automatische Backups
+        </h2>
+        <GlassCard>
+          <div className="relative z-10 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">Zeitplan aktiviert</p>
+                <p className="text-xs text-white/30 mt-0.5">Erstellt automatisch Backups im gewählten Intervall.</p>
+              </div>
+              <button
+                onClick={() => scheduleMutation.mutate({ enabled: !schedule?.enabled })}
+                disabled={scheduleMutation.isPending || !schedule}
+                className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${schedule?.enabled ? 'bg-emerald-500/30' : 'bg-white/10'}`}
+              >
+                <div className={`w-4 h-4 rounded-full absolute top-0.5 transition-all ${schedule?.enabled ? 'bg-emerald-400 left-5' : 'bg-white/30 left-0.5'}`} />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-white/40 block mb-1.5">Backup-Typ</label>
+                <div className="flex gap-2">
+                  {(['database', 'full'] as const).map(t => (
+                    <button
+                      key={t}
+                      onClick={() => scheduleMutation.mutate({ type: t })}
+                      disabled={!schedule}
+                      className={`flex-1 py-2 rounded-xl text-xs font-medium transition-all ${schedule?.type === t ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/40'}`}
+                    >
+                      {t === 'database' ? 'Datenbank' : 'Vollständig'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-white/40 block mb-1.5">Intervall</label>
+                <div className="flex gap-2">
+                  {[6, 12, 24, 168].map(h => (
+                    <button
+                      key={h}
+                      onClick={() => scheduleMutation.mutate({ intervalHours: h })}
+                      disabled={!schedule}
+                      className={`flex-1 py-2 rounded-xl text-xs font-medium transition-all ${schedule?.intervalHours === h ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/40'}`}
+                    >
+                      {h === 168 ? '7 Tage' : `${h} h`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {schedule?.enabled && (
+              <p className="text-xs text-emerald-400/70">
+                Aktiv: alle {schedule.intervalHours === 168 ? '7 Tage' : `${schedule.intervalHours} Stunden`} ein {schedule.type === 'full' ? 'vollständiges' : 'Datenbank-'}Backup.
+              </p>
+            )}
+          </div>
+        </GlassCard>
+      </div>
+
       {/* Backups */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -479,20 +570,39 @@ export default function SettingsPage() {
               <div className="space-y-1 max-h-[300px] overflow-y-auto">
                 {backups.map((b: any) => (
                   <div key={b.id} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-white/[0.02] text-xs">
-                    <div className="flex items-center gap-3">
-                      <span className={`px-2 py-0.5 rounded ${
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className={`px-2 py-0.5 rounded flex-shrink-0 ${
                         b.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' :
                         b.status === 'running' ? 'bg-amber-500/10 text-amber-400' :
                         'bg-red-500/10 text-red-400'
                       }`}>
                         {b.status === 'completed' ? 'OK' : b.status === 'running' ? 'Läuft...' : 'Fehler'}
                       </span>
-                      <span className="text-white/50 capitalize">{b.type}</span>
+                      <span className="text-white/50">{b.type === 'full' ? 'Vollständig' : 'Datenbank'}</span>
                       {b.size && <span className="text-white/25">{(b.size / 1024 / 1024).toFixed(1)} MB</span>}
+                      {b.error && <span className="text-red-400 truncate">{b.error}</span>}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {b.error && <span className="text-red-400 truncate max-w-[150px]">{b.error}</span>}
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-white/20">{new Date(b.started_at + 'Z').toLocaleString('de-DE')}</span>
+                      {b.status === 'completed' && (
+                        <button
+                          onClick={() => handleDownloadBackup(b.id)}
+                          disabled={downloadingId === b.id}
+                          className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-emerald-400 transition-all"
+                          title="Herunterladen"
+                        >
+                          {downloadingId === b.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+                      {b.status !== 'running' && (
+                        <button
+                          onClick={() => deleteBackupMutation.mutate(b.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-all"
+                          title="Löschen"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

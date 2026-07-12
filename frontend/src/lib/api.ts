@@ -174,7 +174,7 @@ export const getComposeProjects = (serverId = 'local') => fetchApi(`/docker/comp
 export const composeAction = (project: string, action: string, serverId = 'local') =>
   fetchApi(`/docker/compose/${encodeURIComponent(project)}/${action}?serverId=${serverId}`, { method: 'POST' });
 export const getComposeFile = (project: string, serverId = 'local') =>
-  fetchApi<{ content: string; path: string; workingDir: string }>(`/docker/compose/${encodeURIComponent(project)}/file?serverId=${serverId}`);
+  fetchApi<{ content: string; path: string; workingDir: string; remote?: boolean }>(`/docker/compose/${encodeURIComponent(project)}/file?serverId=${serverId}`);
 export const saveComposeFile = (project: string, content: string, serverId = 'local') =>
   fetchApi(`/docker/compose/${encodeURIComponent(project)}/file?serverId=${serverId}`, { method: 'PUT', body: JSON.stringify({ content }) });
 
@@ -208,6 +208,29 @@ export const getAuditLog = (limit = 50) => fetchApi(`/audit?limit=${limit}`);
 export const getBackups = (limit = 20) => fetchApi(`/backup?limit=${limit}`);
 export const getBackupStatus = () => fetchApi<{ running: boolean; latest: any }>('/backup/status');
 export const runBackup = (type = 'database') => fetchApi('/backup/run', { method: 'POST', body: JSON.stringify({ type }) });
+export const deleteBackup = (id: number | string) => fetchApi(`/backup/${id}`, { method: 'DELETE' });
+export type BackupSchedule = { enabled: boolean; type: 'database' | 'full'; intervalHours: number };
+export const getBackupSchedule = () => fetchApi<BackupSchedule>('/backup/schedule');
+export const setBackupSchedule = (cfg: Partial<BackupSchedule>) =>
+  fetchApi<BackupSchedule>('/backup/schedule', { method: 'PUT', body: JSON.stringify(cfg) });
+
+// Backup-Datei herunterladen (Blob über authedFetch, damit der Bearer-Token mitgeht)
+export async function downloadBackup(id: number | string): Promise<void> {
+  const res = await authedFetch(`/backup/${id}/download`);
+  if (!res.ok) throw new Error(`Download fehlgeschlagen: ${res.status}`);
+  const blob = await res.blob();
+  const disposition = res.headers.get('Content-Disposition') || '';
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : `backup-${id}`;
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
 
 // Bookmarks
 export const getBookmarks = () => fetchApi('/bookmarks');

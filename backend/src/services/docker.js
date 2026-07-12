@@ -4,6 +4,8 @@
  * Licensed under the MIT License.
  */
 import Docker from 'dockerode';
+import serverManager from './serverManager.js';
+import { readRemoteFile, writeRemoteFile } from './sshFile.js';
 
 // Default local Docker instance
 const defaultDocker = new Docker({ socketPath: '/var/run/docker.sock' });
@@ -456,8 +458,13 @@ export async function composeAction(projectName, action, dockerInstance) {
 
 // ==================== COMPOSE FILE EDITOR ====================
 
-export async function getComposeFile(projectName, dockerInstance) {
-  const docker = getDockerInstance(dockerInstance);
+// Ermittelt Docker-Instanz, SSH-Config und den Host-Pfad der Compose-Datei
+// eines Projekts anhand der Container-Labels. Zentral für lokales (/host-Mount)
+// wie entferntes (SSH/SFTP) Lesen/Schreiben.
+async function resolveComposeTarget(projectName, serverId) {
+  const conn = serverManager.getConnection(serverId);
+  const docker = conn?.docker || defaultDocker;
+
   const containers = await docker.listContainers({ all: true });
   const projectContainer = containers.find(
     c => c.Labels?.['com.docker.compose.project'] === projectName
@@ -466,38 +473,44 @@ export async function getComposeFile(projectName, dockerInstance) {
 
   const configFiles = projectContainer.Labels?.['com.docker.compose.project.config_files'];
   const workingDir = projectContainer.Labels?.['com.docker.compose.project.working_dir'];
+  if (!configFiles) throw new Error('Compose file path not found in container labels');
 
-  if (!configFiles || !workingDir) {
-    throw new Error('Compose file path not found in container labels');
+  const hostPath = configFiles.split(',')[0];
+  const sshConfig = conn?.config?.ssh_host ? conn.config : null;
+  return { hostPath, workingDir, sshConfig };
+}
+
+export async function getComposeFile(projectName, serverId = 'local') {
+  const { hostPath, workingDir, sshConfig } = await resolveComposeTarget(projectName, serverId);
+
+  // Remote-Server: Datei direkt über SFTP vom Host lesen.
+  if (sshConfig) {
+    const content = await readRemoteFile(sshConfig, hostPath);
+    return { content, path: hostPath, workingDir, remote: true };
   }
 
-  // The working dir is a host path - map it to /host prefix
-  const hostPath = configFiles.split(',')[0];
+  // Lokaler Server: Host-Dateisystem ist unter /host gemountet.
   const mappedPath = `/host${hostPath}`;
-
   const { readFileSync } = await import('fs');
   try {
     const content = readFileSync(mappedPath, 'utf-8');
-    return { content, path: hostPath, workingDir };
+    return { content, path: hostPath, workingDir, remote: false };
   } catch (error) {
     throw new Error(`Cannot read compose file: ${error.message}`);
   }
 }
 
-export async function saveComposeFile(projectName, content, dockerInstance) {
-  const docker = getDockerInstance(dockerInstance);
-  const containers = await docker.listContainers({ all: true });
-  const projectContainer = containers.find(
-    c => c.Labels?.['com.docker.compose.project'] === projectName
-  );
-  if (!projectContainer) throw new Error('Project not found');
+export async function saveComposeFile(projectName, content, serverId = 'local') {
+  const { hostPath, sshConfig } = await resolveComposeTarget(projectName, serverId);
 
-  const configFiles = projectContainer.Labels?.['com.docker.compose.project.config_files'];
-  if (!configFiles) throw new Error('Compose file path not found');
+  // Remote-Server: Datei über SFTP schreiben (.bak-Sicherung inklusive).
+  if (sshConfig) {
+    await writeRemoteFile(sshConfig, hostPath, content);
+    return { path: hostPath, saved: true, remote: true };
+  }
 
-  const hostPath = configFiles.split(',')[0];
+  // Lokaler Server: Host-Dateisystem ist unter /host gemountet.
   const mappedPath = `/host${hostPath}`;
-
   const { writeFileSync, copyFileSync, existsSync } = await import('fs');
 
   // Create backup before saving
@@ -507,7 +520,7 @@ export async function saveComposeFile(projectName, content, dockerInstance) {
   }
 
   writeFileSync(mappedPath, content, 'utf-8');
-  return { path: hostPath, saved: true };
+  return { path: hostPath, saved: true, remote: false };
 }
 
 // ==================== IMAGE UPDATE CHECK ====================

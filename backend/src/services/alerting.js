@@ -47,6 +47,8 @@ const EVENT_CATEGORY = {
   status_report: 'Statusbericht',
   new_portfolio_request: 'Portfolio · Anfrage',
   new_portfolio_customer: 'Portfolio · Kunde',
+  backup_completed: 'Backup · Erfolg',
+  backup_failed: 'Backup · Fehler',
   test: 'Verbindungstest',
 };
 function categoryFromEvent(event) {
@@ -448,6 +450,18 @@ export async function sendStatusReport(report) {
       color: anyOffline ? 0xff8800 : 0x00ff88,
       fields,
     });
+  }
+}
+
+// Einzel-Event an alle aktivierten Kanäle senden, die dieses Event abonniert haben.
+// Für punktuelle Ereignisse (z. B. Backup fertig/fehlgeschlagen) statt Schwellwert-Polling.
+export async function notify(event, payload) {
+  const db = getDb();
+  const channels = db.prepare('SELECT * FROM alert_channels WHERE enabled = 1').all();
+  for (const channel of channels) {
+    const events = JSON.parse(channel.events || '[]');
+    if (!events.includes(event)) continue;
+    await sendWebhook(channel, { event, ...payload });
   }
 }
 

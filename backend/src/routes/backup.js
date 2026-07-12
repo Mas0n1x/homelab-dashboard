@@ -4,7 +4,15 @@
  * Licensed under the MIT License.
  */
 import { Router } from 'express';
-import { getBackups, getBackupStatus, runBackup } from '../services/backup.js';
+import {
+  getBackups,
+  getBackupStatus,
+  runBackup,
+  deleteBackup,
+  getBackupFile,
+  getBackupSchedule,
+  setBackupSchedule,
+} from '../services/backup.js';
 
 const router = Router();
 
@@ -27,6 +35,24 @@ router.get('/status', (req, res) => {
   }
 });
 
+// Zeitplan für automatische Backups lesen
+router.get('/schedule', (req, res) => {
+  try {
+    res.json(getBackupSchedule());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Zeitplan für automatische Backups setzen
+router.put('/schedule', (req, res) => {
+  try {
+    res.json(setBackupSchedule(req.body || {}));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Run backup
 router.post('/run', async (req, res) => {
   try {
@@ -36,6 +62,27 @@ router.post('/run', async (req, res) => {
   } catch (error) {
     res.status(error.message.includes('already running') ? 409 : 500)
       .json({ error: error.message });
+  }
+});
+
+// Backup-Datei herunterladen
+router.get('/:id/download', (req, res) => {
+  try {
+    const { path, filename } = getBackupFile(req.params.id);
+    res.download(path, filename);
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+// Backup löschen
+router.delete('/:id', (req, res) => {
+  try {
+    res.json(deleteBackup(req.params.id, req.user?.id));
+  } catch (error) {
+    const code = error.message.includes('nicht gefunden') ? 404
+      : error.message.includes('Laufendes') ? 409 : 500;
+    res.status(code).json({ error: error.message });
   }
 });
 

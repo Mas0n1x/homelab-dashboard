@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileCode, Save, Loader2, AlertTriangle } from 'lucide-react';
+import { FileCode, Save, Loader2, AlertTriangle, Wifi } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Modal } from '@/components/ui/Modal';
 import { useServerStore } from '@/stores/serverStore';
@@ -90,7 +90,15 @@ export function ComposeEditor() {
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-sm font-medium">{selectedProject}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">{selectedProject}</p>
+                  {fileData?.remote && (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-medium">
+                      <Wifi className="w-2.5 h-2.5" />
+                      Remote (SSH)
+                    </span>
+                  )}
+                </div>
                 {fileData?.path && (
                   <p className="text-[10px] text-white/25 font-mono mt-0.5">{fileData.path}</p>
                 )}
@@ -118,7 +126,7 @@ export function ComposeEditor() {
               />
             ) : (
               <p className="text-sm text-white/30 text-center py-8">
-                Compose-Datei konnte nicht geladen werden. Stellen Sie sicher, dass das Host-Verzeichnis gemountet ist.
+                Compose-Datei konnte nicht geladen werden. Beim lokalen Server muss das Host-Verzeichnis gemountet sein; bei Remote-Servern braucht der SSH-Nutzer Leserechte auf die Datei.
               </p>
             )}
           </div>

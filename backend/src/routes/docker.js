@@ -258,7 +258,8 @@ router.post('/compose/:project/:action', async (req, res) => {
 
 router.get('/compose/:project/file', async (req, res) => {
   try {
-    const result = await dockerService.getComposeFile(req.params.project, dockerFor(req));
+    const serverId = req.query.serverId || 'local';
+    const result = await dockerService.getComposeFile(req.params.project, serverId);
     res.json(result);
   } catch (error) {
     fail(res, error, error.message);
@@ -267,9 +268,10 @@ router.get('/compose/:project/file', async (req, res) => {
 
 router.put('/compose/:project/file', async (req, res) => {
   try {
+    const serverId = req.query.serverId || 'local';
     const { content } = req.body;
     if (!content) return res.status(400).json({ error: 'Content is required' });
-    const result = await dockerService.saveComposeFile(req.params.project, content, dockerFor(req));
+    const result = await dockerService.saveComposeFile(req.params.project, content, serverId);
     logAudit('compose.save', req.params.project, null, req.user?.id);
     res.json(result);
   } catch (error) {
