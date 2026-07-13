@@ -168,6 +168,20 @@ export const getNotifications = () => fetchApi('/portfolio/notifications');
 export const markNotificationRead = (id: string) => fetchApi(`/portfolio/notifications/${id}/read`, { method: 'PUT' });
 export const clearNotifications = () => fetchApi('/portfolio/notifications', { method: 'DELETE' });
 
+// Aurora (Self-Hosted Cloud) — Metrics
+export interface AuroraMetrics {
+  users: number;
+  files: number;
+  folders: number;
+  storageBytes: number;
+  trashItems: number;
+  trashBytes: number;
+  versions: number;
+  versionBytes: number;
+  shares: number;
+}
+export const getAuroraMetrics = () => fetchApi<AuroraMetrics>('/aurora/metrics');
+
 // Business (SaleNet + Portfolio zusammengeführt, mit lokalem "erledigt")
 export interface BusinessItem {
   ref: string;
