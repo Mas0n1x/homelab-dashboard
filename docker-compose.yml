@@ -39,6 +39,8 @@ services:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
       # SSH-Key für sicheren Remote-Docker-Zugriff (z. B. VPS) — Pfad IM Container
       - SSH_KEY_PATH=${SSH_KEY_PATH:-/app/ssh/id_ed25519}
+      - AURORA_METRICS_URL=${AURORA_METRICS_URL:-http://aurora:8080}
+      - AURORA_METRICS_TOKEN=${AURORA_METRICS_TOKEN:-}
       - STALWART_URL=http://stalwart:8080
       - STALWART_ADMIN_USER=${STALWART_ADMIN_USER:-admin}
       - STALWART_ADMIN_PASSWORD=${STALWART_ADMIN_PASSWORD:-}
