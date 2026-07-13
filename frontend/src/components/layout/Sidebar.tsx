@@ -15,6 +15,7 @@ import {
   Gamepad2,
   Globe,
   Cloud,
+  Bot,
   Menu, X,
 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -47,6 +48,7 @@ const TOOL_NAV: NavItem[] = [
   { href: '/terminal', label: 'Terminal', icon: <Terminal className="w-4 h-4" /> },
   { href: '/mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },
   { href: '/minecraft', label: 'Minecraft', icon: <Gamepad2 className="w-4 h-4" /> },
+  { href: '/bots', label: 'Discord-Bots', icon: <Bot className="w-4 h-4" /> },
   { href: '/traffic', label: 'Traffic', icon: <Globe className="w-4 h-4" /> },
   { href: '/aurora', label: 'Aurora', icon: <Cloud className="w-4 h-4" /> },
 ];

@@ -31,6 +31,11 @@ services:
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET muss in der .env gesetzt sein (stabiler Wert — verschluesselt gespeicherte Mail-Zugangsdaten)}
       - MC_AGENT_URL=${MC_AGENT_URL:-}
       - MC_AGENT_TOKEN=${MC_AGENT_TOKEN:-}
+      # Discord-Bots: zentrale Bot-Runtime + PersoNet (extern)
+      - BOT_RUNTIME_URL=http://bot-runtime:3200
+      - BOT_RUNTIME_TOKEN=${BOT_RUNTIME_TOKEN:-}
+      - PERSONET_BOT_URL=${PERSONET_BOT_URL:-}
+      - PERSONET_BOT_API_KEY=${PERSONET_BOT_API_KEY:-}
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
       # SSH-Key für sicheren Remote-Docker-Zugriff (z. B. VPS) — Pfad IM Container
       - SSH_KEY_PATH=${SSH_KEY_PATH:-/app/ssh/id_ed25519}
@@ -48,6 +53,39 @@ services:
       - homelab-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  bot-runtime:
+    build:
+      context: ./bot-runtime
+      dockerfile: Dockerfile
+    container_name: homelab-bot-runtime
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3200
+      - BOT_DB_PATH=/app/data/bots.db
+      - BOT_RUNTIME_TOKEN=${BOT_RUNTIME_TOKEN:?BOT_RUNTIME_TOKEN muss in der .env gesetzt sein (gemeinsames Token mit dem Backend)}
+      # Portfolio-Bot: GitHub-Anbindung + "Meine Server" (interner Zugriff aufs Dashboard)
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
+      - PORTFOLIO_WEBHOOK_URL=${PORTFOLIO_WEBHOOK_URL:-}
+      - HOMELAB_API_URL=${BOT_HOMELAB_API_URL:-http://backend:3001}
+      - HOMELAB_USER=${BOT_HOMELAB_USER:-}
+      - HOMELAB_PASSWORD=${BOT_HOMELAB_PASSWORD:-}
+      # SaleNet-Bot
+      - SALENET_DISCORD_BOT_TOKEN=${SALENET_DISCORD_BOT_TOKEN:-}
+      - SALENET_DB_PATH=/app/data/salenet.db
+      - SALENET_PRODUCTS_URL=${SALENET_PRODUCTS_URL:-}
+      - STRIPE_SECRET_KEY=${SALENET_STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${SALENET_STRIPE_WEBHOOK_SECRET:-}
+    volumes:
+      - bot-runtime-data:/app/data
+    networks:
+      - homelab-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - backend
 
   nginx:
     image: nginx:alpine
@@ -106,3 +144,4 @@ networks:
 volumes:
   homelab-data:
   stalwart-data:
+  bot-runtime-data:

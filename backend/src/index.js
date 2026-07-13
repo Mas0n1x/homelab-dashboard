@@ -45,6 +45,7 @@ import { runDueBackups } from './services/backup.js';
 import { recordMetric, pruneMetrics } from './services/metrics.js';
 import metricsRoutes from './routes/metrics.js';
 import tunnelsRoutes from './routes/tunnels.js';
+import botsRoutes, { createBotWebhookPassthrough, createBotEventsIngest } from './routes/bots.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -64,6 +65,14 @@ serverManager.init();
 
 // Middleware
 app.use(cors({ origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()) : true, credentials: true }));
+
+// Bot-Webhook-Passthrough (öffentlich, HMAC wird in der Bot-Runtime geprüft) — MUSS vor
+// dem globalen JSON-Parser stehen, damit der rohe Body für die Signatur erhalten bleibt.
+app.post('/api/bots/:bot/webhook/github', express.json({ limit: '5mb', verify: (req, _res, buf) => { req.rawBody = buf; } }), createBotWebhookPassthrough());
+
+// Business-Events aus Portfolio/SaleNet (öffentlich, per Bearer-Token gesichert)
+app.post('/api/bots/:bot/events', express.json({ limit: '2mb' }), createBotEventsIngest());
+
 app.use(express.json({ limit: '48mb' }));
 
 // Public routes (no auth required)
@@ -102,6 +111,7 @@ app.use('/api/backup', backupRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/tunnels', tunnelsRoutes);
+app.use('/api/bots', botsRoutes);
 
 // Create HTTP server
 const server = createServer(app);

@@ -408,3 +408,35 @@ export const getNetworkConfig = (serverId: string) => fetchApi<NetworkConfig>(`/
 export const getDiskHealth = (serverId: string) => fetchApi<DiskHealthInfo>(`/maintenance/${serverId}/disk-health`);
 export const getSystemdServices = (serverId: string) => fetchApi<SystemdService[]>(`/maintenance/${serverId}/systemd`);
 export const getUpdateStatus = (serverId: string) => fetchApi<UpdateStatus>(`/maintenance/${serverId}/updates`);
+
+// ─── Discord-Bots (Steuerzentrale) ───
+// Übersicht aller Bots (Portfolio, SaleNet, PersoNet) inkl. Status.
+export const getBots = () => fetchApi<{ bots: BotOverviewEntry[] }>('/bots');
+
+// Generischer, statusbewusster Aufruf an einen Bot (proxyt zur Bot-Runtime bzw. PersoNet).
+export async function botCall<T = any>(
+  bot: string,
+  path: string,
+  options?: RequestInit,
+): Promise<{ ok: boolean; status: number; data: T }> {
+  const res = await authedFetch(`/bots/${bot}${path}`, options);
+  const data = await res.json().catch(() => ({} as T));
+  return { ok: res.ok, status: res.status, data: data as T };
+}
+
+export interface BotOverviewEntry {
+  id: string;
+  name: string;
+  description: string;
+  external?: boolean;
+  status: {
+    connected: boolean;
+    guild?: { id: string; name: string; icon?: string | null } | null;
+    memberCount?: number;
+    uptime?: number;
+    ping?: number;
+    username?: string | null;
+    avatar?: string | null;
+    error?: string;
+  } | null;
+}
