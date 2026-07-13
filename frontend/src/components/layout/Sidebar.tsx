@@ -37,7 +37,6 @@ interface ServerSubNav {
 const SERVER_SUB_NAV: ServerSubNav[] = [
   { href: (id) => `/server/${id}`, label: 'Overview', icon: <Cpu className="w-4 h-4" /> },
   { href: (id) => `/server/${id}/docker`, label: 'Docker', icon: <Box className="w-4 h-4" /> },
-  { href: (id) => `/server/${id}/terminal`, label: 'Terminal', icon: <Terminal className="w-4 h-4" /> },
   { href: (id) => `/server/${id}/logs`, label: 'Logs', icon: <FileText className="w-4 h-4" /> },
   { href: (id) => `/server/${id}/maintenance`, label: 'Wartung', icon: <Wrench className="w-4 h-4" /> },
 ];
@@ -45,6 +44,7 @@ const SERVER_SUB_NAV: ServerSubNav[] = [
 const TOOL_NAV: NavItem[] = [
   { href: '/status', label: 'Status', icon: <Activity className="w-4 h-4" /> },
   { href: '/docker', label: 'Docker', icon: <Box className="w-4 h-4" /> },
+  { href: '/terminal', label: 'Terminal', icon: <Terminal className="w-4 h-4" /> },
   { href: '/mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },
   { href: '/minecraft', label: 'Minecraft', icon: <Gamepad2 className="w-4 h-4" /> },
   { href: '/traffic', label: 'Traffic', icon: <Globe className="w-4 h-4" /> },

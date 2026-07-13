@@ -5,7 +5,9 @@
  */
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
 import { WebSocketServer, WebSocket } from 'ws';
+import { Client as SSHClient } from 'ssh2';
 import { createServer } from 'http';
 
 import { initDatabase, migrateFromConfigJson, cleanupOldUptimeData } from './services/database.js';
@@ -236,6 +238,78 @@ async function handleTerminalOpen(ws, data) {
   }
 }
 
+// Interaktive Root-Shell zum Server-HOST via SSH (nicht Container).
+// Nutzt die SSH-Zugangsdaten aus der servers-Tabelle. Ist der SSH-User nicht root,
+// wird direkt in eine root-Login-Shell (sudo -i) gewechselt.
+async function handleHostShellOpen(ws, data) {
+  const serverId = data.serverId || 'local';
+  const conn = serverManager.getConnection(serverId);
+  if (!conn) {
+    ws.send(JSON.stringify({ type: 'terminal-error', error: 'Server nicht gefunden' }));
+    return;
+  }
+  const cfg = conn.config;
+  const host = cfg.ssh_host || process.env.LOCAL_SSH_HOST || 'host.docker.internal';
+  const port = cfg.ssh_port || 22;
+  const username = cfg.ssh_user || 'root';
+  const keyPath = cfg.ssh_key_path || process.env.SSH_KEY_PATH;
+
+  let privateKey;
+  try {
+    privateKey = fs.readFileSync(keyPath);
+  } catch {
+    ws.send(JSON.stringify({ type: 'terminal-error', error: `SSH-Schlüssel nicht lesbar (${keyPath})` }));
+    return;
+  }
+
+  cleanupTerminalSession(ws);
+
+  const client = new SSHClient();
+  const cols = data.cols || 120;
+  const rows = data.rows || 30;
+
+  client.on('ready', () => {
+    client.shell({ term: 'xterm-256color', cols, rows }, (err, stream) => {
+      if (err) {
+        ws.send(JSON.stringify({ type: 'terminal-error', error: err.message }));
+        client.end();
+        return;
+      }
+      terminalSessions.set(ws, { kind: 'ssh', sshClient: client, stream });
+
+      // Root erzwingen, falls als Nicht-root-Nutzer verbunden.
+      if (username !== 'root') {
+        stream.write('sudo -i\n');
+      }
+
+      ws.send(JSON.stringify({
+        type: 'terminal-opened',
+        name: `${cfg.name} · root@${host}`,
+      }));
+
+      const forward = (chunk) => {
+        if (ws.readyState === ws.OPEN) {
+          ws.send(JSON.stringify({ type: 'terminal-data', data: chunk.toString('base64') }));
+        }
+      };
+      stream.on('data', forward);
+      stream.stderr?.on('data', forward);
+
+      stream.on('close', () => {
+        if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({ type: 'terminal-closed' }));
+        try { client.end(); } catch {}
+        terminalSessions.delete(ws);
+      });
+    });
+  });
+
+  client.on('error', (err) => {
+    ws.send(JSON.stringify({ type: 'terminal-error', error: `SSH: ${err.message}` }));
+  });
+
+  client.connect({ host, port, username, privateKey, readyTimeout: 15000, keepaliveInterval: 15000 });
+}
+
 function handleTerminalInput(ws, data) {
   const session = terminalSessions.get(ws);
   if (!session?.stream) return;
@@ -248,9 +322,14 @@ function handleTerminalInput(ws, data) {
 
 async function handleTerminalResize(ws, data) {
   const session = terminalSessions.get(ws);
-  if (!session?.exec) return;
+  if (!session) return;
 
   try {
+    if (session.kind === 'ssh') {
+      session.stream?.setWindow(data.rows || 30, data.cols || 120, 0, 0);
+      return;
+    }
+    if (!session.exec) return;
     // Use Docker API to resize the exec TTY
     const docker = serverManager.getDocker(data.serverId || 'local');
     if (!docker) return;
@@ -337,7 +416,8 @@ function cleanupLogSessions(ws) {
 function cleanupTerminalSession(ws) {
   const session = terminalSessions.get(ws);
   if (session) {
-    try { session.stream?.destroy(); } catch {}
+    try { session.stream?.destroy?.(); } catch {}
+    try { if (session.kind === 'ssh') session.sshClient?.end(); } catch {}
     terminalSessions.delete(ws);
   }
 }
@@ -418,6 +498,7 @@ wss.on('connection', (ws, req) => {
 
       // Terminal messages
       if (data.type === 'terminal-open') await handleTerminalOpen(ws, data);
+      if (data.type === 'host-shell-open') await handleHostShellOpen(ws, data);
       if (data.type === 'terminal-input') handleTerminalInput(ws, data);
       if (data.type === 'terminal-resize') await handleTerminalResize(ws, data);
       if (data.type === 'terminal-close') cleanupTerminalSession(ws);

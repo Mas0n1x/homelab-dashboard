@@ -12,10 +12,15 @@ import { FleetTopology } from '@/components/fleet/FleetTopology';
 import { FleetSummaryBar } from '@/components/fleet/FleetSummaryBar';
 import { FleetBentoGrid } from '@/components/fleet/FleetBentoGrid';
 import { RequestsWidget } from '@/components/dashboard/RequestsWidget';
-import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
+import { WeatherWidget, type WeatherLocation } from '@/components/dashboard/WeatherWidget';
 import { FleetActions } from '@/components/fleet/FleetActions';
 import { useFleetWebSocket } from '@/hooks/useFleetWebSocket';
 import { PageTransition } from '@/components/ui/PageTransition';
+
+const WEATHER_LOCATIONS: WeatherLocation[] = [
+  { latitude: 50.7539, longitude: 8.4869, city: 'Hartenrod' },
+  { latitude: 51.3267, longitude: 6.9694, city: 'Heiligenhaus' },
+];
 
 export default function FleetOverviewPage() {
   useFleetWebSocket();
@@ -44,9 +49,15 @@ export default function FleetOverviewPage() {
               Alle Server auf einen Blick
             </motion.p>
           </div>
-          <div className="hidden sm:block w-[300px] shrink-0">
-            <WeatherWidget />
+          {/* Wetter (Desktop): zwei Standorte nebeneinander */}
+          <div className="hidden md:grid grid-cols-2 gap-3 w-[460px] lg:w-[500px] shrink-0 [&>*]:h-full">
+            {WEATHER_LOCATIONS.map(loc => <WeatherWidget key={loc.city} location={loc} />)}
           </div>
+        </div>
+
+        {/* Wetter (Mobil): eigene Zeile */}
+        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3 md:hidden [&>*]:h-full">
+          {WEATHER_LOCATIONS.map(loc => <WeatherWidget key={loc.city} location={loc} />)}
         </div>
 
         {/* Summary Stats Bar */}

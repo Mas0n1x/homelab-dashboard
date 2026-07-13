@@ -6,6 +6,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { Wind } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 
 interface WeatherData {
@@ -15,59 +16,49 @@ interface WeatherData {
   is_day: number;
 }
 
-interface GeoLocation {
+export interface WeatherLocation {
   latitude: number;
   longitude: number;
   city: string;
 }
 
-const WEATHER_ICONS: Record<number, string> = {
-  0: 'Klar',
-  1: 'Heiter',
-  2: 'Teilweise bewolkt',
-  3: 'Bewolkt',
-  45: 'Nebel',
-  48: 'Raureif-Nebel',
-  51: 'Leichter Nieselregen',
-  53: 'Nieselregen',
-  55: 'Starker Nieselregen',
-  61: 'Leichter Regen',
-  63: 'Regen',
-  65: 'Starker Regen',
-  71: 'Leichter Schnee',
-  73: 'Schnee',
-  75: 'Starker Schnee',
-  80: 'Regenschauer',
-  81: 'Regenschauer',
-  82: 'Starke Schauer',
-  95: 'Gewitter',
-  96: 'Gewitter mit Hagel',
-  99: 'Starkes Gewitter',
+const WEATHER_TEXT: Record<number, string> = {
+  0: 'Klar', 1: 'Heiter', 2: 'Teilweise bewölkt', 3: 'Bewölkt',
+  45: 'Nebel', 48: 'Raureif-Nebel',
+  51: 'Leichter Nieselregen', 53: 'Nieselregen', 55: 'Starker Nieselregen',
+  61: 'Leichter Regen', 63: 'Regen', 65: 'Starker Regen',
+  71: 'Leichter Schnee', 73: 'Schnee', 75: 'Starker Schnee',
+  80: 'Regenschauer', 81: 'Regenschauer', 82: 'Starke Schauer',
+  95: 'Gewitter', 96: 'Gewitter mit Hagel', 99: 'Starkes Gewitter',
 };
 
-function getWeatherEmoji(code: number, isDay: boolean): string {
-  if (code === 0) return isDay ? '\u2600\uFE0F' : '\uD83C\uDF19';
-  if (code <= 2) return isDay ? '\u26C5' : '\uD83C\uDF19';
-  if (code === 3) return '\u2601\uFE0F';
-  if (code <= 48) return '\uD83C\uDF2B\uFE0F';
-  if (code <= 55) return '\uD83C\uDF26\uFE0F';
-  if (code <= 65) return '\uD83C\uDF27\uFE0F';
-  if (code <= 75) return '\u2744\uFE0F';
-  if (code <= 82) return '\uD83C\uDF26\uFE0F';
-  return '\u26A1';
+function weatherEmoji(code: number, isDay: boolean): string {
+  if (code === 0) return isDay ? '☀️' : '🌙';
+  if (code <= 2) return isDay ? '⛅' : '🌙';
+  if (code === 3) return '☁️';
+  if (code <= 48) return '🌫️';
+  if (code <= 55) return '🌦️';
+  if (code <= 65) return '🌧️';
+  if (code <= 75) return '❄️';
+  if (code <= 82) return '🌦️';
+  return '⚡';
 }
 
-// Fester Standort: 35080 Hartenrod (Bad Endbach)
-const GEO: GeoLocation = { latitude: 50.7539, longitude: 8.4869, city: '35080 Hartenrod' };
+// Farbstimmung je nach Tag/Nacht und Wetterlage
+function tint(code: number, isDay: boolean): string {
+  if (!isDay) return 'from-indigo-500/15 to-transparent';
+  if (code === 0 || code <= 2) return 'from-amber-400/15 to-transparent';
+  if (code <= 48) return 'from-slate-400/12 to-transparent';
+  if (code <= 82) return 'from-sky-500/15 to-transparent';
+  return 'from-violet-500/15 to-transparent';
+}
 
-export function WeatherWidget() {
-  const geo = GEO;
-
-  const { data: weather } = useQuery<WeatherData>({
-    queryKey: ['weather', geo.latitude, geo.longitude],
+export function WeatherWidget({ location }: { location: WeatherLocation }) {
+  const { data: weather, isLoading } = useQuery<WeatherData>({
+    queryKey: ['weather', location.latitude, location.longitude],
     queryFn: async () => {
       const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${geo.latitude}&longitude=${geo.longitude}&current_weather=true`
+        `https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current_weather=true`
       );
       if (!res.ok) throw new Error('Weather API error');
       const data = await res.json();
@@ -77,23 +68,34 @@ export function WeatherWidget() {
     refetchInterval: 600000,
   });
 
-  if (!weather) return null;
-
-  const emoji = getWeatherEmoji(weather.weathercode, weather.is_day === 1);
-  const description = WEATHER_ICONS[weather.weathercode] || 'Unbekannt';
+  const isDay = weather ? weather.is_day === 1 : true;
+  const emoji = weather ? weatherEmoji(weather.weathercode, isDay) : '☁️';
+  const description = weather ? (WEATHER_TEXT[weather.weathercode] || 'Unbekannt') : '';
 
   return (
-    <GlassCard delay={0.3} hover>
+    <GlassCard delay={0.3} hover className="overflow-hidden">
+      <div className={`absolute inset-0 bg-gradient-to-br ${weather ? tint(weather.weathercode, isDay) : 'from-white/[0.03] to-transparent'} pointer-events-none`} />
       <div className="relative z-10 flex items-center gap-3">
-        <span className="text-3xl">{emoji}</span>
-        <div className="flex-1">
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl font-semibold">{weather.temperature}°C</span>
-            <span className="text-xs text-white/40">{weather.windspeed} km/h</span>
-          </div>
-          <p className="text-xs text-white/40">{description}</p>
+        <div className="w-11 h-11 rounded-2xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
+          <span className="text-2xl leading-none">{emoji}</span>
         </div>
-        <span className="text-xs text-white/30">{geo.city}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-semibold tabular-nums leading-none">
+              {weather ? Math.round(weather.temperature) : '–'}
+            </span>
+            <span className="text-sm text-white/40 leading-none">°C</span>
+          </div>
+          <p className="text-[13px] font-medium text-white/75 truncate mt-0.5">{location.city}</p>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p className="text-[11px] text-white/50 truncate max-w-[90px]">{isLoading ? 'Lädt…' : description}</p>
+          {weather && (
+            <p className="text-[11px] text-white/30 flex items-center gap-1 justify-end mt-0.5 tabular-nums">
+              <Wind className="w-3 h-3" />{Math.round(weather.windspeed)} km/h
+            </p>
+          )}
+        </div>
       </div>
     </GlassCard>
   );
