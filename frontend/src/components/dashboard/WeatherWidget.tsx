@@ -6,7 +6,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Wind } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 
 interface WeatherData {
@@ -75,26 +74,22 @@ export function WeatherWidget({ location }: { location: WeatherLocation }) {
   return (
     <GlassCard delay={0.3} hover className="overflow-hidden">
       <div className={`absolute inset-0 bg-gradient-to-br ${weather ? tint(weather.weathercode, isDay) : 'from-white/[0.03] to-transparent'} pointer-events-none`} />
-      <div className="relative z-10 flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
-          <span className="text-2xl leading-none">{emoji}</span>
+      <div className="relative z-10 flex items-center gap-3.5">
+        <div className="w-14 h-14 rounded-2xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
+          <span className="text-3xl leading-none">{emoji}</span>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-semibold tabular-nums leading-none">
+          <p className="text-[13px] font-medium text-white/80 truncate" title={location.city}>{location.city}</p>
+          <div className="flex items-baseline gap-1 mt-0.5">
+            <span className="text-3xl font-semibold tabular-nums leading-none">
               {weather ? Math.round(weather.temperature) : '–'}
             </span>
-            <span className="text-sm text-white/40 leading-none">°C</span>
+            <span className="text-base text-white/40 leading-none">°C</span>
           </div>
-          <p className="text-[13px] font-medium text-white/75 truncate mt-0.5">{location.city}</p>
-        </div>
-        <div className="text-right flex-shrink-0">
-          <p className="text-[11px] text-white/50 truncate max-w-[90px]">{isLoading ? 'Lädt…' : description}</p>
-          {weather && (
-            <p className="text-[11px] text-white/30 flex items-center gap-1 justify-end mt-0.5 tabular-nums">
-              <Wind className="w-3 h-3" />{Math.round(weather.windspeed)} km/h
-            </p>
-          )}
+          <p className="text-[11px] text-white/40 truncate mt-1">
+            {isLoading ? 'Lädt…' : description}
+            {weather && <span className="text-white/25"> · {Math.round(weather.windspeed)} km/h</span>}
+          </p>
         </div>
       </div>
     </GlassCard>

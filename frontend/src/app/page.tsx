@@ -50,7 +50,7 @@ export default function FleetOverviewPage() {
             </motion.p>
           </div>
           {/* Wetter (Desktop): zwei Standorte nebeneinander */}
-          <div className="hidden md:grid grid-cols-2 gap-3 w-[460px] lg:w-[500px] shrink-0 [&>*]:h-full">
+          <div className="hidden md:grid grid-cols-2 gap-3 w-[500px] lg:w-[560px] shrink-0 [&>*]:h-full">
             {WEATHER_LOCATIONS.map(loc => <WeatherWidget key={loc.city} location={loc} />)}
           </div>
         </div>
