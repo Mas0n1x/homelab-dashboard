@@ -222,7 +222,7 @@ class DiscordBot {
   setConfig(key, value) {
     const existing = this.dbGet('SELECT key FROM discord_config WHERE key = ?', [key]);
     if (existing) {
-      this.dbRun('UPDATE discord_config SET value = ?, updated_at = datetime("now") WHERE key = ?', [value, key]);
+      this.dbRun("UPDATE discord_config SET value = ?, updated_at = datetime('now') WHERE key = ?", [value, key]);
     } else {
       this.dbRun('INSERT INTO discord_config (key, value) VALUES (?, ?)', [key, value]);
     }
