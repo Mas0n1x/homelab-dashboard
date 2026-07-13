@@ -38,13 +38,14 @@ export function AppShell({ children, connected }: AppShellProps) {
       <Background />
       <Sidebar />
 
-      {/* Main content area - offset by sidebar width */}
+      {/* Main content area - offset by sidebar width. overflow-x-hidden verhindert,
+          dass ein zu breites Kind die ganze Seite horizontal verschiebbar macht. */}
       <div
-        className="md:transition-[margin-left] md:duration-300 md:ease-[cubic-bezier(0.16,1,0.3,1)]"
+        className="overflow-x-hidden md:transition-[margin-left] md:duration-300 md:ease-[cubic-bezier(0.16,1,0.3,1)]"
         style={{ marginLeft: 'var(--sidebar-width, 0px)' }}
       >
         <TopBar connected={connected} />
-        <main className="px-4 lg:px-6 py-5 pb-24 md:pb-6 min-h-[calc(100vh-3.5rem)]">
+        <main className="px-4 lg:px-6 py-5 pb-24 md:pb-6 min-h-[calc(100vh-3.5rem)] overflow-x-hidden">
           {children}
         </main>
       </div>

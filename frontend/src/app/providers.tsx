@@ -11,7 +11,7 @@ import { usePathname } from 'next/navigation';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useServerStore } from '@/stores/serverStore';
 import { AppShell } from '@/components/layout/AppShell';
-import { ThemeCustomizer } from '@/components/dashboard/ThemeCustomizer';
+import { ThemeApplier } from '@/components/dashboard/ThemeApplier';
 import { CommandPalette } from '@/components/dashboard/CommandPalette';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import * as api from '@/lib/api';
@@ -32,7 +32,7 @@ function WebSocketManager({ children }: { children: React.ReactNode }) {
       <AppShell connected={connected}>
         {children}
       </AppShell>
-      <ThemeCustomizer />
+      <ThemeApplier />
       <CommandPalette />
     </>
   );
