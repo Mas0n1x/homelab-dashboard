@@ -205,6 +205,10 @@
     gap: 1rem;
   }
 
+  /* Grid-Items dürfen unter ihre Inhaltsbreite schrumpfen (sonst blähen lange
+     Texte/Zahlen die Kachel über den Viewport → abgeschnittene Werte auf Mobil). */
+  .bento-grid > * { min-width: 0; }
+
   .bento-1x1 { grid-column: span 1; grid-row: span 1; }
   .bento-2x1 { grid-column: span 2; grid-row: span 1; }
   .bento-2x2 { grid-column: span 2; grid-row: span 2; }

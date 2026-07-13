@@ -88,14 +88,14 @@ export function FleetSummaryBar() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
-          className="glass-card-elevated p-3.5 flex items-center gap-3"
+          className="glass-card-elevated p-3.5 flex items-center gap-3 min-w-0"
         >
           <div className={`w-9 h-9 rounded-xl ${stat.bg} flex items-center justify-center flex-shrink-0`}>
             <span className={stat.color}>{stat.icon}</span>
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-white/30">{stat.label}</p>
-            <p className={`text-sm font-semibold tabular-nums ${stat.color}`}>{stat.value}</p>
+            <p className="text-[10px] uppercase tracking-wider text-white/30 truncate">{stat.label}</p>
+            <p className={`text-sm font-semibold tabular-nums truncate ${stat.color}`}>{stat.value}</p>
           </div>
         </motion.div>
       ))}
