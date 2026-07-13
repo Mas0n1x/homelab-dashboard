@@ -41,7 +41,7 @@ export function SystemdServices({ serverId }: SystemdServicesProps) {
         <div className="py-6 text-center text-red-400/60 text-xs">Fehler: {(error as Error).message}</div>
       ) : !services || services.length === 0 ? (
         <div className="py-6 text-center text-white/20 text-xs">
-          <p>Keine ueberwachten Services</p>
+          <p>Keine überwachten Services</p>
           <p className="text-[10px] text-white/10 mt-1">Services in der Glances-Konfiguration hinzufuegen</p>
         </div>
       ) : (

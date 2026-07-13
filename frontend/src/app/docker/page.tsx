@@ -7,13 +7,13 @@
 
 import { useState, useCallback } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { Play, Square, RotateCcw, FileText, ChevronDown, ChevronRight, Boxes } from 'lucide-react';
+import { Play, Square, RotateCcw, FileText, ChevronDown, ChevronRight, Boxes, LayoutGrid, FolderGit2, Disc3, ArrowUpCircle, Database, Network, Plug, GitCompareArrows, LayoutTemplate, FileCode2, PieChart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageTransition } from '@/components/ui/PageTransition';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { Tabs } from '@/components/ui/Tabs';
+import { OverflowTabs } from '@/components/ui/OverflowTabs';
 import { Modal } from '@/components/ui/Modal';
 import { ContainerResourcesInline } from '@/components/docker/ContainerResources';
 import { ComposeActions } from '@/components/docker/ComposeActions';
@@ -105,19 +105,20 @@ export default function DockerPage() {
     });
   };
 
+  // Haeufig genutzte Tabs sichtbar, Rest gruppiert im "Mehr"-Menue — sonst wird die Leiste zu voll.
   const tabs = [
-    { id: 'services', label: 'Services' },
-    { id: 'containers', label: 'Container', count: containers.length },
-    { id: 'compose', label: 'Projekte' },
-    { id: 'images', label: 'Images', count: (images as any[])?.length },
-    { id: 'volumes', label: 'Volumes', count: (volumes as any[])?.length },
-    { id: 'networks', label: 'Netzwerke', count: (networks as any[])?.length },
-    { id: 'ports', label: 'Ports', count: (ports as any[])?.length },
-    { id: 'comparison', label: 'Vergleich' },
-    { id: 'templates', label: 'Templates' },
-    { id: 'editor', label: 'Editor' },
-    { id: 'storage', label: 'Speicher' },
-    { id: 'updates', label: 'Updates' },
+    { id: 'services', label: 'Services', icon: LayoutGrid },
+    { id: 'containers', label: 'Container', count: containers.length, icon: Boxes },
+    { id: 'compose', label: 'Projekte', icon: FolderGit2 },
+    { id: 'images', label: 'Images', count: (images as any[])?.length, icon: Disc3 },
+    { id: 'updates', label: 'Updates', icon: ArrowUpCircle },
+    { id: 'volumes', label: 'Volumes', count: (volumes as any[])?.length, icon: Database, overflow: true },
+    { id: 'networks', label: 'Netzwerke', count: (networks as any[])?.length, icon: Network, overflow: true },
+    { id: 'ports', label: 'Ports', count: (ports as any[])?.length, icon: Plug, overflow: true },
+    { id: 'storage', label: 'Speicher', icon: PieChart, overflow: true },
+    { id: 'comparison', label: 'Vergleich', icon: GitCompareArrows, overflow: true },
+    { id: 'templates', label: 'Templates', icon: LayoutTemplate, overflow: true },
+    { id: 'editor', label: 'Editor', icon: FileCode2, overflow: true },
   ];
 
   return (
@@ -133,9 +134,7 @@ export default function DockerPage() {
       </div>
 
       {/* Tabs */}
-      <div className="overflow-x-auto">
-        <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-      </div>
+      <OverflowTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
       {/* Services Tab */}
       {activeTab === 'services' && <ServicesTab />}

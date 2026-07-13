@@ -242,6 +242,15 @@ export function initDatabase() {
     );
   `);
 
+  // Business-Anfragen (SaleNet/Portfolio) lokal als "erledigt" markieren —
+  // die Quell-DBs sind readonly bzw. extern, daher wird nur hier ausgeblendet.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS dismissed_requests (
+      ref TEXT PRIMARY KEY,
+      dismissed_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
   // Migration: SSH-Spalten für sicheren Remote-Docker-Zugriff (ohne offenen Port)
   const serverCols = db.prepare('PRAGMA table_info(servers)').all().map(c => c.name);
   const sshCols = [

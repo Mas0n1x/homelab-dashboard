@@ -7,11 +7,18 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { History } from 'lucide-react';
-import { clsx } from 'clsx';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { formatAudit, alertMeta, cleanAuditValue } from '@/lib/audit';
 import * as api from '@/lib/api';
 
-interface Event { ts: number; kind: 'alert' | 'audit'; text: string; sub?: string; }
+interface Ev {
+  ts: number;
+  label: string;
+  detail?: string;
+  Icon: ReturnType<typeof formatAudit>['Icon'];
+  tint: string;
+  count: number;
+}
 
 function rel(ms: number): string {
   const sec = Math.max(0, Math.round((Date.now() - ms) / 1000));
@@ -25,16 +32,31 @@ function rel(ms: number): string {
 
 export function EventsWidget() {
   const { data: alerts } = useQuery<any[]>({ queryKey: ['alert-history-widget'], queryFn: () => api.getAlertHistory(15) as Promise<any[]>, refetchInterval: 60000 });
-  const { data: audit } = useQuery<any[]>({ queryKey: ['audit-widget'], queryFn: () => api.getAuditLog(15) as Promise<any[]>, refetchInterval: 60000 });
+  const { data: audit } = useQuery<any[]>({ queryKey: ['audit-widget'], queryFn: () => api.getAuditLog(25) as Promise<any[]>, refetchInterval: 60000 });
 
-  const events: Event[] = [];
+  const raw: Ev[] = [];
   for (const a of alerts ?? []) {
-    events.push({ ts: new Date((a.sent_at || '') + 'Z').getTime(), kind: 'alert', text: a.message || a.event_type, sub: a.channel_name });
+    const ts = new Date((a.sent_at || '') + 'Z').getTime();
+    raw.push({ ts, label: cleanAuditValue(a.message) || a.event_type || 'Alarm', detail: cleanAuditValue(a.channel_name), ...alertMeta(), count: 1 });
   }
   for (const e of audit ?? []) {
-    events.push({ ts: new Date((e.created_at || '') + 'Z').getTime(), kind: 'audit', text: `${e.action}${e.target ? ' · ' + e.target : ''}`, sub: e.details || undefined });
+    const ts = new Date((e.created_at || '') + 'Z').getTime();
+    const f = formatAudit(e.action, e.target, e.details);
+    raw.push({ ts, label: f.label, detail: f.detail, Icon: f.Icon, tint: f.tint, count: 1 });
   }
-  const sorted = events.filter(e => !isNaN(e.ts)).sort((a, b) => b.ts - a.ts).slice(0, 8);
+
+  // Aufeinanderfolgende identische Ereignisse buendeln (z. B. mehrere Anmeldungen).
+  const sorted = raw.filter(e => !isNaN(e.ts)).sort((a, b) => b.ts - a.ts);
+  const merged: Ev[] = [];
+  for (const e of sorted) {
+    const prev = merged[merged.length - 1];
+    if (prev && prev.label === e.label && prev.detail === e.detail) {
+      prev.count++;
+    } else {
+      merged.push({ ...e });
+    }
+  }
+  const events = merged.slice(0, 8);
 
   return (
     <GlassCard delay={0.35} className="h-full">
@@ -45,20 +67,28 @@ export function EventsWidget() {
           </div>
           <span className="text-xs font-medium text-white/60">Ereignisse</span>
         </div>
-        {sorted.length === 0 ? (
+        {events.length === 0 ? (
           <p className="text-sm text-white/25 text-center py-6">Noch keine Ereignisse</p>
         ) : (
-          <div className="space-y-2">
-            {sorted.map((e, i) => (
-              <div key={i} className="flex items-center gap-2.5">
-                <span className={clsx('w-1.5 h-1.5 rounded-full flex-shrink-0', e.kind === 'alert' ? 'bg-amber-400' : 'bg-cyan-400/70')} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-white/70 truncate">{e.text}</p>
-                  {e.sub && <p className="text-[10px] text-white/25 truncate">{e.sub}</p>}
+          <div className="space-y-0.5">
+            {events.map((e, i) => {
+              const Icon = e.Icon;
+              return (
+                <div key={i} className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 hover:bg-white/[0.02] transition">
+                  <div className="w-6 h-6 rounded-md bg-white/[0.04] flex items-center justify-center flex-shrink-0">
+                    <Icon className={`w-3.5 h-3.5 ${e.tint}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-white/75 truncate">
+                      {e.label}
+                      {e.count > 1 && <span className="ml-1.5 text-[10px] text-white/40">×{e.count}</span>}
+                    </p>
+                    {e.detail && <p className="text-[10px] text-white/30 truncate">{e.detail}</p>}
+                  </div>
+                  <span className="text-[10px] text-white/25 tabular-nums flex-shrink-0">{rel(e.ts)}</span>
                 </div>
-                <span className="text-[10px] text-white/25 tabular-nums flex-shrink-0">{rel(e.ts)}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

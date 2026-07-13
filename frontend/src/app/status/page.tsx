@@ -43,11 +43,13 @@ export default function StatusPage() {
     queryKey: ['statusBoard', servers.map(s => s.id).join(',')],
     queryFn: async () => {
       return Promise.all(servers.map(async s => {
-        const [services, status] = await Promise.all([
-          api.getServices(s.id).catch(() => []) as Promise<Svc[]>,
+        const [servicesRes, status] = await Promise.all([
+          api.getServices(s.id).catch(() => ({ services: [] })) as Promise<{ services?: Svc[] } | Svc[]>,
           api.getUptimeStatus(s.id, 30).catch(() => ({})) as Promise<Record<string, ServiceStatusEntry>>,
         ]);
-        return { server: s, services: Array.isArray(services) ? services : [], status };
+        // /services liefert ein Objekt { services, discovered, manual } — Array-Fallback für Robustheit.
+        const services = Array.isArray(servicesRes) ? servicesRes : (servicesRes?.services ?? []);
+        return { server: s, services, status };
       }));
     },
     refetchInterval: 60000,

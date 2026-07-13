@@ -168,6 +168,27 @@ export const getNotifications = () => fetchApi('/portfolio/notifications');
 export const markNotificationRead = (id: string) => fetchApi(`/portfolio/notifications/${id}/read`, { method: 'PUT' });
 export const clearNotifications = () => fetchApi('/portfolio/notifications', { method: 'DELETE' });
 
+// Business (SaleNet + Portfolio zusammengeführt, mit lokalem "erledigt")
+export interface BusinessItem {
+  ref: string;
+  source: 'SaleNet' | 'Portfolio';
+  kind: 'order' | 'contact' | 'request';
+  title: string;
+  sub: string;
+  email?: string | null;
+  message?: string | null;
+  amount?: string | null;
+  status: string;
+  time: string;
+  isNew: boolean;
+}
+export const getBusinessRequests = () =>
+  fetchApi<{ items: BusinessItem[]; total: number; dismissedCount: number }>('/business/requests');
+export const dismissBusinessRequest = (ref: string) =>
+  fetchApi('/business/requests/dismiss', { method: 'POST', body: JSON.stringify({ ref }) });
+export const restoreBusinessRequests = (ref?: string) =>
+  fetchApi('/business/requests/restore', { method: 'POST', body: JSON.stringify(ref ? { ref } : {}) });
+
 // Favorites
 export const getFavorites = (serverId = 'local') => fetchApi(`/favorites?serverId=${serverId}`);
 export const addFavorite = (serviceId: string, serverId = 'local') =>

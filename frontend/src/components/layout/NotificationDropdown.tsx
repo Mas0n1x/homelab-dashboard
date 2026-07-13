@@ -68,7 +68,7 @@ export function NotificationDropdown() {
                   <button
                     onClick={() => clearAll()}
                     className="p-1 rounded hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors"
-                    title="Alle loeschen"
+                    title="Alle löschen"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

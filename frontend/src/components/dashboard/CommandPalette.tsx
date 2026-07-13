@@ -328,7 +328,7 @@ export function CommandPalette() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Suche Server, Container, Aktionen... (server: fuer Filter)"
+              placeholder="Suche Server, Container, Aktionen... (server: für Filter)"
               className="flex-1 bg-transparent text-sm text-white placeholder:text-white/25 outline-none"
             />
             <kbd className="text-[10px] text-white/15 border border-white/[0.08] rounded px-1.5 py-0.5 font-mono">ESC</kbd>
@@ -379,7 +379,7 @@ export function CommandPalette() {
             <span className="flex items-center gap-1"><Command className="w-3 h-3" />K oeffnen</span>
             <span>↑↓ navigieren</span>
             <span>↵ ausfuehren</span>
-            <span className="ml-auto">server: fuer Filter</span>
+            <span className="ml-auto">server: für Filter</span>
           </div>
         </motion.div>
       </motion.div>

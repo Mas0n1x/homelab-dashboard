@@ -62,7 +62,7 @@ export function UpdateStatus({ serverId }: UpdateStatusProps) {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Package className="w-4 h-4 text-amber-400" />
-            <span className="text-xs text-amber-400">{data.count} Updates verfuegbar</span>
+            <span className="text-xs text-amber-400">{data.count} Updates verfügbar</span>
           </div>
           <div className="max-h-48 overflow-y-auto space-y-1 scrollbar-hide">
             {data.packages.map((pkg, i) => (

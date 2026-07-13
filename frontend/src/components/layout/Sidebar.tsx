@@ -15,6 +15,7 @@ import {
   Gamepad2,
   Globe,
   Cloud,
+  Menu, X,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -332,41 +333,156 @@ function SidebarLink({
 }
 
 function MobileBottomNav({ pathname }: { pathname: string }) {
+  const { servers } = useServerStore();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Menue-Overlay bei Navigationswechsel schliessen
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+
+  // Body-Scroll sperren solange das Overlay offen ist
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [menuOpen]);
+
   const MOBILE_NAV = [
     { href: '/', label: 'Fleet', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { href: '/status', label: 'Status', icon: <Activity className="w-5 h-5" /> },
     { href: '/docker', label: 'Docker', icon: <Box className="w-5 h-5" /> },
     { href: '/mail', label: 'Mail', icon: <Mail className="w-5 h-5" /> },
-    { href: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
   ];
 
+  const linkCls = (active: boolean) => clsx(
+    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors',
+    active ? 'bg-white/[0.08] text-white' : 'text-white/60 active:bg-white/[0.04]'
+  );
+
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/[0.06]">
-      <div className="absolute inset-0 sidebar-glass" />
-      <div className="relative z-10 flex items-center justify-around h-16 pb-[env(safe-area-inset-bottom)]">
-        {MOBILE_NAV.map(item => {
-          const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={clsx(
-                'flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200',
-                active ? 'text-accent-light' : 'text-white/35 active:text-white/60'
-              )}
+    <>
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/[0.06]">
+        <div className="absolute inset-0 sidebar-glass" />
+        <div className="relative z-10 grid grid-cols-5 items-center h-16 pb-[env(safe-area-inset-bottom)]">
+          {MOBILE_NAV.map(item => {
+            const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={clsx(
+                  'relative flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors duration-200',
+                  active ? 'text-accent-light' : 'text-white/35 active:text-white/60'
+                )}
+              >
+                {item.icon}
+                <span className="text-[10px] font-medium">{item.label}</span>
+                {active && (
+                  <motion.div
+                    layoutId="mobile-nav-active"
+                    className="absolute bottom-0 w-8 h-0.5 rounded-full bg-accent-light"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </Link>
+            );
+          })}
+          <button
+            onClick={() => setMenuOpen(true)}
+            className={clsx(
+              'flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors duration-200',
+              menuOpen ? 'text-accent-light' : 'text-white/35 active:text-white/60'
+            )}
+          >
+            <Menu className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Menü</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Vollstaendiges Navigations-Overlay (alle Tools + Server-Details) */}
+      <AnimatePresence>
+        {menuOpen && (
+          <div className="md:hidden fixed inset-0 z-[60]">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+              className="absolute bottom-0 left-0 right-0 max-h-[85vh] rounded-t-3xl border-t border-white/[0.08] overflow-hidden"
             >
-              {item.icon}
-              <span className="text-[10px] font-medium">{item.label}</span>
-              {active && (
-                <motion.div
-                  layoutId="mobile-nav-active"
-                  className="absolute -bottom-0 w-8 h-0.5 rounded-full bg-accent-light"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+              <div className="absolute inset-0 sidebar-glass" />
+              <div className="relative z-10 flex flex-col max-h-[85vh]">
+                <div className="flex items-center justify-between px-5 pt-4 pb-3 flex-shrink-0">
+                  <span className="text-base font-semibold">Navigation</span>
+                  <button onClick={() => setMenuOpen(false)} className="w-9 h-9 rounded-xl flex items-center justify-center text-white/50 active:bg-white/[0.06]">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="mx-4 h-px bg-white/[0.06] flex-shrink-0" />
+
+                <div className="flex-1 overflow-y-auto px-3 py-3 pb-[calc(1rem+env(safe-area-inset-bottom))] space-y-4">
+                  {/* Server mit Unterpunkten */}
+                  <div>
+                    <p className="px-2 mb-1.5 text-[10px] uppercase tracking-widest text-white/25 font-medium">Server</p>
+                    <div className="space-y-2">
+                      {servers.map(server => (
+                        <div key={server.id} className="rounded-2xl bg-white/[0.02] border border-white/[0.05] p-2">
+                          <div className="flex items-center gap-2.5 px-2 py-1">
+                            <div className="relative flex-shrink-0">
+                              <Server className="w-4 h-4 text-white/60" />
+                              <span className={clsx('absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0a0a1a]',
+                                server.status === 'connected' ? 'bg-emerald-400' : 'bg-red-400')} />
+                            </div>
+                            <span className="text-[13px] font-medium truncate">{server.name}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1 mt-1">
+                            {SERVER_SUB_NAV.map(sub => {
+                              const href = sub.href(server.id);
+                              return (
+                                <Link key={href} href={href} className={linkCls(pathname === href)}>
+                                  {sub.icon}
+                                  <span className="text-[13px]">{sub.label}</span>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tools */}
+                  <div>
+                    <p className="px-2 mb-1.5 text-[10px] uppercase tracking-widest text-white/25 font-medium">Tools</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      {TOOL_NAV.map(item => (
+                        <Link key={item.href} href={item.href} className={linkCls(pathname === item.href || pathname.startsWith(item.href + '/'))}>
+                          {item.icon}<span>{item.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* System */}
+                  <div>
+                    <p className="px-2 mb-1.5 text-[10px] uppercase tracking-widest text-white/25 font-medium">System</p>
+                    {SYSTEM_NAV.map(item => (
+                      <Link key={item.href} href={item.href} className={linkCls(pathname === item.href)}>
+                        {item.icon}<span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

@@ -13,6 +13,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { UptimeWidget } from '@/components/dashboard/UptimeWidget';
 import { FleetHealthWidget } from '@/components/dashboard/FleetHealthWidget';
 import { CostWidget } from '@/components/dashboard/CostWidget';
+import { StorageWidget } from '@/components/dashboard/StorageWidget';
 import { EventsWidget } from '@/components/dashboard/EventsWidget';
 
 function ContainerOverview() {
@@ -74,7 +75,7 @@ export function FleetBentoGrid() {
   // [&>*]:h-full, damit alle Karten ihre Rasterzelle fuellen (keine Luecken).
   return (
     <div className="bento-grid">
-      {/* Reihe 1: Kennzahlen */}
+      {/* Reihe 1: Kennzahlen (4 Spalten, symmetrisch) */}
       <div className="bento-1x1 [&>*]:h-full">
         <FleetHealthWidget />
       </div>
@@ -83,6 +84,9 @@ export function FleetBentoGrid() {
       </div>
       <div className="bento-1x1 [&>*]:h-full">
         <CostWidget />
+      </div>
+      <div className="bento-1x1 [&>*]:h-full">
+        <StorageWidget />
       </div>
 
       {/* Reihe 2: Listen */}

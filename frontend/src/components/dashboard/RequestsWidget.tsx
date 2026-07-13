@@ -5,34 +5,13 @@
  */
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Inbox, ShoppingCart, Mail, Briefcase } from 'lucide-react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Inbox, ShoppingCart, Mail, Briefcase, Check, RotateCcw } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { useAuthStore } from '@/stores/authStore';
-
-const API_BASE = typeof window !== 'undefined'
-  ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api`
-  : '';
-
-async function api(endpoint: string) {
-  const { accessToken } = useAuthStore.getState();
-  try {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-    });
-    return res.json();
-  } catch { return null; }
-}
-
-interface Item {
-  source: 'SaleNet' | 'Portfolio';
-  kind: 'order' | 'contact' | 'request';
-  title: string;
-  sub: string;
-  status: string;
-  time: string;
-  isNew: boolean;
-}
+import * as api from '@/lib/api';
+import type { BusinessItem } from '@/lib/api';
 
 function relTime(t: string): string {
   if (!t) return '';
@@ -45,28 +24,31 @@ function relTime(t: string): string {
   return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 }
 
+const KindIcon = { order: ShoppingCart, contact: Mail, request: Briefcase };
+
 export function RequestsWidget() {
-  const [items, setItems] = useState<Item[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const qc = useQueryClient();
+  const [pending, setPending] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    const load = async () => {
-      const [recent, portfolio] = await Promise.all([api('/salenet/recent'), api('/portfolio/requests')]);
-      const list: Item[] = [];
-      if (recent?.orders) for (const o of recent.orders) list.push({ source: 'SaleNet', kind: 'order', title: o.package_name || 'Bestellung', sub: o.customer_name || o.customer_email || '', status: o.status, time: o.created_at, isNew: o.status === 'pending' });
-      if (recent?.contacts) for (const c of recent.contacts) list.push({ source: 'SaleNet', kind: 'contact', title: c.subject || 'Kontaktanfrage', sub: c.name || c.email || '', status: c.status, time: c.created_at, isNew: c.status === 'new' });
-      if (Array.isArray(portfolio)) for (const p of portfolio) list.push({ source: 'Portfolio', kind: 'request', title: p.subject || p.projectType || p.title || p.name || 'Anfrage', sub: p.name || p.email || p.company || '', status: p.status || 'new', time: p.created_at || p.createdAt || p.date || '', isNew: ['new', 'pending', 'open', 'neu'].includes((p.status || 'new').toLowerCase()) });
-      list.sort((a, b) => new Date((b.time || '').replace(' ', 'T')).getTime() - new Date((a.time || '').replace(' ', 'T')).getTime());
-      setItems(list);
-      setLoaded(true);
-    };
-    load();
-    const t = setInterval(load, 30000);
-    return () => clearInterval(t);
-  }, []);
+  const { data, isLoading } = useQuery({
+    queryKey: ['business-requests'],
+    queryFn: () => api.getBusinessRequests(),
+    refetchInterval: 30000,
+  });
 
+  const dismiss = useMutation({
+    mutationFn: (ref: string) => api.dismissBusinessRequest(ref),
+    onMutate: (ref) => setPending(p => new Set(p).add(ref)),
+    onSettled: () => { setPending(new Set()); qc.invalidateQueries({ queryKey: ['business-requests'] }); },
+  });
+  const restoreAll = useMutation({
+    mutationFn: () => api.restoreBusinessRequests(),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['business-requests'] }),
+  });
+
+  const items: BusinessItem[] = (data?.items ?? []).filter(i => !pending.has(i.ref));
   const newCount = items.filter(i => i.isNew).length;
-  const KindIcon = { order: ShoppingCart, contact: Mail, request: Briefcase };
+  const dismissedCount = data?.dismissedCount ?? 0;
 
   return (
     <GlassCard delay={0.2}>
@@ -75,27 +57,64 @@ export function RequestsWidget() {
           <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center"><Inbox className="w-3.5 h-3.5 text-orange-400" /></div>
           <span className="text-xs font-medium text-white/60">Neue Anfragen</span>
         </div>
-        {newCount > 0 && <span className="text-[11px] font-semibold text-orange-300 bg-orange-500/15 border border-orange-500/25 rounded-full px-2 py-0.5">{newCount} neu</span>}
+        <div className="flex items-center gap-2">
+          {dismissedCount > 0 && (
+            <button
+              onClick={() => restoreAll.mutate()}
+              title={`${dismissedCount} erledigte wieder einblenden`}
+              className="flex items-center gap-1 text-[10px] text-white/30 hover:text-white/60 transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" /> {dismissedCount}
+            </button>
+          )}
+          {newCount > 0 && <span className="text-[11px] font-semibold text-orange-300 bg-orange-500/15 border border-orange-500/25 rounded-full px-2 py-0.5">{newCount} neu</span>}
+        </div>
       </div>
-      <div className="space-y-1.5 max-h-[220px] overflow-y-auto">
-        {!loaded && <p className="text-[12px] text-white/25 py-4 text-center">Lade…</p>}
-        {loaded && items.length === 0 && <p className="text-[12px] text-white/25 py-4 text-center">Keine Anfragen</p>}
-        {items.slice(0, 8).map((it, i) => {
-          const Icon = KindIcon[it.kind];
-          return (
-            <div key={i} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-white/[0.02] transition">
-              {it.isNew && <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" style={{ boxShadow: '0 0 6px rgba(251,146,60,0.6)' }} />}
-              {!it.isNew && <span className="w-1.5 h-1.5 flex-shrink-0" />}
-              <Icon className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className={`text-[12px] truncate ${it.isNew ? 'text-white/85' : 'text-white/55'}`}>{it.title}</p>
-                {it.sub && <p className="text-[10px] text-white/30 truncate">{it.sub}</p>}
-              </div>
-              <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded flex-shrink-0 ${it.source === 'SaleNet' ? 'text-amber-300/70 bg-amber-500/10' : 'text-violet-300/70 bg-violet-500/10'}`}>{it.source}</span>
-              <span className="text-[10px] text-white/25 tabular-nums flex-shrink-0 w-14 text-right">{relTime(it.time)}</span>
-            </div>
-          );
-        })}
+
+      <div className="space-y-1 max-h-[260px] overflow-y-auto pr-0.5">
+        {isLoading && <p className="text-[12px] text-white/25 py-6 text-center">Lade…</p>}
+        {!isLoading && items.length === 0 && (
+          <div className="py-8 text-center">
+            <Check className="w-5 h-5 text-emerald-400/50 mx-auto mb-1.5" />
+            <p className="text-[12px] text-white/30">Alles erledigt — keine offenen Anfragen</p>
+          </div>
+        )}
+        <AnimatePresence initial={false}>
+          {items.slice(0, 12).map((it) => {
+            const Icon = KindIcon[it.kind];
+            return (
+              <motion.div
+                key={it.ref}
+                layout
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, x: 24, height: 0 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                className="group flex items-center gap-3 rounded-xl px-2.5 py-2 hover:bg-white/[0.03] transition-colors"
+              >
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${it.isNew ? 'bg-orange-500/10' : 'bg-white/[0.04]'}`}>
+                  <Icon className={`w-4 h-4 ${it.isNew ? 'text-orange-400' : 'text-white/40'}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className={`text-[13px] truncate ${it.isNew ? 'text-white/90 font-medium' : 'text-white/60'}`}>{it.title}</p>
+                    {it.amount && <span className="text-[10px] text-emerald-300/80 bg-emerald-500/10 rounded px-1.5 py-0.5 flex-shrink-0 tabular-nums">{it.amount}</span>}
+                  </div>
+                  {it.sub && <p className="text-[11px] text-white/35 truncate">{it.sub}</p>}
+                </div>
+                <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded flex-shrink-0 ${it.source === 'SaleNet' ? 'text-amber-300/70 bg-amber-500/10' : 'text-violet-300/70 bg-violet-500/10'}`}>{it.source}</span>
+                <span className="text-[10px] text-white/25 tabular-nums flex-shrink-0 hidden sm:block w-14 text-right">{relTime(it.time)}</span>
+                <button
+                  onClick={() => dismiss.mutate(it.ref)}
+                  title="Als erledigt markieren"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-white/25 hover:text-emerald-400 hover:bg-emerald-500/10 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
     </GlassCard>
   );

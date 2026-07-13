@@ -48,7 +48,7 @@ export default function ServerLayout({ children }: { children: React.ReactNode }
         <div className="text-center">
           <p className="text-white/40 text-sm">Server nicht gefunden</p>
           <Link href="/" className="text-accent-light text-sm mt-2 inline-block hover:underline">
-            Zurueck zur Fleet-Uebersicht
+            Zurück zur Fleet-Übersicht
           </Link>
         </div>
       </div>
