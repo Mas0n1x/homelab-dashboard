@@ -31,6 +31,8 @@ services:
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET muss in der .env gesetzt sein (stabiler Wert — verschluesselt gespeicherte Mail-Zugangsdaten)}
       - MC_AGENT_URL=${MC_AGENT_URL:-}
       - MC_AGENT_TOKEN=${MC_AGENT_TOKEN:-}
+      # Mehrere Minecraft-Server (JSON-Array, hat Vorrang vor MC_AGENT_URL/TOKEN)
+      - MC_SERVERS=${MC_SERVERS:-}
       # Discord-Bots: zentrale Bot-Runtime + PersoNet (extern)
       - BOT_RUNTIME_URL=http://bot-runtime:3200
       - BOT_RUNTIME_TOKEN=${BOT_RUNTIME_TOKEN:-}

@@ -4,20 +4,19 @@
  * Licensed under the MIT License.
  */
 import { Router } from 'express';
+import { getServer, publicServers } from '../services/mcServers.js';
 
 const router = Router();
-const AGENT_URL = process.env.MC_AGENT_URL || '';
-const AGENT_TOKEN = process.env.MC_AGENT_TOKEN || '';
 
-async function agentFetch(path, opts = {}) {
-  if (!AGENT_URL || !AGENT_TOKEN) {
+async function agentFetch(server, path, opts = {}) {
+  if (!server || !server.url || !server.token) {
     return { status: 503, data: { error: 'MC-Agent nicht konfiguriert' } };
   }
   try {
-    const res = await fetch(`${AGENT_URL}${path}`, {
+    const res = await fetch(`${server.url}${path}`, {
       ...opts,
       headers: {
-        Authorization: `Bearer ${AGENT_TOKEN}`,
+        Authorization: `Bearer ${server.token}`,
         'Content-Type': 'application/json',
         ...(opts.headers || {}),
       },
@@ -30,38 +29,48 @@ async function agentFetch(path, opts = {}) {
   }
 }
 
+// Server, den die aktuelle Anfrage meint (?server=<id>, Default: erster Server).
+function reqServer(req) {
+  return getServer(req.query.server);
+}
+
+// Liste aller konfigurierten Server (ohne Token) für den Switcher im Frontend.
+router.get('/servers', (req, res) => {
+  res.json({ servers: publicServers() });
+});
+
 router.get('/status', async (req, res) => {
-  const r = await agentFetch('/status');
+  const r = await agentFetch(reqServer(req), '/status');
   res.status(r.status).json(r.data);
 });
 
 router.post('/power', async (req, res) => {
-  const r = await agentFetch('/power', { method: 'POST', body: JSON.stringify(req.body) });
+  const r = await agentFetch(reqServer(req), '/power', { method: 'POST', body: JSON.stringify(req.body) });
   res.status(r.status).json(r.data);
 });
 
 router.post('/command', async (req, res) => {
-  const r = await agentFetch('/command', { method: 'POST', body: JSON.stringify(req.body) });
+  const r = await agentFetch(reqServer(req), '/command', { method: 'POST', body: JSON.stringify(req.body) });
   res.status(r.status).json(r.data);
 });
 
 router.get('/logs', async (req, res) => {
-  const r = await agentFetch(`/logs?tail=${encodeURIComponent(req.query.tail || '250')}`);
+  const r = await agentFetch(reqServer(req), `/logs?tail=${encodeURIComponent(req.query.tail || '250')}`);
   res.status(r.status).json(r.data);
 });
 
 router.get('/configs', async (req, res) => {
-  const r = await agentFetch('/configs');
+  const r = await agentFetch(reqServer(req), '/configs');
   res.status(r.status).json(r.data);
 });
 
 router.get('/config/:file', async (req, res) => {
-  const r = await agentFetch(`/config/${encodeURIComponent(req.params.file)}`);
+  const r = await agentFetch(reqServer(req), `/config/${encodeURIComponent(req.params.file)}`);
   res.status(r.status).json(r.data);
 });
 
 router.put('/config/:file', async (req, res) => {
-  const r = await agentFetch(`/config/${encodeURIComponent(req.params.file)}`, {
+  const r = await agentFetch(reqServer(req), `/config/${encodeURIComponent(req.params.file)}`, {
     method: 'PUT',
     body: JSON.stringify(req.body),
   });
@@ -70,113 +79,113 @@ router.put('/config/:file', async (req, res) => {
 
 // Backups
 router.get('/backups', async (req, res) => {
-  const r = await agentFetch('/backups');
+  const r = await agentFetch(reqServer(req), '/backups');
   res.status(r.status).json(r.data);
 });
 router.post('/backups', async (req, res) => {
-  const r = await agentFetch('/backups', { method: 'POST' });
+  const r = await agentFetch(reqServer(req), '/backups', { method: 'POST' });
   res.status(r.status).json(r.data);
 });
 router.post('/backups/:name/restore', async (req, res) => {
-  const r = await agentFetch(`/backups/${encodeURIComponent(req.params.name)}/restore`, { method: 'POST' });
+  const r = await agentFetch(reqServer(req), `/backups/${encodeURIComponent(req.params.name)}/restore`, { method: 'POST' });
   res.status(r.status).json(r.data);
 });
 router.delete('/backups/:name', async (req, res) => {
-  const r = await agentFetch(`/backups/${encodeURIComponent(req.params.name)}`, { method: 'DELETE' });
+  const r = await agentFetch(reqServer(req), `/backups/${encodeURIComponent(req.params.name)}`, { method: 'DELETE' });
   res.status(r.status).json(r.data);
 });
 
 // Plugins
 router.get('/plugins', async (req, res) => {
-  const r = await agentFetch('/plugins');
+  const r = await agentFetch(reqServer(req), '/plugins');
   res.status(r.status).json(r.data);
 });
 router.post('/plugins/toggle', async (req, res) => {
-  const r = await agentFetch('/plugins/toggle', { method: 'POST', body: JSON.stringify(req.body) });
+  const r = await agentFetch(reqServer(req), '/plugins/toggle', { method: 'POST', body: JSON.stringify(req.body) });
   res.status(r.status).json(r.data);
 });
 router.post('/plugins/install', async (req, res) => {
-  const r = await agentFetch('/plugins/install', { method: 'POST', body: JSON.stringify(req.body) });
+  const r = await agentFetch(reqServer(req), '/plugins/install', { method: 'POST', body: JSON.stringify(req.body) });
   res.status(r.status).json(r.data);
 });
 router.get('/plugins/browse', async (req, res) => {
-  const r = await agentFetch(`/plugins/browse?q=${encodeURIComponent(req.query.q || '')}&offset=${encodeURIComponent(req.query.offset || '0')}`);
+  const r = await agentFetch(reqServer(req), `/plugins/browse?q=${encodeURIComponent(req.query.q || '')}&offset=${encodeURIComponent(req.query.offset || '0')}`);
   res.status(r.status).json(r.data);
 });
 router.get('/plugins/updates', async (req, res) => {
-  const r = await agentFetch('/plugins/updates');
+  const r = await agentFetch(reqServer(req), '/plugins/updates');
   res.status(r.status).json(r.data);
 });
 router.delete('/plugins/:name', async (req, res) => {
-  const r = await agentFetch(`/plugins/${encodeURIComponent(req.params.name)}`, { method: 'DELETE' });
+  const r = await agentFetch(reqServer(req), `/plugins/${encodeURIComponent(req.params.name)}`, { method: 'DELETE' });
   res.status(r.status).json(r.data);
 });
 
 // Datei-Manager
 router.get('/files', async (req, res) => {
-  const r = await agentFetch(`/files?path=${encodeURIComponent(req.query.path || '')}`);
+  const r = await agentFetch(reqServer(req), `/files?path=${encodeURIComponent(req.query.path || '')}`);
   res.status(r.status).json(r.data);
 });
 router.get('/file', async (req, res) => {
-  const r = await agentFetch(`/file?path=${encodeURIComponent(req.query.path || '')}`);
+  const r = await agentFetch(reqServer(req), `/file?path=${encodeURIComponent(req.query.path || '')}`);
   res.status(r.status).json(r.data);
 });
 router.put('/file', async (req, res) => {
-  const r = await agentFetch(`/file?path=${encodeURIComponent(req.query.path || '')}`, { method: 'PUT', body: JSON.stringify(req.body) });
+  const r = await agentFetch(reqServer(req), `/file?path=${encodeURIComponent(req.query.path || '')}`, { method: 'PUT', body: JSON.stringify(req.body) });
   res.status(r.status).json(r.data);
 });
 router.post('/upload', async (req, res) => {
-  const r = await agentFetch('/upload', { method: 'POST', body: JSON.stringify(req.body) });
+  const r = await agentFetch(reqServer(req), '/upload', { method: 'POST', body: JSON.stringify(req.body) });
   res.status(r.status).json(r.data);
 });
 
 // Spieler & Gamerules
 router.get('/players', async (req, res) => {
-  const r = await agentFetch('/players');
+  const r = await agentFetch(reqServer(req), '/players');
   res.status(r.status).json(r.data);
 });
 router.get('/players/known', async (req, res) => {
-  const r = await agentFetch('/players/known');
+  const r = await agentFetch(reqServer(req), '/players/known');
   res.status(r.status).json(r.data);
 });
 router.get('/performance', async (req, res) => {
-  const r = await agentFetch('/performance');
+  const r = await agentFetch(reqServer(req), '/performance');
   res.status(r.status).json(r.data);
 });
 router.get('/gamerules', async (req, res) => {
-  const r = await agentFetch('/gamerules');
+  const r = await agentFetch(reqServer(req), '/gamerules');
   res.status(r.status).json(r.data);
 });
 
 // World
 router.get('/world', async (req, res) => {
-  const r = await agentFetch('/world');
+  const r = await agentFetch(reqServer(req), '/world');
   res.status(r.status).json(r.data);
 });
 router.post('/world/reset', async (req, res) => {
-  const r = await agentFetch('/world/reset', { method: 'POST' });
+  const r = await agentFetch(reqServer(req), '/world/reset', { method: 'POST' });
   res.status(r.status).json(r.data);
 });
 
 // Automatisierung (Auto-Backups + geplante Befehle)
 router.get('/automation', async (req, res) => {
-  const r = await agentFetch('/automation');
+  const r = await agentFetch(reqServer(req), '/automation');
   res.status(r.status).json(r.data);
 });
 router.put('/automation/backup', async (req, res) => {
-  const r = await agentFetch('/automation/backup', { method: 'PUT', body: JSON.stringify(req.body) });
+  const r = await agentFetch(reqServer(req), '/automation/backup', { method: 'PUT', body: JSON.stringify(req.body) });
   res.status(r.status).json(r.data);
 });
 router.post('/automation/commands', async (req, res) => {
-  const r = await agentFetch('/automation/commands', { method: 'POST', body: JSON.stringify(req.body) });
+  const r = await agentFetch(reqServer(req), '/automation/commands', { method: 'POST', body: JSON.stringify(req.body) });
   res.status(r.status).json(r.data);
 });
 router.put('/automation/commands/:id', async (req, res) => {
-  const r = await agentFetch(`/automation/commands/${encodeURIComponent(req.params.id)}`, { method: 'PUT', body: JSON.stringify(req.body) });
+  const r = await agentFetch(reqServer(req), `/automation/commands/${encodeURIComponent(req.params.id)}`, { method: 'PUT', body: JSON.stringify(req.body) });
   res.status(r.status).json(r.data);
 });
 router.delete('/automation/commands/:id', async (req, res) => {
-  const r = await agentFetch(`/automation/commands/${encodeURIComponent(req.params.id)}`, { method: 'DELETE' });
+  const r = await agentFetch(reqServer(req), `/automation/commands/${encodeURIComponent(req.params.id)}`, { method: 'DELETE' });
   res.status(r.status).json(r.data);
 });
 

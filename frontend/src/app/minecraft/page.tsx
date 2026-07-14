@@ -24,14 +24,23 @@ const API_BASE = typeof window !== 'undefined'
   ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api`
   : '';
 
+// Aktiver Minecraft-Server — wird von der Seite gesetzt und an jeden Agent-Call gehängt.
+let activeServerId = '';
+function setActiveServer(id: string) { activeServerId = id; }
+
 async function mcApi(endpoint: string, options?: RequestInit) {
   const { accessToken } = useAuthStore.getState();
-  const res = await fetch(`${API_BASE}/minecraft${endpoint}`, {
+  const url = activeServerId
+    ? `${API_BASE}/minecraft${endpoint}${endpoint.includes('?') ? '&' : '?'}server=${encodeURIComponent(activeServerId)}`
+    : `${API_BASE}/minecraft${endpoint}`;
+  const res = await fetch(url, {
     ...options,
     headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}), ...(options?.headers as Record<string, string> || {}) },
   });
   return res.json().catch(() => ({}));
 }
+
+interface McServer { id: string; name: string; host: string; version: string; map?: string }
 
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '').replace(/\r/g, '');
 function fmtSize(b: number): string { if (!b) return '0 B'; const u = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(1024)); return `${(b / Math.pow(1024, i)).toFixed(1)} ${u[i]}`; }
@@ -128,10 +137,13 @@ function StatCard({ icon: Icon, label, value, sub, percent, color }: { icon: any
 }
 
 export default function MinecraftPage() {
+  const [servers, setServers] = useState<McServer[]>([]);
+  const [serverId, setServerId] = useState('');
   const [status, setStatus] = useState<any>({});
   const [tab, setTab] = useState<Tab>('console');
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState('');
+  const activeMc = servers.find(s => s.id === serverId);
 
   const [logs, setLogs] = useState('');
   const [command, setCommand] = useState('');
@@ -200,9 +212,37 @@ export default function MinecraftPage() {
   const refreshLogs = useCallback(async () => { const r = await mcApi('/logs?tail=300'); if (typeof r.logs === 'string') setLogs(stripAnsi(r.logs)); }, []);
   const appendLog = (s: string) => setLogs(p => { const n = p + s; return n.length > 80000 ? n.slice(n.length - 80000) : n; });
 
-  useEffect(() => { refreshStatus(); const t = setInterval(refreshStatus, 5000); return () => clearInterval(t); }, [refreshStatus]);
+  // Server-Liste laden und aktiven Server festlegen (aus localStorage, sonst erster)
   useEffect(() => {
-    if (tab !== 'console') return;
+    mcApi('/servers').then(r => {
+      const list: McServer[] = r.servers || [];
+      setServers(list);
+      if (!list.length) return;
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('mc-active-server') : null;
+      const initial = list.find(s => s.id === saved)?.id || list[0].id;
+      setActiveServer(initial);
+      setServerId(initial);
+    });
+  }, []);
+
+  const switchServer = (id: string) => {
+    if (id === serverId) return;
+    setActiveServer(id);
+    setServerId(id);
+    if (typeof window !== 'undefined') localStorage.setItem('mc-active-server', id);
+    // Server-spezifischen Zustand zurücksetzen
+    setStatus({}); setLogs(''); setConfigs([]); setActiveConfig(''); setPlugins([]);
+    setBackups([]); setWorld(null); setKnown([]); setOnline({ online: [], count: 0, max: null });
+    setFmPath(''); setFmFile(''); setFmEntries([]);
+    // Karten-Tab verlassen, wenn der neue Server keine Karte hat
+    const target = servers.find(s => s.id === id);
+    if (tab === 'map' && !target?.map) setTab('console');
+    setTimeout(refreshStatus, 0);
+  };
+
+  useEffect(() => { if (!serverId) return; refreshStatus(); const t = setInterval(refreshStatus, 5000); return () => clearInterval(t); }, [refreshStatus, serverId]);
+  useEffect(() => {
+    if (tab !== 'console' || !serverId) return;
     let closedByUs = false; let pollTimer: any = null; let ws: WebSocket | null = null;
     const startPolling = () => { if (pollTimer) return; refreshLogs(); pollTimer = setInterval(refreshLogs, 3000); };
     try {
@@ -210,7 +250,7 @@ export default function MinecraftPage() {
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.port ? `${window.location.hostname}:${window.location.port}` : window.location.hostname;
       setLogs('');
-      ws = new WebSocket(`${proto}//${host}/api/minecraft/console?token=${encodeURIComponent(accessToken || '')}`);
+      ws = new WebSocket(`${proto}//${host}/api/minecraft/console?token=${encodeURIComponent(accessToken || '')}&server=${encodeURIComponent(serverId)}`);
       consoleWsRef.current = ws;
       ws.onopen = () => setWsConnected(true);
       ws.onmessage = (ev) => {
@@ -225,7 +265,7 @@ export default function MinecraftPage() {
       ws.onerror = () => { /* onclose folgt */ };
     } catch { startPolling(); }
     return () => { closedByUs = true; if (pollTimer) clearInterval(pollTimer); if (ws) { try { ws.close(); } catch { /* */ } } consoleWsRef.current = null; setWsConnected(false); };
-  }, [tab, refreshLogs]);
+  }, [tab, refreshLogs, serverId]);
   useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; }, [logs]);
   useEffect(() => {
     if (tab === 'config') mcApi('/configs').then(r => { const f: string[] = r.files || []; setConfigs(f); if (f.length && !activeConfig) loadConfig(f.includes('server.properties') ? 'server.properties' : f[0]); });
@@ -237,7 +277,7 @@ export default function MinecraftPage() {
     else if (tab === 'performance') mcApi('/performance').then(setPerf);
     else if (tab === 'automation') loadAutomation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+  }, [tab, serverId]);
   useEffect(() => { if (tab !== 'players') return; const t = setInterval(loadPlayers, 8000); return () => clearInterval(t); }, [tab]);
   useEffect(() => { if (tab !== 'performance') return; const t = setInterval(() => mcApi('/performance').then(setPerf), 4000); return () => clearInterval(t); }, [tab]);
   useEffect(() => { if (tab === 'plugins' && pluginSub === 'browse' && browseResults.length === 0) browsePlugins(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [tab, pluginSub]);
@@ -312,10 +352,12 @@ export default function MinecraftPage() {
   const running = status.running;
   const statusColor = status.error ? '#6b7280' : running ? '#10b981' : '#ef4444';
   const statusText = status.error ? 'Agent nicht erreichbar' : running ? (status.health === 'healthy' ? 'Läuft' : 'Startet…') : 'Gestoppt';
+  const mapUrl = activeMc ? (activeMc.map || '') : MAP_URL;
   const TABS: [Tab, string, any][] = [
     ['console', 'Konsole', TerminalSquare], ['performance', 'Leistung', Activity], ['players', 'Spieler', Users], ['world', 'Welt', Globe],
     ['config', 'Konfiguration', SlidersHorizontal], ['files', 'Dateien', Folder], ['plugins', 'Plugins', Puzzle],
-    ['backups', 'Backups', Archive], ['automation', 'Automatik', CalendarClock], ['map', 'Karte', MapIcon],
+    ['backups', 'Backups', Archive], ['automation', 'Automatik', CalendarClock],
+    ...(mapUrl ? [['map', 'Karte', MapIcon] as [Tab, string, any]] : []),
   ];
   const pcmd = (name: string, cmd: string, m: string) => { rcon(cmd).then(r => flash(m + (r?.response ? `: ${stripAnsi(r.response)}` : ''))); setTimeout(loadPlayers, 700); };
   const crumbs = fmPath ? fmPath.split('/').filter(Boolean) : [];
@@ -332,10 +374,30 @@ export default function MinecraftPage() {
             <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-2xl font-bold">Minecraft <span className="text-gradient">Server</span></motion.h1>
             <div className="flex items-center gap-2 mt-1 text-sm text-white/40 flex-wrap">
               <Circle className="w-2.5 h-2.5" style={{ fill: statusColor, color: statusColor }} /><span style={{ color: statusColor }}>{statusText}</span>
-              <span className="text-white/20">·</span><span>45.133.9.70:25565</span><span className="text-white/20">·</span><span>Paper 26.2</span>
+              <span className="text-white/20">·</span><span>{activeMc?.host || '45.133.9.70:25565'}</span><span className="text-white/20">·</span><span>{activeMc?.version || 'Paper 26.2'}</span>
               {online.max !== null && <><span className="text-white/20">·</span><span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{online.count}/{online.max}</span></>}
             </div>
           </div>
+
+          {/* Server-Umschalter */}
+          {servers.length > 1 && (
+            <div className="order-last w-full lg:order-none lg:w-auto flex justify-center">
+              <div className="inline-flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1">
+                {servers.map(s => {
+                  const active = serverId === s.id;
+                  return (
+                    <button key={s.id} onClick={() => switchServer(s.id)}
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition ${active ? 'bg-orange-500/15 border border-orange-500/25 text-orange-200' : 'border border-transparent text-white/45 hover:text-white/80 hover:bg-white/[0.04]'}`}>
+                      <ServerIcon className="w-3.5 h-3.5" />
+                      {s.name}
+                      {active && <Circle className="w-2 h-2 ml-0.5" style={{ fill: statusColor, color: statusColor }} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-2">
             <button disabled={busy || running} onClick={() => power('start')} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-30 transition"><Play className="w-4 h-4" /> Start</button>
             <button disabled={busy || !running} onClick={() => power('restart')} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 disabled:opacity-30 transition"><RotateCw className="w-4 h-4" /> Neustart</button>
@@ -793,10 +855,10 @@ export default function MinecraftPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2"><Layers className="w-4 h-4 text-cyan-400/80" /><h3 className="text-sm font-medium text-white/70">Live-Karte · BlueMap</h3></div>
-              <a href={MAP_URL} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 hover:bg-cyan-500/25 transition"><ExternalLink className="w-3.5 h-3.5" /> In neuem Tab öffnen</a>
+              <a href={mapUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 hover:bg-cyan-500/25 transition"><ExternalLink className="w-3.5 h-3.5" /> In neuem Tab öffnen</a>
             </div>
             <div className="glass-card rounded-2xl overflow-hidden bg-black/40">
-              <iframe src={MAP_URL} title="BlueMap" className="w-full h-[70vh] border-0" />
+              <iframe src={mapUrl} title="BlueMap" className="w-full h-[70vh] border-0" />
             </div>
             <p className="text-[11px] text-white/25">Interaktive 3D-/2D-Karte (Overworld, Nether, End). Bleibt die Einbettung leer, blockiert der Browser gemischte Inhalte (HTTPS-Dashboard ↔ HTTP-Karte) — dann „In neuem Tab öffnen" nutzen. Dauerhafte Lösung: BlueMap über eine eigene HTTPS-Subdomain (Cloudflare-Tunnel).</p>
           </div>

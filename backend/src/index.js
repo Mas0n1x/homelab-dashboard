@@ -37,6 +37,7 @@ import auditRoutes from './routes/audit.js';
 import backupRoutes from './routes/backup.js';
 import maintenanceRoutes from './routes/maintenance.js';
 import minecraftRoutes from './routes/minecraft.js';
+import { getServer as getMcServer } from './services/mcServers.js';
 import trafficRoutes from './routes/traffic.js';
 import salenetRoutes from './routes/salenet.js';
 import businessRoutes from './routes/business.js';
@@ -123,15 +124,15 @@ const wss = new WebSocketServer({ noServer: true });
 
 // Minecraft-Live-Konsole: WebSocket-Proxy zum MC-Agent (Agent-Token bleibt server-seitig)
 const mcConsoleWss = new WebSocketServer({ noServer: true });
-const MC_AGENT_URL = process.env.MC_AGENT_URL || '';
-const MC_AGENT_TOKEN = process.env.MC_AGENT_TOKEN || '';
 mcConsoleWss.on('connection', (client, req) => {
+  let mcServer = null;
   try {
     const u = new URL(req.url, `http://${req.headers.host}`);
     verifyToken(u.searchParams.get('token') || '');
+    mcServer = getMcServer(u.searchParams.get('server') || '');
   } catch { client.close(4001, 'Unauthorized'); return; }
-  if (!MC_AGENT_URL || !MC_AGENT_TOKEN) { client.close(4002, 'Agent nicht konfiguriert'); return; }
-  const agentWsUrl = MC_AGENT_URL.replace(/^http/, 'ws') + '/console?token=' + encodeURIComponent(MC_AGENT_TOKEN);
+  if (!mcServer || !mcServer.url || !mcServer.token) { client.close(4002, 'Agent nicht konfiguriert'); return; }
+  const agentWsUrl = mcServer.url.replace(/^http/, 'ws') + '/console?token=' + encodeURIComponent(mcServer.token);
   const upstream = new WebSocket(agentWsUrl);
   const queue = [];
   upstream.on('open', () => { queue.forEach(m => upstream.send(m)); queue.length = 0; });
