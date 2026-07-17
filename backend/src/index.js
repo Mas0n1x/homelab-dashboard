@@ -163,8 +163,11 @@ const clients = new Map();
 const terminalSessions = new Map();
 // Log streaming sessions: ws -> Map<containerId, stream>
 const logSessions = new Map();
-// Previous container states for crash detection
-let previousContainerStates = new Map();
+// Previous container states for crash detection — pro Server getrennt
+// (Map<serverId, Map<containerId, state>>), sonst überschreibt jeder
+// Server-Durchlauf den Zustand des vorigen und die Crash-Erkennung
+// vergleicht Container gegen den falschen Server.
+let previousContainerStatesByServer = new Map();
 // Previous uptime per server (seconds) for reboot detection
 let previousUptimeSeconds = new Map();
 
@@ -685,7 +688,8 @@ setInterval(async () => {
       const currentStates = new Map();
       containers.forEach(c => currentStates.set(c.id, c.state));
 
-      for (const [id, prevState] of previousContainerStates) {
+      const prevStates = previousContainerStatesByServer.get(server.id) || new Map();
+      for (const [id, prevState] of prevStates) {
         const currentState = currentStates.get(id);
         if (prevState === 'running' && currentState && currentState !== 'running') {
           const c = containers.find(x => x.id === id);
@@ -695,7 +699,7 @@ setInterval(async () => {
           if (c) restartedContainers.push(c);
         }
       }
-      previousContainerStates = currentStates;
+      previousContainerStatesByServer.set(server.id, currentStates);
 
       // Reboot-Erkennung über Uptime-Rückgang
       let rebooted = false;
@@ -707,6 +711,7 @@ setInterval(async () => {
       }
 
       await checkAlerts({
+        serverId: server.id,
         serverName: server.name || server.id,
         systemStats,
         cpuPercent: systemStats?.cpu?.total || 0,
