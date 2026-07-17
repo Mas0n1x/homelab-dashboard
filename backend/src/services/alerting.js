@@ -115,10 +115,12 @@ async function sendWebhook(channel, payload) {
 // Edge-getriggerte Schwellwert-Alerts mit Recovery (Hysterese).
 // Sendet EINMAL beim Überschreiten und EINMAL bei Normalisierung – kein Spam.
 // Der Zustand wird über event_type in der alert_history gehalten
-// (z. B. "disk_high::/mnt" + "disk_high::/mnt::ok").
+// (z. B. "cpu_high::pi-5" bzw. "disk_high::pi-5::/mnt" + "…::ok").
+// WICHTIG: Der Zustand muss pro Server (scope) getrennt sein, sonst
+// „entwarnt" ein ruhiger Server den Alarm eines anderen (Server-Verwechslung).
 async function handleThreshold(db, channel, opts) {
-  const { event, baseEvent, subject = '', isHigh, alert, recovery } = opts;
-  const stateEvent = subject ? `${event}::${subject}` : event;
+  const { event, scope = '', subject = '', isHigh, alert, recovery } = opts;
+  const stateEvent = [event, scope, subject].filter(Boolean).join('::');
   const okEvent = `${stateEvent}::ok`;
 
   const lastAlert = db.prepare(
@@ -217,6 +219,9 @@ export async function checkAlerts(data) {
   const disks = stats?.disk || [];
   const temps = stats?.temperature || [];
   const maxTemp = temps.length ? Math.max(...temps.map(t => Number(t.value) || 0)) : null;
+  // Server-Scope für die Hysterese-Zustände: trennt Alarm/Entwarnung pro Server,
+  // damit ein ruhiger Server nicht den Alarm eines anderen quittiert.
+  const scope = data.serverId || data.serverName || '';
 
   for (const channel of channels) {
     const events = JSON.parse(channel.events || '[]');
@@ -226,6 +231,7 @@ export async function checkAlerts(data) {
       const v = data.cpuPercent || 0;
       await handleThreshold(db, channel, {
         event: 'cpu_high',
+        scope,
         isHigh: v > TH.cpu.high,
         alert: () => ({
           title: '🔥 CPU-Auslastung hoch',
@@ -248,6 +254,7 @@ export async function checkAlerts(data) {
       const memInfo = stats?.memory ? `${fmtBytes(stats.memory.used)} / ${fmtBytes(stats.memory.total)}` : null;
       await handleThreshold(db, channel, {
         event: 'ram_high',
+        scope,
         isHigh: v > TH.ram.high,
         alert: () => ({
           title: '💾 RAM-Auslastung hoch',
@@ -274,6 +281,7 @@ export async function checkAlerts(data) {
         const v = Number(d.percent) || 0;
         await handleThreshold(db, channel, {
           event: 'disk_high',
+          scope,
           subject: d.mountPoint || d.device || 'disk',
           isHigh: v > TH.disk.high,
           alert: (subj) => ({
@@ -301,6 +309,7 @@ export async function checkAlerts(data) {
     if (events.includes('temp_high') && maxTemp !== null) {
       await handleThreshold(db, channel, {
         event: 'temp_high',
+        scope,
         isHigh: maxTemp > TH.temp.high,
         alert: () => ({
           title: '🌡️ CPU-Temperatur hoch',
