@@ -13,6 +13,78 @@ const crypto = require('crypto');
 // ── Components V2 Flag ──────────────────────────────────────────
 const CV2_FLAGS = MessageFlags.IsComponentsV2 || (1 << 15);
 
+// ── Audit-Log-Metadaten: Aktion → Titel + Farbe ─────────────────
+// Deckt praktisch jede administrative Server-Aktion ab. Aktionen mit
+// eigenem, hübscherem Handler (Ban, Channel create/delete, Rollen/Timeout
+// am Member) werden im Handler bewusst übersprungen (kein Doppel-Log).
+const AUDIT_META = {
+  [AuditLogEvent.GuildUpdate]:               { t: '⚙️ Server bearbeitet', c: 0x00d4ff },
+  [AuditLogEvent.ChannelUpdate]:             { t: '✏️ Channel bearbeitet', c: 0x00d4ff },
+  [AuditLogEvent.ChannelOverwriteCreate]:    { t: '🔐 Channel-Recht hinzugefügt', c: 0x00d4ff },
+  [AuditLogEvent.ChannelOverwriteUpdate]:    { t: '🔐 Channel-Recht geändert', c: 0x00d4ff },
+  [AuditLogEvent.ChannelOverwriteDelete]:    { t: '🔓 Channel-Recht entfernt', c: 0xffaa00 },
+  [AuditLogEvent.MemberKick]:                { t: '👢 Gekickt', c: 0xffaa00 },
+  [AuditLogEvent.MemberPrune]:               { t: '🧹 Inaktive entfernt (Prune)', c: 0xffaa00 },
+  [AuditLogEvent.MemberMove]:                { t: '🔀 In Sprachkanal verschoben', c: 0x00d4ff },
+  [AuditLogEvent.MemberDisconnect]:          { t: '🔌 Aus Sprachkanal getrennt', c: 0xffaa00 },
+  [AuditLogEvent.BotAdd]:                    { t: '🤖 Bot hinzugefügt', c: 0x00ff88 },
+  [AuditLogEvent.RoleCreate]:                { t: '➕ Rolle erstellt', c: 0x00ff88 },
+  [AuditLogEvent.RoleUpdate]:                { t: '🎭 Rolle bearbeitet', c: 0x00d4ff },
+  [AuditLogEvent.RoleDelete]:                { t: '🗑️ Rolle gelöscht', c: 0xff4444 },
+  [AuditLogEvent.InviteCreate]:              { t: '📨 Einladung erstellt', c: 0x00ff88 },
+  [AuditLogEvent.InviteUpdate]:              { t: '📨 Einladung geändert', c: 0x00d4ff },
+  [AuditLogEvent.InviteDelete]:              { t: '📭 Einladung gelöscht', c: 0xff4444 },
+  [AuditLogEvent.WebhookCreate]:             { t: '🪝 Webhook erstellt', c: 0x00ff88 },
+  [AuditLogEvent.WebhookUpdate]:             { t: '🪝 Webhook geändert', c: 0x00d4ff },
+  [AuditLogEvent.WebhookDelete]:             { t: '🪝 Webhook gelöscht', c: 0xff4444 },
+  [AuditLogEvent.EmojiCreate]:               { t: '😀 Emoji erstellt', c: 0x00ff88 },
+  [AuditLogEvent.EmojiUpdate]:               { t: '😀 Emoji geändert', c: 0x00d4ff },
+  [AuditLogEvent.EmojiDelete]:               { t: '😀 Emoji gelöscht', c: 0xff4444 },
+  [AuditLogEvent.MessageDelete]:             { t: '🗑️ Nachricht gelöscht (durch Mod)', c: 0xff4444 },
+  [AuditLogEvent.MessageBulkDelete]:         { t: '🗑️ Nachrichten massenhaft gelöscht', c: 0xff4444 },
+  [AuditLogEvent.MessagePin]:                { t: '📌 Nachricht angepinnt', c: 0x00d4ff },
+  [AuditLogEvent.MessageUnpin]:              { t: '📌 Nachricht losgelöst', c: 0xffaa00 },
+  [AuditLogEvent.IntegrationCreate]:         { t: '🔗 Integration hinzugefügt', c: 0x00ff88 },
+  [AuditLogEvent.IntegrationUpdate]:         { t: '🔗 Integration geändert', c: 0x00d4ff },
+  [AuditLogEvent.IntegrationDelete]:         { t: '🔗 Integration entfernt', c: 0xff4444 },
+  [AuditLogEvent.StageInstanceCreate]:       { t: '🎤 Bühne gestartet', c: 0x00ff88 },
+  [AuditLogEvent.StageInstanceUpdate]:       { t: '🎤 Bühne geändert', c: 0x00d4ff },
+  [AuditLogEvent.StageInstanceDelete]:       { t: '🎤 Bühne beendet', c: 0xffaa00 },
+  [AuditLogEvent.StickerCreate]:             { t: '🏷️ Sticker erstellt', c: 0x00ff88 },
+  [AuditLogEvent.StickerUpdate]:             { t: '🏷️ Sticker geändert', c: 0x00d4ff },
+  [AuditLogEvent.StickerDelete]:             { t: '🏷️ Sticker gelöscht', c: 0xff4444 },
+  [AuditLogEvent.GuildScheduledEventCreate]: { t: '📅 Event erstellt', c: 0x00ff88 },
+  [AuditLogEvent.GuildScheduledEventUpdate]: { t: '📅 Event geändert', c: 0x00d4ff },
+  [AuditLogEvent.GuildScheduledEventDelete]: { t: '📅 Event gelöscht', c: 0xff4444 },
+  [AuditLogEvent.ThreadCreate]:              { t: '🧵 Thread erstellt', c: 0x00ff88 },
+  [AuditLogEvent.ThreadUpdate]:              { t: '🧵 Thread bearbeitet', c: 0x00d4ff },
+  [AuditLogEvent.ThreadDelete]:              { t: '🧵 Thread gelöscht', c: 0xff4444 },
+  [AuditLogEvent.ApplicationCommandPermissionUpdate]:      { t: '⌨️ Command-Rechte geändert', c: 0x00d4ff },
+  [AuditLogEvent.AutoModerationRuleCreate]:                { t: '🛡️ AutoMod-Regel erstellt', c: 0x00ff88 },
+  [AuditLogEvent.AutoModerationRuleUpdate]:                { t: '🛡️ AutoMod-Regel geändert', c: 0x00d4ff },
+  [AuditLogEvent.AutoModerationRuleDelete]:                { t: '🛡️ AutoMod-Regel gelöscht', c: 0xff4444 },
+  [AuditLogEvent.AutoModerationBlockMessage]:              { t: '🛡️ AutoMod: Nachricht blockiert', c: 0xffaa00 },
+  [AuditLogEvent.AutoModerationFlagToChannel]:             { t: '🛡️ AutoMod: markiert', c: 0xffaa00 },
+  [AuditLogEvent.AutoModerationUserCommunicationDisabled]: { t: '🛡️ AutoMod: Timeout gesetzt', c: 0xffaa00 },
+};
+
+// Schlüssel aus dem Audit-Log-"changes"-Array → lesbare deutsche Labels.
+const KEY_LABELS = {
+  name: 'Name', topic: 'Thema', nsfw: 'NSFW', rate_limit_per_user: 'Slowmode (Sek.)',
+  bitrate: 'Bitrate', user_limit: 'Nutzerlimit', color: 'Farbe', hoist: 'Separat anzeigen',
+  mentionable: 'Erwähnbar', position: 'Position', nick: 'Nickname', deaf: 'Server-taub',
+  mute: 'Server-stumm', channel_id: 'Channel', parent_id: 'Kategorie', permissions: 'Berechtigungen',
+  allow: 'Erlaubt', deny: 'Verweigert', region: 'Region', afk_channel_id: 'AFK-Channel',
+  afk_timeout: 'AFK-Timeout', icon_hash: 'Server-Icon', splash_hash: 'Splash-Bild',
+  owner_id: 'Inhaber', vanity_url_code: 'Vanity-URL', verification_level: 'Verifizierungsstufe',
+  explicit_content_filter: 'Inhaltsfilter', default_message_notifications: 'Standard-Benachrichtigungen',
+  mfa_level: 'MFA-Stufe', system_channel_id: 'System-Channel', code: 'Einladungscode',
+  max_uses: 'Max. Nutzungen', uses: 'Nutzungen', max_age: 'Gültigkeit (Sek.)', temporary: 'Temporär',
+  inviter_id: 'Ersteller', archived: 'Archiviert', locked: 'Gesperrt',
+  auto_archive_duration: 'Auto-Archivierung (Min.)', application_id: 'Anwendung',
+  avatar_hash: 'Avatar', description: 'Beschreibung', type: 'Typ', enabled: 'Aktiviert',
+};
+
 // Kuratierte Projektliste fuer die "Projekte"-Nachricht (eine Nachricht, alle Projekte).
 // status: 'live' (gruen), 'dev' (gelb), 'building' (blau). since: Freitext. url: optional.
 const CURATED_PROJECTS = [
@@ -372,6 +444,8 @@ class DiscordBot {
     this.client.on(Events.MessageUpdate, (oldMessage, newMessage) => this._onMessageUpdate(oldMessage, newMessage));
     this.client.on(Events.ChannelCreate, (channel) => this._onChannelChange('create', channel));
     this.client.on(Events.ChannelDelete, (channel) => this._onChannelChange('delete', channel));
+    // Umfassendes Audit-Log: fängt alle übrigen administrativen Aktionen ab.
+    this.client.on(Events.GuildAuditLogEntryCreate, (entry, guild) => this._onAuditLogEntry(entry, guild));
   }
 
   // ── Welcome (Components V2) ────────────────────────────────────
@@ -1026,6 +1100,172 @@ class DiscordBot {
       await channel.send({ embeds: [embed] });
     } catch (e) {
       console.error('Member-flow modlog error:', e.message);
+    }
+  }
+
+  // ── Umfassendes Audit-Log ─────────────────────────────────────
+  // Dokumentiert praktisch jede administrative Server-Aktion in EINEM Handler.
+  // Aktionen mit eigenem, hübscherem Handler werden übersprungen (kein Doppel-Log).
+  // Reines Betreten/Verlassen von Sprachkanälen ist KEIN Audit-Event und wird
+  // daher bewusst nicht erfasst (Mod-erzwungenes Move/Disconnect hingegen schon).
+  async _onAuditLogEntry(entry, guild) {
+    if (this.getConfig('modlog_audit') === 'false') return;
+
+    // Von dedizierten Handlern bereits abgedeckt → hier ignorieren (kein Doppel-Log)
+    const SKIP = new Set([
+      AuditLogEvent.MemberBanAdd, AuditLogEvent.MemberBanRemove,
+      AuditLogEvent.ChannelCreate, AuditLogEvent.ChannelDelete,
+      AuditLogEvent.MemberRoleUpdate, AuditLogEvent.MemberUpdate,
+    ]);
+    if (SKIP.has(entry.action)) return;
+
+    const channel = await this._modlogChannel();
+    if (!channel) return;
+
+    try {
+      const meta = AUDIT_META[entry.action] || { t: `Aktion #${entry.action}`, c: 0x8888ff };
+
+      // Ausführenden auflösen (kann fehlen, z. B. bei AutoMod-Automatik)
+      let executor = entry.executor;
+      if (!executor && entry.executorId) {
+        executor = await this.client.users.fetch(entry.executorId).catch(() => null);
+      }
+
+      const desc = [];
+      const targetLabel = await this._auditTargetLabel(entry, guild);
+      if (targetLabel) desc.push(`**Betrifft:** ${targetLabel}`);
+      desc.push(executor
+        ? `**Ausgeführt von:** <@${executor.id}> (${executor.tag})`
+        : '**Ausgeführt von:** *System / unbekannt*');
+
+      const embed = new EmbedBuilder()
+        .setTitle(`Mod-Log: ${meta.t}`)
+        .setDescription(desc.join('\n'))
+        .setColor(meta.c)
+        .setTimestamp();
+
+      const extra = this._auditExtra(entry);
+      if (extra) embed.addFields({ name: 'Details', value: extra.substring(0, 1024) });
+
+      const changeFields = this._formatAuditChanges(entry);
+      if (changeFields.length) embed.addFields(...changeFields.slice(0, 20));
+
+      if (entry.reason) embed.addFields({ name: 'Grund', value: String(entry.reason).substring(0, 1024) });
+
+      await channel.send({ embeds: [embed] });
+      this.log('modlog', channel.id, null, entry.targetId || null,
+        { type: 'audit', action: entry.action, executor: executor?.tag || null });
+    } catch (e) {
+      console.error('Audit-log modlog error:', e.message);
+    }
+  }
+
+  // Lesbares Label für das Ziel der Aktion (User/Channel/Rolle/Server/…).
+  async _auditTargetLabel(entry, guild) {
+    const id = entry.targetId;
+    try {
+      switch (entry.targetType) {
+        case 'User': {
+          const u = entry.target || (id ? await this.client.users.fetch(id).catch(() => null) : null);
+          return u?.tag ? `<@${u.id}> (${u.tag})` : (id ? `<@${id}>` : null);
+        }
+        case 'Channel':
+        case 'Thread':
+          return id ? `<#${id}>` : (entry.target?.name ? `#${entry.target.name}` : null);
+        case 'Role':
+          return id ? `<@&${id}>` : (entry.target?.name || null);
+        case 'Guild':
+          return guild?.name || 'Server';
+        default:
+          return entry.target?.name ? `\`${entry.target.name}\`` : (id ? `\`${id}\`` : null);
+      }
+    } catch {
+      return id ? `\`${id}\`` : null;
+    }
+  }
+
+  // Aktions-spezifische Zusatzinfos aus entry.extra (Anzahl, Ziel-Channel, …).
+  _auditExtra(entry) {
+    const x = entry.extra;
+    if (!x) return null;
+    const parts = [];
+    try {
+      const a = entry.action;
+      if (a === AuditLogEvent.MemberPrune) {
+        if (x.days) parts.push(`Inaktiv seit: ${x.days} Tagen`);
+        if (x.removed) parts.push(`Entfernt: ${x.removed}`);
+      } else if (a === AuditLogEvent.MessageDelete || a === AuditLogEvent.MessageBulkDelete
+        || a === AuditLogEvent.MessagePin || a === AuditLogEvent.MessageUnpin) {
+        if (x.channel?.id) parts.push(`Channel: <#${x.channel.id}>`);
+        if (x.count) parts.push(`Anzahl: ${x.count}`);
+      } else if (a === AuditLogEvent.MemberDisconnect) {
+        if (x.count) parts.push(`Getrennt: ${x.count}`);
+      } else if (a === AuditLogEvent.MemberMove) {
+        if (x.channel?.id) parts.push(`Ziel-Channel: <#${x.channel.id}>`);
+        if (x.count) parts.push(`Verschoben: ${x.count}`);
+      } else if (a === AuditLogEvent.ChannelOverwriteCreate
+        || a === AuditLogEvent.ChannelOverwriteUpdate
+        || a === AuditLogEvent.ChannelOverwriteDelete) {
+        // extra ist eine Rolle oder ein Mitglied, dessen Rechte betroffen sind
+        if (x.name) parts.push(`Rolle: \`${x.name}\``);
+        else if (x.id) parts.push(`Betrifft: <@${x.id}>`);
+      }
+    } catch { /* extra-Form variiert je Aktion – best effort */ }
+    return parts.length ? parts.join(' · ') : null;
+  }
+
+  // Wandelt entry.changes in lesbare Embed-Felder (Vorher → Nachher) um.
+  _formatAuditChanges(entry) {
+    const changes = entry.changes;
+    if (!Array.isArray(changes) || !changes.length) return [];
+    const fields = [];
+    for (const ch of changes) {
+      if (fields.length >= 12) break;
+      const label = String(KEY_LABELS[ch.key] || ch.key).substring(0, 256);
+
+      // Berechtigungs-Bitfelder lesbar diffen
+      if (['permissions', 'allow', 'deny'].includes(ch.key)) {
+        const val = this._formatPermDiff(ch.old, ch.new);
+        if (val) fields.push({ name: label, value: val.substring(0, 1024) });
+        continue;
+      }
+
+      const before = this._fmtVal(ch.old);
+      const after = this._fmtVal(ch.new);
+      let value;
+      if (before !== null && after !== null) value = `${before} → ${after}`;
+      else if (after !== null) value = `${after}`;
+      else if (before !== null) value = `~~${before}~~`;
+      else continue;
+      fields.push({ name: label, value: String(value).substring(0, 1024) });
+    }
+    return fields;
+  }
+
+  _fmtVal(v) {
+    if (v === undefined || v === null || v === '') return null;
+    if (typeof v === 'boolean') return v ? 'Ja' : 'Nein';
+    if (Array.isArray(v)) {
+      if (!v.length) return '*leer*';
+      return v.map(e => (e && typeof e === 'object') ? (e.name || e.id || JSON.stringify(e)) : String(e)).join(', ');
+    }
+    if (typeof v === 'object') return (v.name || v.id || JSON.stringify(v));
+    return String(v);
+  }
+
+  // Berechtigungs-Bitfeld-Differenz (welche Rechte kamen dazu / fielen weg).
+  _formatPermDiff(oldRaw, newRaw) {
+    try {
+      const oldP = new PermissionsBitField(BigInt(oldRaw || 0)).toArray();
+      const newP = new PermissionsBitField(BigInt(newRaw || 0)).toArray();
+      const added = newP.filter(p => !oldP.includes(p));
+      const removed = oldP.filter(p => !newP.includes(p));
+      const lines = [];
+      if (added.length) lines.push(`➕ ${added.join(', ')}`);
+      if (removed.length) lines.push(`➖ ${removed.join(', ')}`);
+      return lines.length ? lines.join('\n') : null;
+    } catch {
+      return null;
     }
   }
 
