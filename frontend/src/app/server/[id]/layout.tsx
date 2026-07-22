@@ -8,7 +8,7 @@
 import { useEffect } from 'react';
 import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Cpu, Box, Terminal, FileText, Wrench } from 'lucide-react';
+import { Cpu, Box, FileText, Wrench } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
 import { useServerStore } from '@/stores/serverStore';
@@ -19,7 +19,6 @@ import { ServerHeader } from '@/components/server/ServerHeader';
 const TABS = [
   { id: 'overview', label: 'Overview', icon: Cpu, path: '' },
   { id: 'docker', label: 'Docker', icon: Box, path: '/docker' },
-  { id: 'terminal', label: 'Terminal', icon: Terminal, path: '/terminal' },
   { id: 'logs', label: 'Logs', icon: FileText, path: '/logs' },
   { id: 'maintenance', label: 'Wartung', icon: Wrench, path: '/maintenance' },
 ];
