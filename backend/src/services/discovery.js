@@ -15,6 +15,9 @@ const WEB_PORTS = new Set([80, 443, 3000, 3001, 4000, 5000, 5173, 8000, 8080, 80
 // Container names to always skip (our own dashboard containers)
 const SKIP_CONTAINERS = new Set(['homelab-frontend', 'homelab-backend', 'homelab-nginx']);
 
+// Compose-Projekte, die nicht mehr aufs Dashboard gehoeren (nach vps2 umgezogen).
+const SKIP_PROJECTS = new Set(['azubinet', 'personet-cc']);
+
 // Known name mappings for common images
 const IMAGE_NAMES = {
   'nginx': 'Web Server',
@@ -38,9 +41,13 @@ export async function discoverServices(serverId = 'local') {
     return containers
       .filter(c => {
         const name = c.Names[0]?.replace(/^\//, '') || '';
+        const project = c.Labels?.['com.docker.compose.project'] || '';
 
         // Skip our own dashboard containers
         if (SKIP_CONTAINERS.has(name)) return false;
+
+        // Umgezogene Projekte ausblenden (Container ODER Compose-Projekt)
+        if (SKIP_PROJECTS.has(project) || SKIP_PROJECTS.has(name)) return false;
 
         // Explicit opt-out
         if (c.Labels?.['dashboard.enable'] === 'false') return false;

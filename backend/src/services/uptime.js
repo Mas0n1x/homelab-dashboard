@@ -33,26 +33,37 @@ export async function checkServiceHealth(serviceId, serverId, url) {
   if (!url) return;
 
   const db = getDb();
+  const target = toReachableUrl(serverId, url);
   const start = Date.now();
   let online = false;
   let responseTime = 0;
   let statusCode = 0;
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
 
-    const res = await fetch(toReachableUrl(serverId, url), {
-      method: 'HEAD',
+  try {
+    // GET statt HEAD: viele Dienste beantworten HEAD mit 405/501 oder ignorieren es
+    // ganz (Timeout), obwohl sie laufen. Range-Header haelt die Antwort minimal.
+    const res = await fetch(target, {
+      method: 'GET',
       signal: controller.signal,
-      redirect: 'follow'
+      redirect: 'follow',
+      headers: { 'User-Agent': 'HomelabDashboard-Uptime/1.0', 'Range': 'bytes=0-0' }
     });
 
-    clearTimeout(timeout);
-    online = res.ok || res.status === 401 || res.status === 403; // Auth-protected services count as online
-    responseTime = Date.now() - start;
+    // Body nicht komplett laden — es zaehlt nur, dass der Dienst geantwortet hat.
+    res.body?.cancel?.().catch(() => {});
+
     statusCode = res.status;
+    // Jede HTTP-Antwort < 500 bedeutet: der Dienst laeuft und liefert aus
+    // (auch Login-Redirect, 401/403 Auth, 404 ohne Root-Route). Erst 5xx oder
+    // ein Netzwerkfehler/Timeout gelten als offline.
+    online = statusCode > 0 && statusCode < 500;
   } catch {
+    // Netzwerkfehler oder Timeout -> offline
+  } finally {
+    clearTimeout(timeout);
     responseTime = Date.now() - start;
   }
 

@@ -9,11 +9,11 @@
 export const PROJECT_CATEGORIES: { name: string; projects: string[] }[] = [
   {
     name: 'Police Department-CC',
-    projects: ['personet-cc', 'leitstelle-max', 'asdhandbuch', 'gta-map', 'azubinet', 'lspd-dashboard', 'dienstblatt', 'diensthandbuch-pd', 'swat-handbuch'],
+    projects: ['leitstelle-max', 'asdhandbuch', 'gta-map', 'lspd-dashboard', 'dienstblatt', 'diensthandbuch-pd', 'swat-handbuch'],
   },
   {
     name: 'CC-Systeme',
-    projects: ['straftatenrechner-standalone', 'mednet'],
+    projects: ['straftatenrechner-standalone'],
   },
   {
     name: 'LawNet',

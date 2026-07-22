@@ -44,7 +44,6 @@ const SERVER_SUB_NAV: ServerSubNav[] = [
 
 const TOOL_NAV: NavItem[] = [
   { href: '/status', label: 'Status', icon: <Activity className="w-4 h-4" /> },
-  { href: '/docker', label: 'Docker', icon: <Box className="w-4 h-4" /> },
   { href: '/terminal', label: 'Terminal', icon: <Terminal className="w-4 h-4" /> },
   { href: '/mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },
   { href: '/minecraft', label: 'Minecraft', icon: <Gamepad2 className="w-4 h-4" /> },
@@ -352,7 +351,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
   const MOBILE_NAV = [
     { href: '/', label: 'Fleet', icon: <LayoutDashboard className="w-5 h-5" /> },
     { href: '/status', label: 'Status', icon: <Activity className="w-5 h-5" /> },
-    { href: '/docker', label: 'Docker', icon: <Box className="w-5 h-5" /> },
+    { href: '/terminal', label: 'Terminal', icon: <Terminal className="w-5 h-5" /> },
     { href: '/mail', label: 'Mail', icon: <Mail className="w-5 h-5" /> },
   ];
 
