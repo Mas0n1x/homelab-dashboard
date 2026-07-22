@@ -50,26 +50,29 @@ export function OverflowTabs({ tabs, activeTab, onChange }: Props) {
   }, [open]);
 
   return (
-    <div className="flex gap-1 p-1 rounded-xl bg-white/[0.02] border border-white/[0.05] backdrop-blur-sm overflow-x-auto">
-      {main.map(tab => {
-        const active = activeTab === tab.id;
-        const Icon = tab.icon;
-        return (
-          <button
-            key={tab.id}
-            onClick={() => onChange(tab.id)}
-            className={clsx('relative px-3.5 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex-shrink-0 whitespace-nowrap flex items-center gap-1.5',
-              active ? 'text-white' : 'text-white/50 hover:text-white/80')}
-          >
-            {active && <motion.div layoutId="overflow-tab-indicator" className="absolute inset-0 bg-white/[0.08] rounded-lg shadow-sm" transition={{ type: 'spring', stiffness: 400, damping: 30 }} />}
-            <span className="relative z-10 flex items-center">
-              {Icon && <Icon className="w-4 h-4 mr-1.5 opacity-70" />}
-              {tab.label}
-              <Count value={tab.count} active={active} />
-            </span>
-          </button>
-        );
-      })}
+    <div className="flex gap-1 p-1 rounded-xl bg-white/[0.02] border border-white/[0.05] backdrop-blur-sm">
+      {/* Nur die Haupt-Tabs scrollen — sonst würde overflow-x-auto das „Mehr"-Dropdown abschneiden. */}
+      <div className="flex gap-1 overflow-x-auto min-w-0 flex-1">
+        {main.map(tab => {
+          const active = activeTab === tab.id;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onChange(tab.id)}
+              className={clsx('relative px-3.5 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex-shrink-0 whitespace-nowrap flex items-center gap-1.5',
+                active ? 'text-white' : 'text-white/50 hover:text-white/80')}
+            >
+              {active && <motion.div layoutId="overflow-tab-indicator" className="absolute inset-0 bg-white/[0.08] rounded-lg shadow-sm" transition={{ type: 'spring', stiffness: 400, damping: 30 }} />}
+              <span className="relative z-10 flex items-center">
+                {Icon && <Icon className="w-4 h-4 mr-1.5 opacity-70" />}
+                {tab.label}
+                <Count value={tab.count} active={active} />
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       {more.length > 0 && (
         <div ref={ref} className="relative flex-shrink-0">
