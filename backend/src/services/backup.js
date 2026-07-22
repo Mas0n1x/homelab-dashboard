@@ -64,10 +64,10 @@ export async function runBackup(type, userId = null) {
 
     switch (type) {
       case 'database': {
-        const dbPath = process.env.DB_PATH || '/app/data/dashboard.db';
         backupPath = join(BACKUP_DIR, `dashboard-${timestamp}.db`);
-        // Use SQLite backup API via CLI
-        execSync(`sqlite3 "${dbPath}" ".backup '${backupPath}'"`, { timeout: 30000 });
+        // Eingebaute Online-Backup-API von better-sqlite3 (kein sqlite3-CLI im
+        // Container noetig, WAL-konsistent ueber dieselbe Verbindung).
+        await db.backup(backupPath);
         size = statSync(backupPath).size;
         break;
       }
@@ -184,9 +184,9 @@ export async function restoreBackup(id, userId = null) {
   ensureBackupDir();
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
 
-  // Sicherheitskopie des aktuellen Standes
+  // Sicherheitskopie des aktuellen Standes (eingebaute better-sqlite3-API, kein CLI)
   try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch { /* egal */ }
-  try { execSync(`sqlite3 "${dbPath}" ".backup '${join(BACKUP_DIR, `pre-restore-${ts}.db`)}'"`, { timeout: 30000 }); } catch { /* egal */ }
+  try { await db.backup(join(BACKUP_DIR, `pre-restore-${ts}.db`)); } catch { /* egal */ }
 
   logAudit('backup.restore', backup.type, { id, path: backup.path }, userId);
 

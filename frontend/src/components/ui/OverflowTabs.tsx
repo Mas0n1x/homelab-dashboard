@@ -5,7 +5,8 @@
  */
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
 import { ChevronDown, type LucideIcon } from 'lucide-react';
@@ -40,18 +41,48 @@ export function OverflowTabs({ tabs, activeTab, onChange }: Props) {
   const activeMore = more.find(t => t.id === activeTab);
 
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; right: number } | null>(null);
+  const btnRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => setMounted(true), []);
+
+  // Position des Menüs an der "Mehr"-Schaltfläche ausrichten. Das Menü rendert
+  // per Portal am <body> (position: fixed) — so kann es weder von overflow-Containern
+  // abgeschnitten noch von späteren Karten (eigener Stacking-Context) überdeckt werden.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const el = btnRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setCoords({ top: r.bottom + 8, right: window.innerWidth - r.right });
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open]);
+
+  // Klick außerhalb (Button ODER Menü) schließt.
   useEffect(() => {
     if (!open) return;
-    const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const onClick = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (btnRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      setOpen(false);
+    };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, [open]);
 
   return (
     <div className="flex gap-1 p-1 rounded-xl bg-white/[0.02] border border-white/[0.05] backdrop-blur-sm">
-      {/* Nur die Haupt-Tabs scrollen — sonst würde overflow-x-auto das „Mehr"-Dropdown abschneiden. */}
+      {/* Nur die Haupt-Tabs scrollen — das "Mehr"-Menü liegt außerhalb dieses Wrappers. */}
       <div className="flex gap-1 overflow-x-auto min-w-0 flex-1">
         {main.map(tab => {
           const active = activeTab === tab.id;
@@ -75,7 +106,7 @@ export function OverflowTabs({ tabs, activeTab, onChange }: Props) {
       </div>
 
       {more.length > 0 && (
-        <div ref={ref} className="relative flex-shrink-0">
+        <div ref={btnRef} className="flex-shrink-0">
           <button
             onClick={() => setOpen(o => !o)}
             className={clsx('relative px-3.5 py-2 rounded-lg text-sm font-medium transition-colors duration-200 whitespace-nowrap flex items-center gap-1.5',
@@ -89,33 +120,36 @@ export function OverflowTabs({ tabs, activeTab, onChange }: Props) {
             ) : 'Mehr'}
             <ChevronDown className={clsx('w-3.5 h-3.5 transition-transform', open && 'rotate-180')} />
           </button>
-
-          {open && (
-            <motion.div
-              initial={{ opacity: 0, y: -6, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute right-0 top-full mt-2 z-30 min-w-[190px] p-1.5 rounded-xl bg-[#0d1017]/95 border border-white/[0.08] backdrop-blur-xl shadow-2xl shadow-black/40"
-            >
-              {more.map(tab => {
-                const active = activeTab === tab.id;
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => { onChange(tab.id); setOpen(false); }}
-                    className={clsx('w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors text-left',
-                      active ? 'bg-white/[0.08] text-white' : 'text-white/60 hover:bg-white/[0.04] hover:text-white/90')}
-                  >
-                    {Icon && <Icon className="w-4 h-4 opacity-70 flex-shrink-0" />}
-                    <span className="flex-1">{tab.label}</span>
-                    <Count value={tab.count} active={active} />
-                  </button>
-                );
-              })}
-            </motion.div>
-          )}
         </div>
+      )}
+
+      {mounted && open && coords && createPortal(
+        <motion.div
+          ref={menuRef}
+          initial={{ opacity: 0, y: -6, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: 'fixed', top: coords.top, right: coords.right }}
+          className="z-[100] min-w-[190px] p-1.5 rounded-xl bg-[#0d1017] border border-white/[0.1] shadow-2xl shadow-black/50"
+        >
+          {more.map(tab => {
+            const active = activeTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => { onChange(tab.id); setOpen(false); }}
+                className={clsx('w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors text-left',
+                  active ? 'bg-white/[0.08] text-white' : 'text-white/60 hover:bg-white/[0.04] hover:text-white/90')}
+              >
+                {Icon && <Icon className="w-4 h-4 opacity-70 flex-shrink-0" />}
+                <span className="flex-1">{tab.label}</span>
+                <Count value={tab.count} active={active} />
+              </button>
+            );
+          })}
+        </motion.div>,
+        document.body
       )}
     </div>
   );
