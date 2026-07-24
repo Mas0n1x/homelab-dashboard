@@ -10,7 +10,10 @@ let previousDiscovered = new Map();
 // Ports that indicate a database or non-web service
 const DB_PORTS = new Set([5432, 3306, 27017, 6379, 11211, 9200, 5672, 4369, 15672, 2181, 9092]);
 // Ports that are typically web-accessible
-const WEB_PORTS = new Set([80, 443, 3000, 3001, 4000, 5000, 5173, 8000, 8080, 8081, 8090, 8443, 8888, 9000, 9090]);
+const WEB_PORTS = new Set([80, 443, 3000, 3001, 4000, 5000, 5173, 8000, 8080, 8081, 8090, 8096, 8123, 8384, 8443, 8888, 9000, 9090, 61208]);
+// Nicht-HTTP-Ports (Mail, SSH, Sync-Protokolle): nie als Web-URL waehlen —
+// sonst probt der Uptime-Check den falschen Port und meldet den Dienst offline.
+const NON_WEB_PORTS = new Set([22, 25, 110, 143, 465, 587, 993, 995, 21027, 22000, 24007]);
 
 // Container names to always skip (our own dashboard containers)
 const SKIP_CONTAINERS = new Set(['homelab-frontend', 'homelab-backend', 'homelab-nginx']);
@@ -142,12 +145,13 @@ function guessCategory(project, service, name) {
 function detectUrlFromPorts(ports, host = '192.168.2.103') {
   if (!ports || ports.length === 0) return null;
 
-  // Find the best web port
-  const publicPorts = ports.filter(p => p.PublicPort && !DB_PORTS.has(p.PrivatePort));
+  // Find the best web port — Mail-/Sync-/SSH-Ports ausschliessen.
+  const publicPorts = ports.filter(p =>
+    p.PublicPort && !DB_PORTS.has(p.PrivatePort) && !NON_WEB_PORTS.has(p.PrivatePort));
 
   if (publicPorts.length === 0) return null;
 
-  // Prefer known web ports
+  // Bekannte Web-Ports bevorzugen, sonst erster verbleibender (Nicht-Mail-)Port.
   const webPort = publicPorts.find(p => WEB_PORTS.has(p.PrivatePort)) || publicPorts[0];
 
   if (webPort) {

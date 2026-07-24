@@ -4,6 +4,11 @@
  * Licensed under the MIT License.
  */
 import { getDb } from './database.js';
+import http from 'node:http';
+import https from 'node:https';
+import net from 'node:net';
+
+const CHECK_TIMEOUT = 8000;
 
 // Private/Loopback-Hosts, die der Backend-Container NICHT direkt erreicht.
 // Fuer lokale Dienste laeuft der Zugriff ueber das Host-Gateway.
@@ -29,6 +34,52 @@ function toReachableUrl(serverId, url) {
   return url;
 }
 
+// HTTP(S)-Probe ueber node:http/https. Wichtig: rejectUnauthorized:false —
+// interne Dienste (Stalwart, Vaultwarden, Syncthing-GUI …) nutzen self-signed
+// Zertifikate; global fetch wuerfe die als Fehler -> faelschlich "offline".
+// Ergebnis: { ok, statusCode, responded }. responded=true, sobald ueberhaupt
+// eine HTTP-Antwort kam (auch 5xx) — sonst greift der TCP-Fallback.
+function httpProbe(target) {
+  return new Promise((resolve) => {
+    let u;
+    try { u = new URL(target); } catch { return resolve({ ok: false, statusCode: 0, responded: false }); }
+    const lib = u.protocol === 'https:' ? https : http;
+    let settled = false;
+    const done = (v) => { if (!settled) { settled = true; resolve(v); } };
+
+    const req = lib.request(target, {
+      method: 'GET',
+      timeout: CHECK_TIMEOUT,
+      rejectUnauthorized: false,
+      headers: { 'User-Agent': 'HomelabDashboard-Uptime/1.0', 'Range': 'bytes=0-0' },
+    }, (res) => {
+      const status = res.statusCode || 0;
+      res.destroy(); // Body nicht laden — es zaehlt nur, dass geantwortet wurde
+      // Alles < 500 = laeuft (Redirect, 401/403 Auth, 404 ohne Root-Route).
+      done({ ok: status > 0 && status < 500, statusCode: status, responded: true });
+    });
+    req.on('error', () => done({ ok: false, statusCode: 0, responded: false }));
+    req.on('timeout', () => { req.destroy(); done({ ok: false, statusCode: 0, responded: false }); });
+    req.end();
+  });
+}
+
+// TCP-Fallback: Dienste, die kein HTTP auf dem erkannten Port sprechen
+// (Syncthing-Sync-Port, Mail-Ports, rohe TCP-Dienste), gelten als online,
+// sobald der Port eine Verbindung annimmt. Verhindert falsche "offline".
+function tcpProbe(hostname, port) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    let settled = false;
+    const done = (v) => { if (!settled) { settled = true; socket.destroy(); resolve(v); } };
+    socket.setTimeout(CHECK_TIMEOUT);
+    socket.once('connect', () => done(true));
+    socket.once('timeout', () => done(false));
+    socket.once('error', () => done(false));
+    socket.connect(port, hostname);
+  });
+}
+
 export async function checkServiceHealth(serviceId, serverId, url) {
   if (!url) return;
 
@@ -36,36 +87,26 @@ export async function checkServiceHealth(serviceId, serverId, url) {
   const target = toReachableUrl(serverId, url);
   const start = Date.now();
   let online = false;
-  let responseTime = 0;
   let statusCode = 0;
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  let u = null;
+  try { u = new URL(target); } catch { /* ungueltige URL */ }
 
-  try {
-    // GET statt HEAD: viele Dienste beantworten HEAD mit 405/501 oder ignorieren es
-    // ganz (Timeout), obwohl sie laufen. Range-Header haelt die Antwort minimal.
-    const res = await fetch(target, {
-      method: 'GET',
-      signal: controller.signal,
-      redirect: 'follow',
-      headers: { 'User-Agent': 'HomelabDashboard-Uptime/1.0', 'Range': 'bytes=0-0' }
-    });
-
-    // Body nicht komplett laden — es zaehlt nur, dass der Dienst geantwortet hat.
-    res.body?.cancel?.().catch(() => {});
-
-    statusCode = res.status;
-    // Jede HTTP-Antwort < 500 bedeutet: der Dienst laeuft und liefert aus
-    // (auch Login-Redirect, 401/403 Auth, 404 ohne Root-Route). Erst 5xx oder
-    // ein Netzwerkfehler/Timeout gelten als offline.
-    online = statusCode > 0 && statusCode < 500;
-  } catch {
-    // Netzwerkfehler oder Timeout -> offline
-  } finally {
-    clearTimeout(timeout);
-    responseTime = Date.now() - start;
+  if (u) {
+    const probe = await httpProbe(target);
+    statusCode = probe.statusCode;
+    if (probe.ok) {
+      online = true;
+    } else if (!probe.responded) {
+      // Keine HTTP-Antwort (Nicht-HTTP-Port, Protokoll-Mismatch, Reset):
+      // Port-Verbindung pruefen. Offen -> Dienst laeuft.
+      const port = u.port ? parseInt(u.port, 10) : (u.protocol === 'https:' ? 443 : 80);
+      online = await tcpProbe(u.hostname, port);
+    }
+    // probe.responded && !probe.ok => 5xx => bleibt offline
   }
+
+  const responseTime = Date.now() - start;
 
   db.prepare(
     'INSERT INTO uptime_checks (service_id, server_id, online, response_time, status_code, checked_at) VALUES (?, ?, ?, ?, ?, ?)'
