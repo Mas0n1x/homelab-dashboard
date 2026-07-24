@@ -35,13 +35,15 @@ class ServerManager {
         if (keyPath && fs.existsSync(keyPath)) {
           sshOptions.privateKey = fs.readFileSync(keyPath);
         }
+        // Kein dockerode-`timeout` hier: über SSH ist der Transport ein ssh2-Stream
+        // ohne socket.setTimeout -> würde bei jedem Docker-Call crashen. Das
+        // App-seitige withTimeout() in index.js deckt hängende Aufrufe ab.
         dockerInstance = new Docker({
           protocol: 'ssh',
           host: serverConfig.ssh_host,
           port: serverConfig.ssh_port || 22,
           username: serverConfig.ssh_user || 'root',
           sshOptions,
-          timeout: 15000,
         });
       } else if (serverConfig.is_local || serverConfig.docker_socket) {
         dockerInstance = new Docker({
