@@ -9,7 +9,7 @@ import { useId } from 'react';
 
 export interface ChartSeries { label: string; color: string; data: number[]; }
 
-// Leichtgewichtiger Mehrlinien-SVG-Chart (kein Framework) fuer Metrik-Verlaeufe.
+// Leichtgewichtiger Mehrlinien-SVG-Chart (kein Framework) für Metrik-Verläufe.
 export function HistoryChart({ series, height = 150, max, gridPercent = false }: { series: ChartSeries[]; height?: number; max?: number; gridPercent?: boolean }) {
   const id = useId().replace(/:/g, '');
   const width = 300;

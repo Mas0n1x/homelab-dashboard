@@ -337,7 +337,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
   const { servers } = useServerStore();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Menue-Overlay bei Navigationswechsel schliessen
+  // Menü-Overlay bei Navigationswechsel schließen
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   // Body-Scroll sperren solange das Overlay offen ist

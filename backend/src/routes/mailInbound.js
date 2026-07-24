@@ -3,15 +3,28 @@
  * Copyright (c) 2024-2026 DEV Mas0n1x.
  * Licensed under the MIT License.
  */
+import crypto from 'crypto';
 import { getDb } from '../services/database.js';
 import * as mail from '../services/mail.js';
 
-const WEBHOOK_SECRET = process.env.MAIL_WEBHOOK_SECRET || 'homelab-mail-webhook-secret';
+// Kein Default-Secret: dieser Endpoint ist öffentlich (ohne JWT). Ein bekanntes
+// Default würde jedem erlauben, gefälschte Mails am Spam-Filter vorbei zu injizieren.
+const WEBHOOK_SECRET = process.env.MAIL_WEBHOOK_SECRET || '';
+
+// Konstantzeit-Vergleich gegen Timing-Angriffe.
+function secretMatches(provided) {
+  if (!WEBHOOK_SECRET || !provided) return false;
+  const a = Buffer.from(String(provided));
+  const b = Buffer.from(WEBHOOK_SECRET);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 export async function handleInboundMail(req, res) {
   try {
-    const authHeader = req.headers['x-webhook-secret'];
-    if (authHeader !== WEBHOOK_SECRET) {
+    if (!WEBHOOK_SECRET) {
+      return res.status(503).json({ error: 'Mail-Webhook nicht konfiguriert (MAIL_WEBHOOK_SECRET fehlt)' });
+    }
+    if (!secretMatches(req.headers['x-webhook-secret'])) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 

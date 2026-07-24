@@ -13,13 +13,13 @@ interface SparklineProps {
   height?: number;
   strokeWidth?: number;
   fill?: boolean;
-  /** Feste Skala (z. B. 0..100 fuer Prozent); sonst automatisch. */
+  /** Feste Skala (z. B. 0..100 für Prozent); sonst automatisch. */
   min?: number;
   max?: number;
   className?: string;
 }
 
-// Leichtgewichtige SVG-Sparkline (kein Chart-Framework) fuer die Fleet-Karten.
+// Leichtgewichtige SVG-Sparkline (kein Chart-Framework) für die Fleet-Karten.
 export function Sparkline({ data, color = '#8b5cf6', height = 34, strokeWidth = 1.5, fill = true, min, max, className }: SparklineProps) {
   const id = useId().replace(/:/g, '');
   const width = 100; // via viewBox skaliert, Container gibt Breite vor

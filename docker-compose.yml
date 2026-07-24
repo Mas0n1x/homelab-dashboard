@@ -1,3 +1,11 @@
+# Log-Rotation: begrenzt die json-file-Logs (sonst wachsen sie unbegrenzt und
+# verschleißen die Pi-SSD). Pro Service via *default-logging referenziert.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   frontend:
     build:
@@ -5,6 +13,7 @@ services:
       dockerfile: Dockerfile
     container_name: homelab-frontend
     restart: unless-stopped
+    logging: *default-logging
     environment:
       - NODE_ENV=production
     networks:
@@ -18,6 +27,7 @@ services:
       dockerfile: Dockerfile
     container_name: homelab-backend
     restart: unless-stopped
+    logging: *default-logging
     environment:
       - NODE_ENV=production
       - PORT=3001
@@ -46,7 +56,9 @@ services:
       - STALWART_URL=http://stalwart:8080
       - STALWART_ADMIN_USER=${STALWART_ADMIN_USER:-admin}
       - STALWART_ADMIN_PASSWORD=${STALWART_ADMIN_PASSWORD:-}
-      - MAIL_WEBHOOK_SECRET=${MAIL_WEBHOOK_SECRET:-homelab-mail-webhook-secret}
+      # Kein Default-Secret: ohne gesetzten Wert wird der öffentliche Inbound-Webhook
+      # deaktiviert (503), statt mit einem bekannten Default angreifbar zu sein.
+      - MAIL_WEBHOOK_SECRET=${MAIL_WEBHOOK_SECRET:-}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - homelab-data:/app/data
@@ -64,6 +76,7 @@ services:
       dockerfile: Dockerfile
     container_name: homelab-bot-runtime
     restart: unless-stopped
+    logging: *default-logging
     environment:
       - NODE_ENV=production
       - PORT=3200
@@ -95,6 +108,7 @@ services:
     image: nginx:alpine
     container_name: homelab-nginx
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "80:80"
     volumes:
@@ -111,6 +125,7 @@ services:
     image: stalwartlabs/stalwart:latest
     container_name: homelab-stalwart
     restart: unless-stopped
+    logging: *default-logging
     hostname: mail.mas0n1x.online
     volumes:
       - stalwart-data:/opt/stalwart

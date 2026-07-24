@@ -123,7 +123,7 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
   const isOnline = server.status === 'connected';
   const hasData = system !== null;
 
-  // Metrik-Verlauf fuer Sparklines (react-query dedupt je Server)
+  // Metrik-Verlauf für Sparklines (react-query dedupt je Server)
   const { data: metrics } = useQuery<MetricSample[]>({
     queryKey: ['metrics', server.id],
     queryFn: () => api.getMetrics(server.id, 60) as Promise<MetricSample[]>,
@@ -131,7 +131,7 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
     enabled: isOnline,
   });
 
-  // Tunnel-Status (ein geteilter Fetch fuer alle Karten)
+  // Tunnel-Status (ein geteilter Fetch für alle Karten)
   const { data: tunnels } = useQuery<TunnelInfo[]>({
     queryKey: ['tunnels'],
     queryFn: () => api.getTunnels() as Promise<TunnelInfo[]>,
@@ -204,13 +204,13 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
       onClick={() => router.push(`/server/${server.id}`)}
-      className="group cursor-pointer"
+      className="group cursor-pointer h-full"
     >
-      <div className={clsx('relative rounded-2xl overflow-hidden transition-all duration-300 glass-card glass-card-hover', !isOnline && 'opacity-70', hasAlert && 'ring-1 ring-red-500/40 shadow-[0_0_24px_-4px_rgba(239,68,68,0.35)]')}>
+      <div className={clsx('relative rounded-2xl overflow-hidden transition-all duration-300 glass-card glass-card-hover h-full flex flex-col', !isOnline && 'opacity-70', hasAlert && 'ring-1 ring-red-500/40 shadow-[0_0_24px_-4px_rgba(239,68,68,0.35)]')}>
         {/* Statusstreifen oben */}
         <div className={clsx('absolute top-0 left-0 right-0 h-[2px]', hasAlert ? 'bg-gradient-to-r from-red-500/0 via-red-400 to-red-500/0' : isOnline ? 'bg-gradient-to-r from-emerald-500/0 via-emerald-400/70 to-emerald-500/0' : 'bg-gradient-to-r from-red-500/0 via-red-400/70 to-red-500/0')} />
 
-        <div className="relative z-10 p-5">
+        <div className="relative z-10 p-5 flex-1">
           {/* Header */}
           <div className="flex items-start gap-3 mb-4">
             <div className="relative">

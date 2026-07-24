@@ -22,7 +22,7 @@ export function FleetTopology() {
     : 'xl:grid-cols-4';
 
   return (
-    <div className={clsx('grid grid-cols-1 sm:grid-cols-2 gap-4', cols)}>
+    <div className={clsx('grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch [&>*]:h-full', cols)}>
       {servers.map((server, index) => (
         <ServerNodeCard
           key={server.id}

@@ -4,8 +4,13 @@
  * Licensed under the MIT License.
  */
 import { getDb } from './database.js';
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { existsSync, mkdirSync, statSync, unlinkSync, copyFileSync, readFileSync } from 'fs';
+
+// Async statt execSync: tar synchron würde den kompletten Event-Loop bis zu
+// 120 s blockieren (keine HTTP-/WS-Antworten, alle Hintergrundjobs eingefroren).
+const execAsync = promisify(exec);
 import { basename, join } from 'path';
 import { Client as SSHClient } from 'ssh2';
 import { logAudit } from './audit.js';
@@ -75,7 +80,7 @@ export async function runBackup(type, userId = null) {
         const dbPath = process.env.DB_PATH || '/app/data/dashboard.db';
         backupPath = join(BACKUP_DIR, `full-backup-${timestamp}.tar.gz`);
         // Backup entire data directory excluding the backups folder
-        execSync(`tar -czf "${backupPath}" --exclude='backups' -C /app/data .`, { timeout: 120000 });
+        await execAsync(`tar -czf "${backupPath}" --exclude='backups' -C /app/data .`, { timeout: 120000 });
         size = statSync(backupPath).size;
         break;
       }
@@ -197,13 +202,17 @@ export async function restoreBackup(id, userId = null) {
       try { if (existsSync(dbPath + ext)) unlinkSync(dbPath + ext); } catch { /* egal */ }
     }
   } else if (backup.type === 'full') {
-    execSync(`tar -xzf "${backup.path}" -C /app/data`, { timeout: 120000 });
+    await execAsync(`tar -xzf "${backup.path}" -C /app/data`, { timeout: 120000 });
   } else {
     throw new Error('Unbekannter Backup-Typ');
   }
 
-  // Neustart erzwingen (Container hat restart: unless-stopped)
-  setTimeout(() => process.exit(0), 800);
+  // Neustart erzwingen (Container hat restart: unless-stopped) — DB vorher sauber
+  // schließen, damit keine WAL-Reste die wiederhergestellte Datei überschreiben.
+  setTimeout(() => {
+    try { db.close(); } catch { /* egal */ }
+    process.exit(0);
+  }, 800);
   return { success: true, restart: true };
 }
 

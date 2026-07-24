@@ -29,7 +29,9 @@ class ServerManager {
         // Sicherer Remote-Zugriff über SSH — kein offener Docker-Port nötig.
         // dockerode tunnelt `docker system dial-stdio` über die SSH-Verbindung.
         const keyPath = serverConfig.ssh_key_path || process.env.SSH_KEY_PATH;
-        const sshOptions = {};
+        // readyTimeout: SSH-Handshake bricht nach 10 s ab, statt bei totem
+        // Remote-Server unbegrenzt zu hängen und die Jobs zu blockieren.
+        const sshOptions = { readyTimeout: 10000 };
         if (keyPath && fs.existsSync(keyPath)) {
           sshOptions.privateKey = fs.readFileSync(keyPath);
         }
@@ -39,6 +41,7 @@ class ServerManager {
           port: serverConfig.ssh_port || 22,
           username: serverConfig.ssh_user || 'root',
           sshOptions,
+          timeout: 15000,
         });
       } else if (serverConfig.is_local || serverConfig.docker_socket) {
         dockerInstance = new Docker({

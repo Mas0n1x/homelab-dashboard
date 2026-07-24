@@ -18,11 +18,22 @@ export function createGlancesClient(baseUrl) {
   } catch (e) {}
 
   async function fetchGlances(endpoint) {
-    const response = await fetch(`${url}${endpoint}`, authHeader ? { headers: { Authorization: authHeader } } : undefined);
-    if (!response.ok) {
-      throw new Error(`Glances API error: ${response.status}`);
+    // Hartes Timeout: ein hängender/toter Glances-Host darf den aufrufenden
+    // Hintergrundjob nicht unbegrenzt blockieren.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await fetch(`${url}${endpoint}`, {
+        signal: controller.signal,
+        ...(authHeader ? { headers: { Authorization: authHeader } } : {}),
+      });
+      if (!response.ok) {
+        throw new Error(`Glances API error: ${response.status}`);
+      }
+      return response.json();
+    } finally {
+      clearTimeout(timer);
     }
-    return response.json();
   }
 
   return {

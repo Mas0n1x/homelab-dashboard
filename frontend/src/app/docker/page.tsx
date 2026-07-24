@@ -31,15 +31,26 @@ import { CATEGORY_ORDER, categoryOf } from '@/lib/categories';
 
 export default function DockerPage() {
   const queryClient = useQueryClient();
-  const { activeServerId } = useServerStore();
+  const { activeServerId, wsFallbackMode } = useServerStore();
   const [activeTab, setActiveTab] = useState('services');
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(['all']));
   const [logsModal, setLogsModal] = useState<{ open: boolean; containerId: string; name: string; logs: string }>({ open: false, containerId: '', name: '', logs: '' });
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; containerId: string; containerName: string; action: string }>({ open: false, containerId: '', containerName: '', action: '' });
   const [loading, setLoading] = useState<Record<string, boolean>>({});
 
-  const { data: containersData } = useQuery<Container[]>({ queryKey: ['containers', activeServerId], enabled: false });
-  const { data: dockerInfoData } = useQuery<DockerInfo>({ queryKey: ['dockerInfo', activeServerId], enabled: false });
+  // Primär füllt der WebSocket diese Keys via setQueryData. queryFn ist der
+  // Fallback: Erst-Laden ohne WS + Polling, wenn der WebSocket ausfällt
+  // (sonst bliebe die Seite ganz ohne Live-Verbindung dauerhaft leer).
+  const { data: containersData } = useQuery<Container[]>({
+    queryKey: ['containers', activeServerId],
+    queryFn: () => api.getContainers(activeServerId) as Promise<Container[]>,
+    refetchInterval: wsFallbackMode ? 5000 : false,
+  });
+  const { data: dockerInfoData } = useQuery<DockerInfo>({
+    queryKey: ['dockerInfo', activeServerId],
+    queryFn: () => api.getDockerInfo(activeServerId) as Promise<DockerInfo>,
+    refetchInterval: wsFallbackMode ? 15000 : false,
+  });
   const containers = containersData || [];
   const dockerInfo = dockerInfoData;
 
@@ -105,7 +116,7 @@ export default function DockerPage() {
     });
   };
 
-  // Haeufig genutzte Tabs sichtbar, Rest gruppiert im "Mehr"-Menue — sonst wird die Leiste zu voll.
+  // Häufig genutzte Tabs sichtbar, Rest gruppiert im "Mehr"-Menü, sonst wird die Leiste zu voll.
   const tabs = [
     { id: 'services', label: 'Services', icon: LayoutGrid },
     { id: 'containers', label: 'Container', count: containers.length, icon: Boxes },

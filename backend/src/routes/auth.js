@@ -130,8 +130,8 @@ router.put('/password', authenticateToken, async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ error: 'Aktuelles und neues Passwort erforderlich' });
     }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'Passwort muss mindestens 6 Zeichen lang sein' });
+    if (newPassword.length < 12) {
+      return res.status(400).json({ error: 'Passwort muss mindestens 12 Zeichen lang sein' });
     }
 
     const db = getDb();

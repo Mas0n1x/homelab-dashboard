@@ -4,7 +4,7 @@
  * Licensed under the MIT License.
  */
 import crypto from 'crypto';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 
 const STALWART_URL = process.env.STALWART_URL || 'http://stalwart:8080';
 const STALWART_ADMIN_USER = process.env.STALWART_ADMIN_USER || 'admin';
@@ -43,13 +43,17 @@ export function decryptPassword(encrypted) {
   return decrypted;
 }
 
-// Hash password for Stalwart using SHA-512 crypt
+// Hash password for Stalwart using SHA-512 crypt.
+// WICHTIG: Kein Shell-String mit interpoliertem Passwort (RCE-Gefahr). Das
+// Python-Skript steht als einzelnes argv-Element, das Passwort kommt über
+// stdin — es berührt niemals eine Shell.
 function hashPassword(password) {
   try {
-    const result = execSync(
-      `python3 -c "import crypt; print(crypt.crypt('${password.replace(/'/g, "\\'")}', crypt.METHOD_SHA512))"`,
-      { encoding: 'utf8' }
-    );
+    const script = 'import crypt, sys; print(crypt.crypt(sys.stdin.read(), crypt.METHOD_SHA512))';
+    const result = execFileSync('python3', ['-c', script], {
+      input: password,
+      encoding: 'utf8',
+    });
     return result.trim();
   } catch (error) {
     throw new Error('Password hashing fehlgeschlagen');

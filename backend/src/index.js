@@ -66,7 +66,12 @@ await ensureDefaultUser();
 serverManager.init();
 
 // Middleware
-app.use(cors({ origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()) : true, credentials: true }));
+// Ohne CORS_ORIGIN keine Wildcard-Origin mit Credentials (Fehlkonfiguration).
+// Fehlt die Variable, wird der Origin nicht gespiegelt (same-origin only).
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()).filter(Boolean)
+  : false;
+app.use(cors({ origin: corsOrigins, credentials: true }));
 
 // Bot-Webhook-Passthrough (öffentlich, HMAC wird in der Bot-Runtime geprüft) — MUSS vor
 // dem globalen JSON-Parser stehen, damit der rohe Body für die Signatur erhalten bleibt.
@@ -555,50 +560,63 @@ function broadcast(message) {
 }
 app.locals.broadcast = broadcast;
 
-// Background: Service discovery (every 30 seconds)
-setInterval(async () => {
-  try {
-    const servers = serverManager.getAllServers();
-    for (const server of servers) {
-      const discovered = await discoverServices(server.id);
-      if (hasDiscoveryChanged(server.id, discovered)) {
-        broadcast({
-          type: 'discovery-update',
-          serverId: server.id,
-          data: discovered
-        });
-      }
+// ─── Hintergrundjob-Helfer ───
+
+// Overlap-Guard: verhindert, dass ein neuer Lauf startet, während der vorige
+// noch läuft (langsame SSH-/Docker-Aufrufe würden sich sonst aufstauen).
+function makeJob(name, fn) {
+  let running = false;
+  return async () => {
+    if (running) return;
+    running = true;
+    try {
+      await fn();
+    } catch (error) {
+      console.error(`[job:${name}]`, error?.message || error);
+    } finally {
+      running = false;
     }
-  } catch (error) {
-    console.error('Discovery error:', error.message);
+  };
+}
+
+// Hartes Timeout um einen einzelnen Aufruf — ein toter Server hängt dann nicht
+// den ganzen Job-Lauf auf.
+function withTimeout(promise, ms, label = 'op') {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Timeout (${label}, ${ms}ms)`)), ms);
+  });
+  return Promise.race([Promise.resolve(promise), timeout]).finally(() => clearTimeout(timer));
+}
+
+// Alle Server PARALLEL abarbeiten; ein Fehler/Timeout bei einem Server lässt
+// die anderen unberührt (kein sequentielles await, das die Flotte blockiert).
+function forEachServer(fn) {
+  return Promise.allSettled(serverManager.getAllServers().map(s => fn(s)));
+}
+
+// Background: Service discovery (every 30 seconds)
+setInterval(makeJob('discovery', () => forEachServer(async (server) => {
+  const discovered = await withTimeout(discoverServices(server.id), 20000, 'discovery');
+  if (hasDiscoveryChanged(server.id, discovered)) {
+    broadcast({ type: 'discovery-update', serverId: server.id, data: discovered });
   }
-}, 30000);
+})), 30000);
 
 // Background: Uptime checks (every 60 seconds)
-setInterval(async () => {
-  try {
-    const servers = serverManager.getAllServers();
-    for (const server of servers) {
-      const discovered = await discoverServices(server.id);
-      const manual = db.prepare('SELECT id, url, server_id as serverId FROM manual_services WHERE server_id = ?').all(server.id);
-      const allServices = [
-        ...discovered.map(s => ({ id: s.id, url: s.url, serverId: s.serverId })),
-        ...manual
-      ];
-      const results = await checkAllServices(allServices);
-      broadcast({
-        type: 'service-status',
-        serverId: server.id,
-        data: results
-      });
-    }
-  } catch (error) {
-    console.error('Uptime check error:', error.message);
-  }
-}, 60000);
+setInterval(makeJob('uptime', () => forEachServer(async (server) => {
+  const discovered = await withTimeout(discoverServices(server.id), 20000, 'discovery');
+  const manual = db.prepare('SELECT id, url, server_id as serverId FROM manual_services WHERE server_id = ?').all(server.id);
+  const allServices = [
+    ...discovered.map(s => ({ id: s.id, url: s.url, serverId: s.serverId })),
+    ...manual
+  ];
+  const results = await checkAllServices(allServices);
+  broadcast({ type: 'service-status', serverId: server.id, data: results });
+})), 60000);
 
 // Background: Portfolio notifications (every 30 seconds)
-setInterval(async () => {
+setInterval(makeJob('portfolio', async () => {
   try {
     const newNotifications = await portfolio.checkForNotifications();
     if (newNotifications.length > 0) {
@@ -634,34 +652,31 @@ setInterval(async () => {
   } catch {
     // Portfolio may be offline, that's ok
   }
-}, 30000);
+}), 30000);
 
-// Background: Container stats (every 5 seconds) — nur wenn jemand zuschaut (spart SSH-Last)
-setInterval(async () => {
-  try {
-    if (wss.clients.size === 0) return;
-    const dockerMod = await import('./services/docker.js');
-    const servers = serverManager.getAllServers();
-    for (const server of servers) {
-      const dockerInst = serverManager.getDocker(server.id);
-      if (!dockerInst) continue;
-      const stats = await dockerMod.getAllContainerStats(dockerInst);
-      broadcast({ type: 'container-stats', serverId: server.id, data: stats });
-    }
-  } catch {}
-}, 5000);
+// Background: Container stats (every 5 seconds) — nur wenn jemand zuschaut (spart SSH-Last).
+// Overlap-Guard + parallele Server + Timeout: ein langsamer SSH-Server darf den
+// 5-s-Takt nicht aufstauen.
+setInterval(makeJob('container-stats', async () => {
+  if (wss.clients.size === 0) return;
+  const dockerMod = await import('./services/docker.js');
+  await forEachServer(async (server) => {
+    const dockerInst = serverManager.getDocker(server.id);
+    if (!dockerInst) return;
+    const stats = await withTimeout(dockerMod.getAllContainerStats(dockerInst), 8000, 'stats');
+    broadcast({ type: 'container-stats', serverId: server.id, data: stats });
+  });
+}), 5000);
 
 // Background: Alerting check (every 30 seconds)
-setInterval(async () => {
-  try {
-    const servers = serverManager.getAllServers();
-    for (const server of servers) {
+setInterval(makeJob('alerting', () => forEachServer(async (server) => {
+  {
       const connection = serverManager.getConnection(server.id);
-      if (!connection) continue;
+      if (!connection) return;
 
       const glances = connection.glances;
       const dockerInst = connection.docker;
-      const systemStats = glances ? await glances.getSystemStats().catch(() => null) : null;
+      const systemStats = glances ? await withTimeout(glances.getSystemStats(), 8000, 'glances').catch(() => null) : null;
 
       // Metrik-Sample fuer Sparklines/Verlauf persistieren (Fleet-Historie)
       if (systemStats) {
@@ -723,56 +738,52 @@ setInterval(async () => {
         rebooted,
       });
     }
-  } catch {}
-}, 30000);
+  })), 30000);
 
 // Background: Periodischer Statusbericht (Intervall via STATUS_REPORT_HOURS, Standard 6h)
 const STATUS_REPORT_MS = (parseFloat(process.env.STATUS_REPORT_HOURS) || 6) * 60 * 60 * 1000;
-setInterval(async () => {
-  try {
-    const servers = serverManager.getAllServers();
-    const summaries = [];
-    for (const server of servers) {
-      const connection = serverManager.getConnection(server.id);
-      if (!connection) {
-        summaries.push({ name: server.name || server.id, online: false });
-        continue;
-      }
-      const systemStats = connection.glances ? await connection.glances.getSystemStats().catch(() => null) : null;
-      const dockerMod = await import('./services/docker.js');
-      const containers = connection.docker ? await dockerMod.getContainers(connection.docker).catch(() => []) : [];
-      const temps = systemStats?.temperature || [];
-      summaries.push({
-        name: server.name || server.id,
-        online: !!systemStats,
-        cpuPercent: systemStats?.cpu?.total || 0,
-        memPercent: systemStats?.memory?.percent || 0,
-        disks: systemStats?.disk || [],
-        maxTemp: temps.length ? Math.max(...temps.map(t => Number(t.value) || 0)) : null,
-        uptime: systemStats?.uptime,
-        containers: { running: containers.filter(c => c.state === 'running').length, total: containers.length },
-      });
-    }
-    await sendStatusReport({ servers: summaries });
-  } catch (error) {
-    console.error('Status report error:', error.message);
-  }
-}, STATUS_REPORT_MS);
+setInterval(makeJob('status-report', async () => {
+  const servers = serverManager.getAllServers();
+  const dockerMod = await import('./services/docker.js');
+  const settled = await Promise.allSettled(servers.map(async (server) => {
+    const connection = serverManager.getConnection(server.id);
+    if (!connection) return { name: server.name || server.id, online: false };
+    const systemStats = connection.glances ? await withTimeout(connection.glances.getSystemStats(), 8000, 'glances').catch(() => null) : null;
+    const containers = connection.docker ? await withTimeout(dockerMod.getContainers(connection.docker), 12000, 'docker').catch(() => []) : [];
+    const temps = systemStats?.temperature || [];
+    return {
+      name: server.name || server.id,
+      online: !!systemStats,
+      cpuPercent: systemStats?.cpu?.total || 0,
+      memPercent: systemStats?.memory?.percent || 0,
+      disks: systemStats?.disk || [],
+      maxTemp: temps.length ? Math.max(...temps.map(t => Number(t.value) || 0)) : null,
+      uptime: systemStats?.uptime,
+      containers: { running: containers.filter(c => c.state === 'running').length, total: containers.length },
+    };
+  }));
+  const summaries = settled.map((r, i) => r.status === 'fulfilled' ? r.value : { name: servers[i]?.name || servers[i]?.id, online: false });
+  await sendStatusReport({ servers: summaries });
+}), STATUS_REPORT_MS);
 
 // Background: Geplante Backups prüfen (alle 5 Minuten; Fälligkeit anhand Intervall)
 setInterval(() => {
   runDueBackups().catch(error => console.error('Scheduled backup error:', error.message));
 }, 5 * 60 * 1000);
 
-// Background: Cleanup old uptime data (daily)
-setInterval(() => {
+// Cleanup alter Uptime-/Metrik-Daten: täglich UND einmal beim Start. Bei häufigen
+// Deploys/Restarts käme der reine 24h-Intervall-Tick sonst nie zum Zug und die
+// Tabellen (uptime_checks ~33k Zeilen/Tag) würden ungebremst wachsen.
+function runDataCleanup() {
   try {
     cleanupOldUptimeData();
     pruneMetrics(48); // Metrik-Verlauf: 48h behalten
   } catch (error) {
     console.error('Cleanup error:', error.message);
   }
-}, 24 * 60 * 60 * 1000);
+}
+runDataCleanup();
+setInterval(runDataCleanup, 24 * 60 * 60 * 1000);
 
 // Background: Cleanup expired refresh tokens (every hour)
 setInterval(() => {
@@ -787,3 +798,19 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`Homelab Dashboard API running on port ${PORT}`);
   console.log(`WebSocket available at ws://localhost:${PORT}/ws`);
 });
+
+// Graceful Shutdown: vor dem Beenden die WAL in die Haupt-DB schreiben und die
+// Verbindung sauber schließen. Ohne das riskiert ein SIGKILL nach dem Compose-
+// Stop-Timeout WAL-Inkonsistenzen (bekannte DB-Korruptionsfalle).
+let shuttingDown = false;
+function gracefulShutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`${signal} empfangen — fahre sauber herunter...`);
+  try { server.close(); } catch { /* egal */ }
+  try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch (e) { console.error('WAL-Checkpoint fehlgeschlagen:', e.message); }
+  try { db.close(); } catch (e) { console.error('DB-Close fehlgeschlagen:', e.message); }
+  process.exit(0);
+}
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
