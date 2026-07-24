@@ -145,14 +145,17 @@ function guessCategory(project, service, name) {
 function detectUrlFromPorts(ports, host = '192.168.2.103') {
   if (!ports || ports.length === 0) return null;
 
-  // Find the best web port — Mail-/Sync-/SSH-Ports ausschliessen.
-  const publicPorts = ports.filter(p =>
-    p.PublicPort && !DB_PORTS.has(p.PrivatePort) && !NON_WEB_PORTS.has(p.PrivatePort));
+  const publicPorts = ports.filter(p => p.PublicPort && !DB_PORTS.has(p.PrivatePort));
 
   if (publicPorts.length === 0) return null;
 
-  // Bekannte Web-Ports bevorzugen, sonst erster verbleibender (Nicht-Mail-)Port.
-  const webPort = publicPorts.find(p => WEB_PORTS.has(p.PrivatePort)) || publicPorts[0];
+  // Bekannte Web-Ports bevorzugen; sonst ein Nicht-Mail-/Sync-Port; als letztes
+  // irgendein Port. Mail-Only-Dienste (Stalwart) behalten so ein Pruefziel — der
+  // Uptime-Check faellt dann auf einen TCP-Verbindungstest zurueck.
+  const webPort =
+    publicPorts.find(p => WEB_PORTS.has(p.PrivatePort)) ||
+    publicPorts.find(p => !NON_WEB_PORTS.has(p.PrivatePort)) ||
+    publicPorts[0];
 
   if (webPort) {
     const protocol = webPort.PrivatePort === 443 || webPort.PrivatePort === 8443 ? 'https' : 'http';
