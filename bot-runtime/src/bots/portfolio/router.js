@@ -98,13 +98,15 @@ const RESET_DEFAULTS = {
     ]
   }),
   msg_social: JSON.stringify({
-    title: '🌐 Social Media & Kontakt',
-    description: 'Hier findest du alle wichtigen Links, um mit mir in Kontakt zu treten oder meine Arbeit zu verfolgen.',
+    title: '🌐 Meine Kanäle',
+    description: 'Alles von mir an einem Ort — Software, 3D-Druck und der direkte Draht.',
     links: [
-      { emoji: '💬', name: 'Discord', url: 'https://discord.com/users/388425445793857559', description: 'Direkter Kontakt via Discord' },
-      { emoji: '🐙', name: 'GitHub', url: 'https://github.com/Mas0n1x', description: 'Open-Source Projekte & Code' },
-      { emoji: '📧', name: 'E-Mail', url: 'mailto:support@mas0n1x.online', description: 'Geschäftliche Anfragen per E-Mail' },
-      { emoji: '🌍', name: 'Portfolio', url: 'https://mas0n1x.dev', description: 'Mein Portfolio mit allen Projekten' },
+      { emoji: '🌍', name: 'Portfolio & Anfragen', url: 'https://mas0n1x.online', description: 'Meine Arbeit, meine Leistungen und der Weg zu einer Projektanfrage.' },
+      { emoji: '🛒', name: 'LawNet.Sale', url: 'https://lawnet.sale', description: 'Mein Shop für das LawNet-Ökosystem — inklusive Demo zum Ausprobieren.' },
+      { emoji: '🖨️', name: 'PrintOasis3D', url: 'https://www.etsy.com/shop/PrintOasis3D', description: '3D-Druck auf Etsy: Simracing-Teile und Zubehör fürs Setup.' },
+      { emoji: '🐙', name: 'GitHub', url: 'https://github.com/Mas0n1x', description: 'Code, Open Source und der Stand meiner Projekte.' },
+      { emoji: '💬', name: 'Direktkontakt', url: 'https://discord.com/users/388425445793857559', description: 'Kurzer Draht zu mir auf Discord.' },
+      { emoji: '📧', name: 'Geschäftlich', url: 'mailto:support@mas0n1x.online', description: 'Anfragen per E-Mail' },
     ]
   }),
   msg_products: JSON.stringify([

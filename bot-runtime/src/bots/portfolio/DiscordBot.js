@@ -86,16 +86,33 @@ const KEY_LABELS = {
 };
 
 // Kuratierte Projektliste für die "Projekte"-Nachricht (eine Nachricht, alle Projekte).
-// status: 'live' (gruen), 'dev' (gelb), 'building' (blau). since: Freitext. url: optional.
+// status: 'live' (grün), 'dev' (gelb), 'building' (blau). since/stack: Freitext.
+// url + cta ergeben den Button rechts; ohne url wird er ausgegraut (Label = private).
 const CURATED_PROJECTS = [
-  { name: 'LawNet', status: 'live', since: '2024', url: 'https://lawnet.sale',
-    desc: 'CAD/MDT-Plattform für FiveM-Roleplay — modulares „…Net"-Ökosystem.' },
-  { name: 'Jarvis', status: 'dev', since: '2025', url: null,
-    desc: 'Lokaler KI-Sprachassistent (Iron-Man-Stil) — niedrige Latenz, offline.' },
-  { name: 'Homelab Dashboard', status: 'live', since: 'Dez 2025', url: 'https://github.com/Mas0n1x/homelab-dashboard',
-    desc: 'Multi-Server „Fleet Command Center" fürs Homelab.' },
-  { name: 'Aurora', status: 'building', since: 'Juli 2026', url: null,
-    desc: 'Meine eigene Cloud — gerade im Aufbau.' },
+  {
+    name: 'LawNet', status: 'live', since: '2024', stack: 'TypeScript · Node · MySQL',
+    desc: 'CAD/MDT-Plattform für FiveM-Roleplay — Akten, Fahndung, Streifen und Personal in einem modularen „…Net"-Ökosystem.',
+    note: 'Im Einsatz auf zwei Servern mit zusammen über 2.300 Spielern.',
+    url: 'https://lawnet.sale', cta: 'Zum Shop',
+  },
+  {
+    name: 'Jarvis', status: 'dev', since: '2025', stack: 'Python · Ollama · CUDA',
+    desc: 'Lokaler KI-Sprachassistent im Iron-Man-Stil — Spracherkennung, Antwort und Stimme laufen komplett auf der eigenen Hardware.',
+    note: 'Kein Cloud-Dienst im Spiel, der Fokus liegt auf niedriger Latenz.',
+    url: null, private: 'Privat',
+  },
+  {
+    name: 'Homelab Dashboard', status: 'live', since: 'Dez 2025', stack: 'Next.js · Express · Docker',
+    desc: 'Kommandozentrale für meine Server: Monitoring, Docker-Steuerung, Terminal, Uptime und Discord-Bots an einer Stelle.',
+    note: 'Läuft auf einem Raspberry Pi 5 und verwaltet drei Maschinen.',
+    url: 'https://github.com/Mas0n1x/homelab-dashboard', cta: 'Auf GitHub',
+  },
+  {
+    name: 'Aurora', status: 'live', since: 'Juli 2026', stack: 'Go · SQLite · FTS5',
+    desc: 'Selbst gehostete Cloud für kleine Hardware — Dateien, Notizen, Kalender und Kontakte in einem einzigen Container.',
+    note: 'Braucht im Leerlauf rund 5 MB Arbeitsspeicher.',
+    url: null, private: 'Privat',
+  },
 ];
 
 // ── Default Content ─────────────────────────────────────────────
@@ -252,13 +269,15 @@ const DEFAULT_SERVICES = [
 ];
 
 const DEFAULT_SOCIALS = {
-  title: '🌐 Social Media & Kontakt',
-  description: 'Hier findest du alle wichtigen Links, um mit mir in Kontakt zu treten oder meine Arbeit zu verfolgen.',
+  title: '🌐 Meine Kanäle',
+  description: 'Alles von mir an einem Ort — Software, 3D-Druck und der direkte Draht.',
   links: [
-    { emoji: '💬', name: 'Discord', url: 'https://discord.com/users/388425445793857559', description: 'Direkter Kontakt via Discord' },
-    { emoji: '🐙', name: 'GitHub', url: 'https://github.com/Mas0n1x', description: 'Open-Source Projekte & Code' },
-    { emoji: '📧', name: 'E-Mail', url: 'mailto:support@mas0n1x.online', description: 'Geschäftliche Anfragen per E-Mail' },
-    { emoji: '🌍', name: 'Portfolio', url: 'https://mas0n1x.dev', description: 'Mein Portfolio mit allen Projekten' },
+    { emoji: '🌍', name: 'Portfolio & Anfragen', url: 'https://mas0n1x.online', description: 'Meine Arbeit, meine Leistungen und der Weg zu einer Projektanfrage.' },
+    { emoji: '🛒', name: 'LawNet.Sale', url: 'https://lawnet.sale', description: 'Mein Shop für das LawNet-Ökosystem — inklusive Demo zum Ausprobieren.' },
+    { emoji: '🖨️', name: 'PrintOasis3D', url: 'https://www.etsy.com/shop/PrintOasis3D', description: '3D-Druck auf Etsy: Simracing-Teile und Zubehör fürs Setup.' },
+    { emoji: '🐙', name: 'GitHub', url: 'https://github.com/Mas0n1x', description: 'Code, Open Source und der Stand meiner Projekte.' },
+    { emoji: '💬', name: 'Direktkontakt', url: 'https://discord.com/users/388425445793857559', description: 'Kurzer Draht zu mir auf Discord.' },
+    { emoji: '📧', name: 'Geschäftlich', url: 'mailto:support@mas0n1x.online', description: 'Anfragen per E-Mail' },
   ]
 };
 
@@ -1474,7 +1493,7 @@ class DiscordBot {
     ctaContainer.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         '### 💡 Interesse an einem Projekt?\n' +
-        'Erstelle ein **Ticket** oder besuche unser **[Portfolio](https://mas0n1x.dev)** für weitere Informationen.\n' +
+        'Erstelle ein **Ticket** oder besuche das **[Portfolio](https://mas0n1x.online)** für weitere Informationen.\n' +
         'Wir freuen uns auf deine Anfrage!'
       )
     );
@@ -1533,27 +1552,50 @@ class DiscordBot {
       building: { dot: '🔵', label: 'Im Aufbau' },
     };
 
-    // Alles in EINEM Container = eine Nachricht
+    // Alles in EINEM Container = eine Nachricht. Jedes Projekt ist eine Section
+    // mit Button rechts — dadurch stehen alle Einträge gleich hoch und die Links
+    // sind klickbare Flächen statt Text im Fließtext.
     const container = new ContainerBuilder().setAccentColor(0x00ff88);
     container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        '# 🚀 Meine Projekte\n' +
-        'Woran ich gerade arbeite — Status & Start.'
+        '## 🚀 Projekte\n' +
+        '-# Woran ich arbeite — vom verkauften Produkt bis zum Feierabend-Projekt.'
       )
     );
+    container.addSeparatorComponents(new SeparatorBuilder().setDivider(true));
 
-    for (const p of CURATED_PROJECTS) {
+    CURATED_PROJECTS.forEach((p, i) => {
       const s = STATUS[p.status] || STATUS.dev;
-      container.addSeparatorComponents(new SeparatorBuilder().setDivider(true));
-      let block = `## ${s.dot} ${p.name}\n${p.desc}\n**${s.label}**  ·  seit ${p.since}`;
-      if (p.url) block += `  ·  🔗 [Öffnen](${p.url})`;
-      container.addTextDisplayComponents(new TextDisplayBuilder().setContent(block));
-    }
+
+      const section = new SectionBuilder().addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `**${p.name}**  ${s.dot} ${s.label}\n` +
+          `${p.desc}\n` +
+          `-# ${[`seit ${p.since}`, p.stack, p.note].filter(Boolean).join('  ·  ')}`
+        )
+      );
+
+      // Öffentliche Projekte bekommen einen Link-Button, private einen
+      // ausgegrauten Platzhalter — so bleibt die rechte Kante bündig.
+      section.setButtonAccessory(
+        p.url
+          ? new ButtonBuilder().setLabel(p.cta || 'Ansehen').setURL(p.url).setStyle(ButtonStyle.Link)
+          : new ButtonBuilder().setLabel(p.private || 'Privat').setCustomId(`project_locked_${i}`)
+              .setStyle(ButtonStyle.Secondary).setDisabled(true)
+      );
+
+      container.addSectionComponents(section);
+
+      // Luft zwischen den Einträgen, aber nur zwischen ihnen.
+      if (i < CURATED_PROJECTS.length - 1) {
+        container.addSeparatorComponents(new SeparatorBuilder().setDivider(false));
+      }
+    });
 
     container.addSeparatorComponents(new SeparatorBuilder().setDivider(true));
     container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        '💡 Interesse an einer Zusammenarbeit? Öffne ein **Ticket** oder besuche das **[Portfolio](https://mas0n1x.dev)**.'
+        '-# Interesse an einer Zusammenarbeit? Öffne ein Ticket im Support-Kanal.'
       )
     );
 
@@ -1571,6 +1613,15 @@ class DiscordBot {
     const channel = await this.client.channels.fetch(channelId);
     if (!channel) throw new Error('Channel nicht gefunden');
 
+    // Vorherige Links-Nachricht ersetzen, damit sich im Kanal nichts stapelt
+    // (analog zur Projekte-Nachricht).
+    const prev = this._parseJSON(this.getConfig('social_message_ids'), []);
+    if (Array.isArray(prev)) {
+      for (const id of prev) {
+        try { const m = await channel.messages.fetch(id); await m.delete(); } catch { /* schon weg */ }
+      }
+    }
+
     const socialData = this._parseJSON(this.getConfig('msg_social'), null);
     const title = socialData?.title || DEFAULT_SOCIALS.title;
     const description = socialData?.description || DEFAULT_SOCIALS.description;
@@ -1580,55 +1631,44 @@ class DiscordBot {
       .setAccentColor(0x00d4ff);
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`# ${title}\n${description}`)
+      new TextDisplayBuilder().setContent(`## ${title}\n-# ${description}`)
     );
 
     container.addSeparatorComponents(new SeparatorBuilder().setDivider(true));
 
-    // Build links text
-    const linksText = links.map(l => {
-      let line = `${l.emoji || '🔗'} **${l.name}**`;
-      if (l.url) {
-        if (l.url.startsWith('mailto:')) {
-          line += ` — ${l.url.replace('mailto:', '')}`;
-        } else {
-          line += ` — ${l.url}`;
-        }
+    // Jeder Link ist eine Section mit Button rechts. Früher standen die nackten
+    // URLs im Text UND noch einmal als Buttonleiste darunter — doppelt und unruhig.
+    // Adressen ohne aufrufbare URL (mailto:) wandern in die Fußzeile.
+    const linkable = links.filter(l => l.url && /^https?:\/\//i.test(l.url));
+    const plain = links.filter(l => !linkable.includes(l));
+
+    linkable.forEach((l, i) => {
+      const section = new SectionBuilder().addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `${l.emoji || '🔗'} **${l.name}**` +
+          (l.description ? `\n-# ${l.description}` : '')
+        )
+      );
+      section.setButtonAccessory(
+        new ButtonBuilder().setLabel('Öffnen').setURL(l.url).setStyle(ButtonStyle.Link)
+      );
+      container.addSectionComponents(section);
+
+      if (i < linkable.length - 1) {
+        container.addSeparatorComponents(new SeparatorBuilder().setDivider(false));
       }
-      if (l.description) {
-        line += `\n-# ${l.description}`;
-      }
-      return line;
-    }).join('\n\n');
+    });
 
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(linksText)
-    );
-
-    container.addSeparatorComponents(new SeparatorBuilder().setDivider(true));
-
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        '-# Folge uns auf unseren Kanälen, um keine Updates zu verpassen!'
-      )
-    );
-
-    // Add link buttons
-    const buttonRow = new ActionRowBuilder();
-    for (const link of links) {
-      if (link.url && !link.url.startsWith('mailto:') && buttonRow.components.length < 5) {
-        buttonRow.addComponents(
-          new ButtonBuilder()
-            .setLabel(link.name)
-            .setURL(link.url)
-            .setStyle(ButtonStyle.Link)
-            .setEmoji(link.emoji || '🔗')
-        );
-      }
-    }
-
-    if (buttonRow.components.length > 0) {
-      container.addActionRowComponents(buttonRow);
+    if (plain.length > 0) {
+      container.addSeparatorComponents(new SeparatorBuilder().setDivider(true));
+      container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          plain.map(l => {
+            const value = (l.url || '').replace(/^mailto:/i, '');
+            return `${l.emoji || '📧'} **${l.name}** — ${value || l.description || ''}`.trim();
+          }).join('\n')
+        )
+      );
     }
 
     const sent = await channel.send({
@@ -1636,6 +1676,7 @@ class DiscordBot {
       flags: CV2_FLAGS,
     });
 
+    this.setConfig('social_message_ids', JSON.stringify([sent.id]));
     this.log('social', channelId, sent.id, null, { linksCount: links.length });
     return sent.id;
   }
