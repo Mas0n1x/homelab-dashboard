@@ -28,7 +28,7 @@ const DEFAULTS = {
         '🌐 Website | https://lawnet.sale',
         '🛒 Shop & Preise | https://lawnet.sale/#preise',
         '📊 Live-Status | https://lawnet.sale/status',
-        '💬 Discord | https://discord.gg/TGp9S38KNp'
+        '💬 Discord | https://discord.gg/mM9szM84qt'
     ].join('\n')
 };
 
