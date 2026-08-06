@@ -440,6 +440,71 @@ class DiscordBot {
     };
   }
 
+  // ── Verzeichnis: Kanäle & Rollen für die Auswahllisten im Dashboard ──
+
+  /** Der Server, auf dem der Bot arbeitet (guild_id, sonst der erste). */
+  _resolveGuild() {
+    if (!this.client || !this.isConnected) return null;
+    const guildId = this.getConfig('guild_id');
+    return (guildId ? this.client.guilds.cache.get(guildId) : this.client.guilds.cache.first()) || null;
+  }
+
+  /**
+   * Alle Kanäle inkl. Kategorien — das Dashboard zeigt daraus Auswahllisten,
+   * damit niemand Channel-IDs aus Discord kopieren muss.
+   */
+  async listChannels() {
+    const guild = this._resolveGuild();
+    if (!guild) throw new Error('Bot ist nicht verbunden');
+
+    const TYPES = {
+      [ChannelType.GuildText]: 'text',
+      [ChannelType.GuildAnnouncement]: 'announcement',
+      [ChannelType.GuildVoice]: 'voice',
+      [ChannelType.GuildStageVoice]: 'voice',
+      [ChannelType.GuildForum]: 'forum',
+      [ChannelType.GuildCategory]: 'category',
+    };
+
+    const fetched = await guild.channels.fetch();
+    const list = [];
+    fetched.forEach(c => {
+      if (!c || !TYPES[c.type]) return;
+      list.push({
+        id: c.id,
+        name: c.name,
+        type: TYPES[c.type],
+        parentId: c.parentId || null,
+        position: c.rawPosition ?? 0,
+      });
+    });
+
+    const parentName = (id) => (id ? (list.find(x => x.id === id)?.name || '') : '');
+    return list.sort((a, b) => {
+      const ka = `${parentName(a.parentId)} ${String(a.position).padStart(4, '0')}`;
+      const kb = `${parentName(b.parentId)} ${String(b.position).padStart(4, '0')}`;
+      return ka.localeCompare(kb, 'de');
+    });
+  }
+
+  /** Alle Rollen (ohne @everyone) — höchste zuerst, mit Farbe für die Anzeige. */
+  async listRoles() {
+    const guild = this._resolveGuild();
+    if (!guild) throw new Error('Bot ist nicht verbunden');
+
+    const roles = await guild.roles.fetch();
+    return roles
+      .filter(r => r && r.id !== guild.id)
+      .map(r => ({
+        id: r.id,
+        name: r.name,
+        color: r.color ? `#${r.color.toString(16).padStart(6, '0')}` : null,
+        position: r.position,
+        managed: !!r.managed,
+      }))
+      .sort((a, b) => b.position - a.position);
+  }
+
   // ── Event Registration ──────────────────────────────────────────
 
   _registerEvents() {
@@ -1345,6 +1410,13 @@ class DiscordBot {
       sections = DEFAULT_RULES_SECTIONS;
     }
 
+    // Leerzeilen aus dem Formular-Editor verwerfen, sonst steht im Discord ein
+    // nackter Aufzählungsstrich. Abschnitte ohne Regeln fallen ganz weg.
+    sections = sections
+      .map(s => ({ ...s, rules: (Array.isArray(s.rules) ? s.rules : []).filter(r => String(r ?? '').trim()) }))
+      .filter(s => s.rules.length > 0);
+    if (sections.length === 0) sections = DEFAULT_RULES_SECTIONS;
+
     const accentColor = this._parseColor(configColor);
 
     // ── Header message ──
@@ -1413,7 +1485,9 @@ class DiscordBot {
     if (!channel) throw new Error('Channel nicht gefunden');
 
     const products = this._parseJSON(this.getConfig('msg_products'), null);
-    const productList = (products && products.length > 0) ? products : DEFAULT_SERVICES;
+    // Namenlose Einträge (angefangene Zeilen im Editor) überspringen.
+    const configured = Array.isArray(products) ? products.filter(p => p && String(p.name || '').trim()) : [];
+    const productList = configured.length > 0 ? configured : DEFAULT_SERVICES;
 
     // Header container
     const headerContainer = new ContainerBuilder()
@@ -1626,7 +1700,12 @@ class DiscordBot {
     const socialData = this._parseJSON(this.getConfig('msg_social'), null);
     const title = socialData?.title || DEFAULT_SOCIALS.title;
     const description = socialData?.description || DEFAULT_SOCIALS.description;
-    const links = (socialData?.links && socialData.links.length > 0) ? socialData.links : DEFAULT_SOCIALS.links;
+    // Nur Einträge mit Namen — leere Zeilen aus dem Editor würden als
+    // Abschnitt mit fettem Nichts erscheinen.
+    const configuredLinks = Array.isArray(socialData?.links)
+      ? socialData.links.filter(l => l && String(l.name || '').trim())
+      : [];
+    const links = configuredLinks.length > 0 ? configuredLinks : DEFAULT_SOCIALS.links;
 
     const container = new ContainerBuilder()
       .setAccentColor(0x00d4ff);
@@ -1690,7 +1769,12 @@ class DiscordBot {
     const channel = await this.client.channels.fetch(channelId);
     if (!channel) throw new Error('Channel nicht gefunden');
 
-    const categories = this._parseJSON(this.getConfig('ticket_categories'), DEFAULT_TICKET_CATEGORIES);
+    // Kategorien ohne Namen fliegen raus — sie würden im Panel als leerer
+    // Button landen und Discord lehnt ihn ab.
+    const rawCategories = this._parseJSON(this.getConfig('ticket_categories'), DEFAULT_TICKET_CATEGORIES);
+    const categories = (Array.isArray(rawCategories) ? rawCategories : DEFAULT_TICKET_CATEGORIES)
+      .filter(c => c && String(c.name || '').trim());
+    if (categories.length === 0) throw new Error('Keine gültige Ticket-Kategorie konfiguriert');
 
     // Main info container
     const infoContainer = new ContainerBuilder()

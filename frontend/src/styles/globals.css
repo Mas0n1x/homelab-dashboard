@@ -428,6 +428,16 @@
   }
 }
 
+/* ─── Emoji-Schrift ───
+   Inter und JetBrains Mono bringen keine Emoji-Glyphen mit. In Feldern, in
+   denen Emojis stehen (Ticket-Kategorien, Links, Produkte), muss darum die
+   Emoji-Schrift des Systems zuerst greifen — sonst erscheinen leere Kästchen
+   oder die Emojis fallen aus der Zeilenhöhe. */
+.font-emoji {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji',
+    'Twemoji Mozilla', 'Segoe UI Symbol', 'Inter', system-ui, sans-serif;
+}
+
 /* ─── Scrollbar hide ─── */
 .scrollbar-hide {
   -ms-overflow-style: none;

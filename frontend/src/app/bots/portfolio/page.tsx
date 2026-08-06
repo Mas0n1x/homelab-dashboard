@@ -15,6 +15,13 @@ import {
 } from 'lucide-react';
 import { PageTransition } from '@/components/ui/PageTransition';
 import { botCall } from '@/lib/api';
+import {
+  EmbedMessageEditor, RulesMessageEditor, ProductsMessageEditor,
+  SocialMessageEditor, TicketCategoriesEditor, EmojiField,
+} from '@/components/bots/ContentEditors';
+import {
+  useGuildDirectory, ChannelPicker, RolePicker, DirectoryStatus, type Directory,
+} from '@/components/bots/IdPicker';
 
 type Cfg = Record<string, string>;
 type Tab = 'general' | 'channels' | 'messages' | 'tickets' | 'servers' | 'minecraft' | 'github' | 'logs';
@@ -43,7 +50,7 @@ const MODLOG_EVENTS: { key: string; label: string }[] = [
   { key: 'modlog_audit', label: 'Übrige Server-Aktionen' },
 ];
 
-const CHANNELS: { key: string; label: string }[] = [
+const CHANNELS: { key: string; label: string; kind?: 'text' | 'category' }[] = [
   { key: 'channel_welcome', label: 'Willkommen / Verabschiedung' },
   { key: 'channel_rules', label: 'Regeln' },
   { key: 'channel_products', label: 'Produkte / Services' },
@@ -51,7 +58,7 @@ const CHANNELS: { key: string; label: string }[] = [
   { key: 'channel_servers', label: 'Meine Server (Live-Status)' },
   { key: 'channel_social', label: 'Social Media' },
   { key: 'channel_github', label: 'GitHub-Benachrichtigungen' },
-  { key: 'channel_tickets', label: 'Tickets (Kategorie-ID)' },
+  { key: 'channel_tickets', label: 'Tickets (Kategorie)', kind: 'category' },
   { key: 'channel_ticket_logs', label: 'Ticket-Logs' },
   { key: 'channel_modlog', label: 'Moderation-Log' },
   { key: 'channel_requests', label: 'Anfragen / Benachrichtigungen' },
@@ -61,14 +68,6 @@ const ROLES: { key: string; label: string }[] = [
   { key: 'role_autorole', label: 'Auto-Rolle (nach Regel-Akzept)' },
   { key: 'role_support', label: 'Support-Rolle (Tickets)' },
   { key: 'requests_ping_role', label: 'Ping-Rolle (neue Anfragen)' },
-];
-
-const MESSAGES: { key: string; label: string; send?: { path: string; label: string } }[] = [
-  { key: 'msg_welcome', label: 'Willkommen', send: { path: '/send-welcome-test', label: 'Test senden' } },
-  { key: 'msg_leave', label: 'Verabschiedung' },
-  { key: 'msg_rules', label: 'Regeln', send: { path: '/send-rules', label: 'Regeln posten' } },
-  { key: 'msg_products', label: 'Produkte', send: { path: '/send-products', label: 'Produkte posten' } },
-  { key: 'msg_social', label: 'Social Media', send: { path: '/send-social', label: 'Social posten' } },
 ];
 
 function fmtUptime(ms?: number): string {
@@ -160,6 +159,8 @@ export default function PortfolioBotPage() {
   };
 
   const connected = !!status?.connected;
+  // Kanal-/Rollenlisten kommen aus dem laufenden Bot — deshalb erst, wenn er verbunden ist.
+  const dir = useGuildDirectory('portfolio', connected);
 
   return (
     <PageTransition>
@@ -236,7 +237,26 @@ export default function PortfolioBotPage() {
                 <div className="glass-card rounded-2xl p-5 space-y-4">
                   <h2 className="text-sm font-semibold text-white/70">Verbindung</h2>
                   <Field label="Bot-Token (nur schreiben; leer lassen = unverändert)" value={cfg.bot_token || ''} onChange={v => set('bot_token', v)} type="password" placeholder={cfg.has_token ? '•••••••• (gesetzt)' : 'Token einfügen'} />
-                  <Field label="Guild-ID (Server)" value={cfg.guild_id || ''} onChange={v => set('guild_id', v)} placeholder="123456789012345678" />
+                  {Array.isArray(status?.availableGuilds) && status.availableGuilds.length > 0 ? (
+                    <label className="block">
+                      <span className="text-[12px] text-white/45 mb-1.5 block">Server</span>
+                      <select
+                        value={cfg.guild_id || ''}
+                        onChange={e => set('guild_id', e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none focus:border-accent/40"
+                      >
+                        <option value="">Server wählen…</option>
+                        {status.availableGuilds.map((g: any) => (
+                          <option key={g.id} value={g.id}>{g.name}</option>
+                        ))}
+                        {cfg.guild_id && !status.availableGuilds.some((g: any) => g.id === cfg.guild_id) && (
+                          <option value={cfg.guild_id}>Unbekannt ({cfg.guild_id})</option>
+                        )}
+                      </select>
+                    </label>
+                  ) : (
+                    <Field label="Guild-ID (Server)" value={cfg.guild_id || ''} onChange={v => set('guild_id', v)} placeholder="123456789012345678" />
+                  )}
                 </div>
                 <div className="glass-card rounded-2xl p-5 space-y-3">
                   <h2 className="text-sm font-semibold text-white/70 mb-1">Funktionen</h2>
@@ -276,14 +296,17 @@ export default function PortfolioBotPage() {
 
             {tab === 'channels' && (
               <div className="space-y-4">
-                <div className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {CHANNELS.map(c => (
-                    <Field key={c.key} label={c.label} value={cfg[c.key] || ''} onChange={v => set(c.key, v)} placeholder="Channel-ID" mono />
-                  ))}
+                <div className="glass-card rounded-2xl p-5 space-y-4">
+                  <DirectoryStatus dir={dir} />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {CHANNELS.map(c => (
+                      <ChannelPicker key={c.key} label={c.label} kind={c.kind || 'text'} value={cfg[c.key] || ''} onChange={v => set(c.key, v)} dir={dir} />
+                    ))}
+                  </div>
                 </div>
                 <div className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {ROLES.map(r => (
-                    <Field key={r.key} label={r.label} value={cfg[r.key] || ''} onChange={v => set(r.key, v)} placeholder="Rollen-ID" mono />
+                    <RolePicker key={r.key} label={r.label} value={cfg[r.key] || ''} onChange={v => set(r.key, v)} dir={dir} />
                   ))}
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -295,28 +318,55 @@ export default function PortfolioBotPage() {
 
             {tab === 'messages' && (
               <div className="space-y-4">
-                <div className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field label="Regel-Reaktion (vergibt die Auto-Rolle)" value={cfg.rules_reaction_emoji || ''} onChange={v => set('rules_reaction_emoji', v)} placeholder="✅" />
+                <div className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                  <div>
+                    <EmojiField label="Regel-Reaktion (vergibt die Auto-Rolle)" value={cfg.rules_reaction_emoji || ''} onChange={v => set('rules_reaction_emoji', v)} />
+                  </div>
                   <Field label="ID der geposteten Regel-Nachricht" value={cfg.rules_message_id || ''} onChange={v => set('rules_message_id', v)} placeholder="wird beim Posten gesetzt" mono />
                 </div>
-                {MESSAGES.map(m => (
-                  <div key={m.key} className="glass-card rounded-2xl p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-semibold text-white/70">{m.label}</h3>
-                      {m.send && (
-                        <ActionBtn busy={busy === m.send.path} onClick={() => action(m.send!.path, `${m.label} gesendet.`)} icon={Send} label={m.send.label} small />
-                      )}
-                    </div>
-                    <textarea
-                      value={cfg[m.key] || ''}
-                      onChange={e => set(m.key, e.target.value)}
-                      spellCheck={false}
-                      rows={6}
-                      placeholder="JSON-Inhalt"
-                      className="w-full px-3 py-2.5 rounded-xl bg-black/30 border border-white/[0.08] font-mono text-[12px] leading-relaxed text-white/80 outline-none focus:border-accent/40 resize-y"
-                    />
-                  </div>
-                ))}
+
+                <EmbedMessageEditor
+                  title="Willkommen"
+                  subtitle="Wird beim Beitritt im Willkommens-Kanal gepostet."
+                  headerEmoji="👋"
+                  withFooter
+                  footerLabel="Fußzeile"
+                  placeholders={['{user}', '{username}', '{server}', '{memberCount}']}
+                  value={cfg.msg_welcome || ''}
+                  onChange={v => set('msg_welcome', v)}
+                  action={<ActionBtn busy={busy === '/send-welcome-test'} onClick={() => action('/send-welcome-test', 'Willkommen gesendet.')} icon={Send} label="Test senden" small />}
+                />
+
+                <EmbedMessageEditor
+                  title="Verabschiedung"
+                  subtitle="Wird gepostet, wenn jemand den Server verlässt."
+                  headerEmoji="👋"
+                  placeholders={['{username}', '{server}', '{memberCount}']}
+                  value={cfg.msg_leave || ''}
+                  onChange={v => set('msg_leave', v)}
+                />
+
+                <RulesMessageEditor
+                  title="Regeln"
+                  value={cfg.msg_rules || ''}
+                  onChange={v => set('msg_rules', v)}
+                  action={<ActionBtn busy={busy === '/send-rules'} onClick={() => action('/send-rules', 'Regeln gepostet.')} icon={Send} label="Regeln posten" small />}
+                />
+
+                <ProductsMessageEditor
+                  title="Produkte"
+                  value={cfg.msg_products || ''}
+                  onChange={v => set('msg_products', v)}
+                  action={<ActionBtn busy={busy === '/send-products'} onClick={() => action('/send-products', 'Produkte gepostet.')} icon={Send} label="Produkte posten" small />}
+                />
+
+                <SocialMessageEditor
+                  title="Social Media"
+                  value={cfg.msg_social || ''}
+                  onChange={v => set('msg_social', v)}
+                  action={<ActionBtn busy={busy === '/send-social'} onClick={() => action('/send-social', 'Social gepostet.')} icon={Send} label="Social posten" small />}
+                />
+
                 <SaveBar busy={busy === 'save'} onSave={() => saveConfig()} />
               </div>
             )}
@@ -324,8 +374,8 @@ export default function PortfolioBotPage() {
             {tab === 'tickets' && (
               <div className="space-y-4">
                 <div className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field label="Ticket-Kategorie (Channel-Kategorie-ID)" value={cfg.channel_tickets || ''} onChange={v => set('channel_tickets', v)} placeholder="Kategorie-ID" mono />
-                  <Field label="Support-Rolle" value={cfg.role_support || ''} onChange={v => set('role_support', v)} placeholder="Rollen-ID" mono />
+                  <ChannelPicker label="Ticket-Kategorie" kind="category" value={cfg.channel_tickets || ''} onChange={v => set('channel_tickets', v)} dir={dir} />
+                  <RolePicker label="Support-Rolle" value={cfg.role_support || ''} onChange={v => set('role_support', v)} dir={dir} />
                 </div>
                 <div className="glass-card rounded-2xl p-5">
                   <h3 className="text-sm font-semibold text-white/70 mb-2">Text im neuen Ticket</h3>
@@ -337,29 +387,17 @@ export default function PortfolioBotPage() {
                     className="w-full px-3 py-2.5 rounded-xl bg-black/30 border border-white/[0.08] text-[13px] leading-relaxed text-white/80 outline-none focus:border-accent/40 resize-y"
                   />
                 </div>
-                <div className="glass-card rounded-2xl p-5">
-                  <h3 className="text-sm font-semibold text-white/70 mb-2">Kategorien im Ticket-Panel</h3>
-                  <p className="text-[12px] text-white/40 mb-2">
-                    JSON-Liste aus <code className="text-white/60">name</code>, <code className="text-white/60">emoji</code> und <code className="text-white/60">description</code>.
-                  </p>
-                  <textarea
-                    value={cfg.ticket_categories || ''}
-                    onChange={e => set('ticket_categories', e.target.value)}
-                    spellCheck={false}
-                    rows={8}
-                    placeholder='[{"name":"Allgemeine Frage","emoji":"❓","description":"…"}]'
-                    className="w-full px-3 py-2.5 rounded-xl bg-black/30 border border-white/[0.08] font-mono text-[12px] leading-relaxed text-white/80 outline-none focus:border-accent/40 resize-y"
-                  />
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <SaveBar busy={busy === 'save'} onSave={() => saveConfig()} inline />
-                  <ActionBtn
-                    busy={busy === '/send-ticket-panel'}
-                    onClick={() => { const ch = prompt('Ticket-Panel in welchen Channel? (Channel-ID)'); if (ch) action('/send-ticket-panel', 'Ticket-Panel gepostet.', { channelId: ch }); }}
-                    icon={Send}
-                    label="Ticket-Panel posten"
-                  />
-                </div>
+                <TicketCategoriesEditor
+                  title="Kategorien im Ticket-Panel"
+                  value={cfg.ticket_categories || ''}
+                  onChange={v => set('ticket_categories', v)}
+                />
+                <TicketPanelPoster
+                  dir={dir}
+                  busy={busy === '/send-ticket-panel'}
+                  onPost={channelId => action('/send-ticket-panel', 'Ticket-Panel gepostet.', { channelId })}
+                />
+                <SaveBar busy={busy === 'save'} onSave={() => saveConfig()} />
               </div>
             )}
 
@@ -400,7 +438,7 @@ export default function PortfolioBotPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="Server-Adresse" value={cfg.mc_server_ip || ''} onChange={v => set('mc_server_ip', v)} placeholder="mas0n1x.online" mono />
-                    <Field label="Kanal für den Status" value={cfg.mc_channel || ''} onChange={v => set('mc_channel', v)} placeholder="Channel-ID" mono />
+                    <ChannelPicker label="Kanal für den Status" value={cfg.mc_channel || ''} onChange={v => set('mc_channel', v)} dir={dir} />
                   </div>
                   <Field label="Live-Karte (optional, erscheint als Button)" value={cfg.mc_map_url || ''} onChange={v => set('mc_map_url', v)} placeholder="https://map.example.com" mono />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -475,6 +513,21 @@ function ActionBtn({ busy, onClick, icon: Icon, label, small }: { busy: boolean;
       {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
       {label}
     </button>
+  );
+}
+
+/** Ticket-Panel in einen Kanal posten — vorher fragte ein prompt() nach der ID. */
+function TicketPanelPoster({ dir, busy, onPost }: { dir: Directory; busy: boolean; onPost: (channelId: string) => void }) {
+  const [channelId, setChannelId] = useState('');
+  return (
+    <div className="glass-card rounded-2xl p-5">
+      <h3 className="text-sm font-semibold text-white/70 mb-1">Ticket-Panel posten</h3>
+      <p className="text-[12px] text-white/40 mb-4">Postet die Auswahl mit den Kategorie-Buttons in einen Kanal.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-end">
+        <ChannelPicker label="Ziel-Kanal" value={channelId} onChange={setChannelId} dir={dir} />
+        <ActionBtn busy={busy} onClick={() => channelId && onPost(channelId)} icon={Send} label="Panel posten" />
+      </div>
+    </div>
   );
 }
 

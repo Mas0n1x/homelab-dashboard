@@ -202,6 +202,17 @@ function createPortfolioRouter(bot) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  // ── Verzeichnis (Auswahllisten im Dashboard) ────────────────────────
+  router.get('/channels', async (req, res) => {
+    try { res.json(await bot.listChannels()); }
+    catch (e) { res.status(503).json({ error: e.message }); }
+  });
+
+  router.get('/roles', async (req, res) => {
+    try { res.json(await bot.listRoles()); }
+    catch (e) { res.status(503).json({ error: e.message }); }
+  });
+
   // ── Lifecycle / Status ──────────────────────────────────────────────
   router.get('/status', (req, res) => {
     try { res.json(bot.getStatus()); } catch (e) { res.status(500).json({ error: e.message }); }

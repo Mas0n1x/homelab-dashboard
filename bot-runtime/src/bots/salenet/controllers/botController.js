@@ -114,19 +114,67 @@ exports.listLogs = (req, res) => {
 };
 
 // Listet Text-Channels des aktuellen Guild (für Channel-Picker im UI)
+// Kanal-Typen, die das Dashboard in seinen Auswahllisten anbietet. Kategorien
+// gehören dazu, weil die Ticket-Kategorie eine Kategorie-ID ist.
+const CHANNEL_TYPES = {
+    0: 'text',        // GuildText
+    2: 'voice',       // GuildVoice
+    4: 'category',    // GuildCategory
+    5: 'announcement',// GuildAnnouncement
+    13: 'voice',      // GuildStageVoice
+    15: 'forum',      // GuildForum
+};
+
 exports.listChannels = async (req, res) => {
     try {
         if (!state.client || state.status !== 'online' || !state.guild) {
             return res.status(503).json({ error: 'Bot ist nicht online' });
         }
         const channels = await state.guild.channels.fetch();
-        const list = channels
-            .filter(c => c && c.isTextBased && c.isTextBased() && !c.isThread())
-            .map(c => ({ id: c.id, name: c.name, parent_id: c.parentId }))
-            .sort((a, b) => a.name.localeCompare(b.name));
+        const list = [];
+        channels.forEach(c => {
+            if (!c || !CHANNEL_TYPES[c.type]) return;
+            list.push({
+                id: c.id,
+                name: c.name,
+                type: CHANNEL_TYPES[c.type],
+                parentId: c.parentId || null,
+                parent_id: c.parentId || null, // Altbestand: früherer Feldname
+                position: c.rawPosition ?? 0,
+            });
+        });
+        const parentName = (id) => (id ? (list.find(x => x.id === id)?.name || '') : '');
+        list.sort((a, b) => {
+            const ka = `${parentName(a.parentId)} ${String(a.position).padStart(4, '0')}`;
+            const kb = `${parentName(b.parentId)} ${String(b.position).padStart(4, '0')}`;
+            return ka.localeCompare(kb, 'de');
+        });
         res.json(list);
     } catch (err) {
         console.error('[bot/channels]', err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.listRoles = async (req, res) => {
+    try {
+        if (!state.client || state.status !== 'online' || !state.guild) {
+            return res.status(503).json({ error: 'Bot ist nicht online' });
+        }
+        const roles = await state.guild.roles.fetch();
+        const list = roles
+            .filter(r => r && r.id !== state.guild.id)
+            .map(r => ({
+                id: r.id,
+                name: r.name,
+                color: r.color ? `#${r.color.toString(16).padStart(6, '0')}` : null,
+                position: r.position,
+                managed: !!r.managed,
+            }))
+            .sort((a, b) => b.position - a.position);
+        res.json(list);
+    } catch (err) {
+        console.error('[bot/roles]', err);
         res.status(500).json({ error: err.message });
     }
 };

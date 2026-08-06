@@ -5,7 +5,7 @@
  */
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -15,6 +15,10 @@ import {
 } from 'lucide-react';
 import { PageTransition } from '@/components/ui/PageTransition';
 import { botCall } from '@/lib/api';
+import { PlaceholderChips } from '@/components/bots/ContentEditors';
+import {
+  useGuildDirectory, ChannelPicker, RolePicker, DirectoryStatus, type Directory,
+} from '@/components/bots/IdPicker';
 
 type Cfg = Record<string, string>;
 type Tab = 'general' | 'content' | 'moderation' | 'tickets' | 'automod' | 'github' | 'logs';
@@ -29,7 +33,7 @@ const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: 'logs', label: 'Logs', icon: ScrollText },
 ];
 
-const CHANNELS: { key: string; label: string }[] = [
+const CHANNELS: { key: string; label: string; kind?: 'text' | 'category' }[] = [
   { key: 'discord_welcome_channel_id', label: 'Willkommen' },
   { key: 'discord_leave_channel_id', label: 'Verabschiedung' },
   { key: 'discord_log_channel_id', label: 'Log' },
@@ -37,7 +41,7 @@ const CHANNELS: { key: string; label: string }[] = [
   { key: 'discord_notify_contacts_channel_id', label: 'Kontaktanfragen' },
   { key: 'discord_notify_affiliates_channel_id', label: 'Affiliate-Anträge' },
   { key: 'discord_notify_incidents_channel_id', label: 'Incidents' },
-  { key: 'discord_ticket_category_id', label: 'Ticket-Kategorie' },
+  { key: 'discord_ticket_category_id', label: 'Ticket-Kategorie', kind: 'category' },
 ];
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
@@ -89,6 +93,8 @@ export default function SalenetBotPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null);
+  const welcomeRef = useRef<HTMLTextAreaElement>(null);
+  const leaveRef = useRef<HTMLTextAreaElement>(null);
 
   const flash = (ok: boolean, msg: string) => { setToast({ ok, msg }); setTimeout(() => setToast(null), 3500); };
 
@@ -145,6 +151,8 @@ export default function SalenetBotPage() {
   };
 
   const online = status?.status === 'online';
+  // Kanal-/Rollenlisten holt der Bot selbst aus der Guild — nur wenn er läuft.
+  const dir = useGuildDirectory('salenet', online);
 
   return (
     <PageTransition>
@@ -211,26 +219,33 @@ export default function SalenetBotPage() {
                   <Field label="Guild-ID (Server)" value={cfg.discord_guild_id || ''} onChange={v => set('discord_guild_id', v)} placeholder="123456789012345678" mono />
                 </div>
 
-                <div className="glass-card rounded-2xl p-5">
-                  <h2 className="text-sm font-semibold text-white/70 mb-3">Kanäle</h2>
+                <div className="glass-card rounded-2xl p-5 space-y-4">
+                  <h2 className="text-sm font-semibold text-white/70">Kanäle</h2>
+                  <DirectoryStatus dir={dir} />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {CHANNELS.map(c => (
-                      <Field key={c.key} label={c.label} value={cfg[c.key] || ''} onChange={v => set(c.key, v)} placeholder="Channel-ID" mono />
+                      <ChannelPicker key={c.key} label={c.label} kind={c.kind || 'text'} value={cfg[c.key] || ''} onChange={v => set(c.key, v)} dir={dir} />
                     ))}
-                    <Field label="Support-Rolle (Tickets)" value={cfg.discord_ticket_support_role_id || ''} onChange={v => set('discord_ticket_support_role_id', v)} placeholder="Rollen-ID" mono />
+                    <RolePicker label="Support-Rolle (Tickets)" value={cfg.discord_ticket_support_role_id || ''} onChange={v => set('discord_ticket_support_role_id', v)} dir={dir} />
                   </div>
                 </div>
 
                 <div className="glass-card rounded-2xl p-5 space-y-4">
                   <h2 className="text-sm font-semibold text-white/70">Willkommen / Verabschiedung</h2>
-                  <label className="block">
-                    <span className="text-[12px] text-white/45 mb-1.5 block">Willkommens-Text ({'{user}'}, {'{server}'} als Platzhalter)</span>
-                    <textarea value={cfg.discord_welcome_message || ''} onChange={e => set('discord_welcome_message', e.target.value)} rows={2} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none focus:border-accent/40 resize-y" />
-                  </label>
-                  <label className="block">
-                    <span className="text-[12px] text-white/45 mb-1.5 block">Verabschiedungs-Text</span>
-                    <textarea value={cfg.discord_leave_message || ''} onChange={e => set('discord_leave_message', e.target.value)} rows={2} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none focus:border-accent/40 resize-y" />
-                  </label>
+                  <div>
+                    <label className="block">
+                      <span className="text-[12px] text-white/45 mb-1.5 block">Willkommens-Text</span>
+                      <textarea ref={welcomeRef} value={cfg.discord_welcome_message || ''} onChange={e => set('discord_welcome_message', e.target.value)} rows={2} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none focus:border-accent/40 resize-y" />
+                    </label>
+                    <PlaceholderChips tokens={['{user}', '{server}']} value={cfg.discord_welcome_message || ''} onChange={v => set('discord_welcome_message', v)} textareaRef={welcomeRef} />
+                  </div>
+                  <div>
+                    <label className="block">
+                      <span className="text-[12px] text-white/45 mb-1.5 block">Verabschiedungs-Text</span>
+                      <textarea ref={leaveRef} value={cfg.discord_leave_message || ''} onChange={e => set('discord_leave_message', e.target.value)} rows={2} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none focus:border-accent/40 resize-y" />
+                    </label>
+                    <PlaceholderChips tokens={['{user}', '{server}']} value={cfg.discord_leave_message || ''} onChange={v => set('discord_leave_message', v)} textareaRef={leaveRef} />
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-3">
@@ -240,8 +255,8 @@ export default function SalenetBotPage() {
               </div>
             )}
 
-            {tab === 'content' && <ContentTab flash={flash} post={post} busy={busy} setBusy={setBusy} />}
-            {tab === 'moderation' && <ModerationTab flash={flash} />}
+            {tab === 'content' && <ContentTab flash={flash} post={post} busy={busy} setBusy={setBusy} dir={dir} />}
+            {tab === 'moderation' && <ModerationTab flash={flash} dir={dir} />}
             {tab === 'tickets' && <TicketsTab flash={flash} />}
             {tab === 'automod' && <AutomodTab flash={flash} />}
             {tab === 'github' && <GithubTab flash={flash} />}
@@ -261,7 +276,7 @@ export default function SalenetBotPage() {
   );
 }
 
-function ContentTab({ flash, post, busy, setBusy }: { flash: (ok: boolean, m: string) => void; post: (p: string, m: string) => void; busy: string | null; setBusy: (v: string | null) => void }) {
+function ContentTab({ flash, post, busy, setBusy, dir }: { flash: (ok: boolean, m: string) => void; post: (p: string, m: string) => void; busy: string | null; setBusy: (v: string | null) => void; dir: Directory }) {
   const [cfg, setCfg] = useState<Cfg>({});
   const [loaded, setLoaded] = useState(false);
   useEffect(() => { (async () => { const r = await botCall<Cfg>('salenet', '/content/config'); if (r.ok) setCfg(r.data || {}); setLoaded(true); })(); }, []);
@@ -272,10 +287,10 @@ function ContentTab({ flash, post, busy, setBusy }: { flash: (ok: boolean, m: st
   return (
     <div className="space-y-4">
       <div className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="Regeln — Channel" value={cfg.content_rules_channel_id || ''} onChange={v => set('content_rules_channel_id', v)} mono />
-        <Field label="Produkte — Channel" value={cfg.content_products_channel_id || ''} onChange={v => set('content_products_channel_id', v)} mono />
-        <Field label="Links — Channel" value={cfg.content_links_channel_id || ''} onChange={v => set('content_links_channel_id', v)} mono />
-        <Field label="Systemstatus — Channel" value={cfg.content_status_channel_id || ''} onChange={v => set('content_status_channel_id', v)} mono />
+        <ChannelPicker label="Regeln — Kanal" value={cfg.content_rules_channel_id || ''} onChange={v => set('content_rules_channel_id', v)} dir={dir} />
+        <ChannelPicker label="Produkte — Kanal" value={cfg.content_products_channel_id || ''} onChange={v => set('content_products_channel_id', v)} dir={dir} />
+        <ChannelPicker label="Links — Kanal" value={cfg.content_links_channel_id || ''} onChange={v => set('content_links_channel_id', v)} dir={dir} />
+        <ChannelPicker label="Systemstatus — Kanal" value={cfg.content_status_channel_id || ''} onChange={v => set('content_status_channel_id', v)} dir={dir} />
       </div>
       <div className="glass-card rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between">
@@ -307,15 +322,13 @@ const SLOWMODE_STEPS: { value: number; label: string }[] = [
   { value: 21600, label: '6 Stunden' },
 ];
 
-function ModerationTab({ flash }: { flash: (ok: boolean, m: string) => void }) {
+function ModerationTab({ flash, dir }: { flash: (ok: boolean, m: string) => void; dir: Directory }) {
   const [actions, setActions] = useState<any[]>([]);
   const [form, setForm] = useState({ action: 'warn', target_user_id: '', reason: '' });
   const [busy, setBusy] = useState(false);
-  const [channels, setChannels] = useState<any[]>([]);
   const [slow, setSlow] = useState({ channel_id: '', seconds: 30 });
   const load = useCallback(async () => { const r = await botCall<any[]>('salenet', '/mod-actions'); if (r.ok) setActions(Array.isArray(r.data) ? r.data : []); }, []);
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { (async () => { const r = await botCall<any[]>('salenet', '/channels'); if (r.ok && Array.isArray(r.data)) setChannels(r.data); })(); }, []);
 
   const applySlowmode = async () => {
     if (!slow.channel_id) { flash(false, 'Kein Kanal gewählt'); return; }
@@ -358,14 +371,7 @@ function ModerationTab({ flash }: { flash: (ok: boolean, m: string) => void }) {
           <p className="text-[12px] text-white/40 mt-0.5">Begrenzt, wie oft jemand in einem Kanal schreiben darf.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <label className="block">
-            <span className="text-[12px] text-white/45 mb-1.5 block">Kanal</span>
-            <select value={slow.channel_id} onChange={e => setSlow({ ...slow, channel_id: e.target.value })}
-              className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none">
-              <option value="">{channels.length ? 'Kanal wählen…' : 'Bot offline — keine Kanäle'}</option>
-              {channels.map(c => <option key={c.id} value={c.id}>#{c.name}</option>)}
-            </select>
-          </label>
+          <ChannelPicker label="Kanal" value={slow.channel_id} onChange={v => setSlow({ ...slow, channel_id: v })} dir={dir} />
           <label className="block">
             <span className="text-[12px] text-white/45 mb-1.5 block">Wartezeit</span>
             <select value={slow.seconds} onChange={e => setSlow({ ...slow, seconds: parseInt(e.target.value, 10) })}

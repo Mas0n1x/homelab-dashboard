@@ -40,6 +40,7 @@ function createSalenetRouter() {
   router.post('/restart', botController.restart);
   router.get('/logs', botController.listLogs);
   router.get('/channels', botController.listChannels);
+  router.get('/roles', botController.listRoles);
   router.post('/test-notify', botController.testNotify);
 
   // Phase 2: Moderation
