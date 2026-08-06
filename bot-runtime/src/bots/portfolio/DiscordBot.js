@@ -276,6 +276,7 @@ const DEFAULT_SOCIALS = {
     { emoji: '🛒', name: 'LawNet.Sale', url: 'https://lawnet.sale', description: 'Mein Shop für das LawNet-Ökosystem — inklusive Demo zum Ausprobieren.' },
     { emoji: '🖨️', name: 'PrintOasis3D', url: 'https://www.etsy.com/shop/PrintOasis3D', description: '3D-Druck auf Etsy: Simracing-Teile und Zubehör fürs Setup.' },
     { emoji: '🐙', name: 'GitHub', url: 'https://github.com/Mas0n1x', description: 'Code, Open Source und der Stand meiner Projekte.' },
+    { emoji: '🏛️', name: 'LawNet Community', url: 'https://discord.gg/mM9szM84qt', description: 'Support, Updates und Austausch rund um LawNet.' },
     { emoji: '💬', name: 'Direktkontakt', url: 'https://discord.com/users/388425445793857559', description: 'Kurzer Draht zu mir auf Discord.' },
     { emoji: '📧', name: 'Geschäftlich', url: 'mailto:support@mas0n1x.online', description: 'Anfragen per E-Mail' },
   ]
@@ -2250,28 +2251,38 @@ class DiscordBot {
     return [container];
   }
 
+  // Postet den Status in einen Kanal und startet den Auto-Refresh. Gemeinsame
+  // Grundlage für den /minecraft-Befehl und die Steuerung im Dashboard.
+  async sendMinecraftStatus(channelId, userId = null) {
+    if (!this.client || !this.isConnected) throw new Error('Bot nicht verbunden');
+
+    const channel = await this.client.channels.fetch(channelId);
+    if (!channel) throw new Error('Channel nicht gefunden');
+
+    // Vorherige Minecraft-Nachricht(en) löschen -> immer genau eine
+    const prev = this._parseJSON(this.getConfig('mc_message_ids'), []);
+    if (Array.isArray(prev)) {
+      for (const id of prev) {
+        try { const m = await channel.messages.fetch(id); await m.delete(); } catch { /* schon weg */ }
+      }
+    }
+
+    const status = await this.fetchMinecraftStatus();
+    const components = this._buildMinecraftComponents(status, Math.floor(Date.now() / 1000));
+    const sent = await channel.send({ components, flags: CV2_FLAGS });
+
+    this.setConfig('mc_channel', channel.id);
+    this.setConfig('mc_message_ids', JSON.stringify([sent.id]));
+    this.log('minecraft', channel.id, sent.id, userId, { online: !!status.online, players: status.players?.online });
+
+    this._startMinecraftRefresh();
+    return sent.id;
+  }
+
   async _handleMinecraftCommand(interaction) {
     await interaction.deferReply({ flags: 64 }); // nur für den Aufrufer sichtbar
     try {
-      const channel = interaction.channel;
-
-      // Vorherige Minecraft-Nachricht(en) löschen -> immer genau eine
-      const prev = this._parseJSON(this.getConfig('mc_message_ids'), []);
-      if (Array.isArray(prev)) {
-        for (const id of prev) {
-          try { const m = await channel.messages.fetch(id); await m.delete(); } catch { /* schon weg */ }
-        }
-      }
-
-      const status = await this.fetchMinecraftStatus();
-      const components = this._buildMinecraftComponents(status, Math.floor(Date.now() / 1000));
-      const sent = await channel.send({ components, flags: CV2_FLAGS });
-
-      this.setConfig('mc_channel', channel.id);
-      this.setConfig('mc_message_ids', JSON.stringify([sent.id]));
-      this.log('minecraft', channel.id, sent.id, interaction.user.id, { online: !!status.online, players: status.players?.online });
-
-      this._startMinecraftRefresh();
+      await this.sendMinecraftStatus(interaction.channelId, interaction.user.id);
       await interaction.editReply({ content: '✅ Minecraft-Status gepostet — die Nachricht aktualisiert sich jetzt automatisch.' });
     } catch (e) {
       console.error('Minecraft-Command:', e.message);

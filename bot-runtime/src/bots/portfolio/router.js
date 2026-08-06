@@ -105,6 +105,7 @@ const RESET_DEFAULTS = {
       { emoji: '🛒', name: 'LawNet.Sale', url: 'https://lawnet.sale', description: 'Mein Shop für das LawNet-Ökosystem — inklusive Demo zum Ausprobieren.' },
       { emoji: '🖨️', name: 'PrintOasis3D', url: 'https://www.etsy.com/shop/PrintOasis3D', description: '3D-Druck auf Etsy: Simracing-Teile und Zubehör fürs Setup.' },
       { emoji: '🐙', name: 'GitHub', url: 'https://github.com/Mas0n1x', description: 'Code, Open Source und der Stand meiner Projekte.' },
+      { emoji: '🏛️', name: 'LawNet Community', url: 'https://discord.gg/mM9szM84qt', description: 'Support, Updates und Austausch rund um LawNet.' },
       { emoji: '💬', name: 'Direktkontakt', url: 'https://discord.com/users/388425445793857559', description: 'Kurzer Draht zu mir auf Discord.' },
       { emoji: '📧', name: 'Geschäftlich', url: 'mailto:support@mas0n1x.online', description: 'Anfragen per E-Mail' },
     ]
@@ -251,6 +252,24 @@ function createPortfolioRouter(bot) {
       const messageIds = await bot.sendServersEmbed(channelId);
       res.json({ success: true, messageIds });
     } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Minecraft-Status posten (dieselbe Aktion wie /minecraft im Discord)
+  router.post('/send-minecraft', async (req, res) => {
+    try {
+      const channelId = req.body.channelId || bot.getConfig('mc_channel');
+      if (!channelId) return res.status(400).json({ error: 'Kein Channel konfiguriert' });
+      const messageId = await bot.sendMinecraftStatus(channelId);
+      res.json({ success: true, messageId });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Abruf gegen mcstatus.io prüfen, ohne etwas zu posten
+  router.get('/minecraft-test', async (req, res) => {
+    try {
+      const status = await bot.fetchMinecraftStatus();
+      res.json({ success: true, online: !!status.online, players: status.players?.online ?? 0, version: status.version?.name_clean || null, host: status.host || null });
+    } catch (e) { res.status(502).json({ error: e.message }); }
   });
 
   router.get('/servers-test', async (req, res) => {

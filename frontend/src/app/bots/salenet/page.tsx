@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 import {
   Bot, Circle, Play, Square, RotateCw, Save, Send, Hash, MessageSquare,
   Github, ScrollText, ArrowLeft, Users, ShieldAlert, Ticket, Filter,
-  RefreshCw, Trash2, Loader2, CheckCircle2, AlertTriangle, Plus,
+  RefreshCw, Trash2, Loader2, CheckCircle2, AlertTriangle, Plus, Clock, Link2,
 } from 'lucide-react';
 import { PageTransition } from '@/components/ui/PageTransition';
 import { botCall } from '@/lib/api';
@@ -295,12 +295,37 @@ function ContentTab({ flash, post, busy, setBusy }: { flash: (ok: boolean, m: st
   );
 }
 
+// Slowmode-Stufen wie in Discord selbst, damit niemand Sekunden ausrechnen muss.
+const SLOWMODE_STEPS: { value: number; label: string }[] = [
+  { value: 0, label: 'Aus' },
+  { value: 5, label: '5 Sekunden' },
+  { value: 30, label: '30 Sekunden' },
+  { value: 60, label: '1 Minute' },
+  { value: 300, label: '5 Minuten' },
+  { value: 900, label: '15 Minuten' },
+  { value: 3600, label: '1 Stunde' },
+  { value: 21600, label: '6 Stunden' },
+];
+
 function ModerationTab({ flash }: { flash: (ok: boolean, m: string) => void }) {
   const [actions, setActions] = useState<any[]>([]);
   const [form, setForm] = useState({ action: 'warn', target_user_id: '', reason: '' });
   const [busy, setBusy] = useState(false);
+  const [channels, setChannels] = useState<any[]>([]);
+  const [slow, setSlow] = useState({ channel_id: '', seconds: 30 });
   const load = useCallback(async () => { const r = await botCall<any[]>('salenet', '/mod-actions'); if (r.ok) setActions(Array.isArray(r.data) ? r.data : []); }, []);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { (async () => { const r = await botCall<any[]>('salenet', '/channels'); if (r.ok && Array.isArray(r.data)) setChannels(r.data); })(); }, []);
+
+  const applySlowmode = async () => {
+    if (!slow.channel_id) { flash(false, 'Kein Kanal gewählt'); return; }
+    setBusy(true);
+    const r = await botCall('salenet', '/mod/slowmode', { method: 'POST', body: JSON.stringify(slow) });
+    setBusy(false);
+    const label = SLOWMODE_STEPS.find(s => s.value === slow.seconds)?.label || `${slow.seconds}s`;
+    flash(r.ok, r.ok ? (slow.seconds === 0 ? 'Slowmode abgeschaltet.' : `Slowmode auf ${label} gesetzt.`) : (r.data as any)?.error || 'Fehler');
+    if (r.ok) load();
+  };
   const exec = async () => {
     if (!form.target_user_id.trim()) { flash(false, 'User-ID fehlt'); return; }
     setBusy(true);
@@ -326,6 +351,32 @@ function ModerationTab({ flash }: { flash: (ok: boolean, m: string) => void }) {
           <Field label="Grund" value={form.reason} onChange={v => setForm({ ...form, reason: v })} />
         </div>
         <ActionBtn busy={busy} onClick={exec} icon={ShieldAlert} label="Ausführen" />
+      </div>
+      <div className="glass-card rounded-2xl p-5 space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold text-white/70">Slowmode</h2>
+          <p className="text-[12px] text-white/40 mt-0.5">Begrenzt, wie oft jemand in einem Kanal schreiben darf.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <label className="block">
+            <span className="text-[12px] text-white/45 mb-1.5 block">Kanal</span>
+            <select value={slow.channel_id} onChange={e => setSlow({ ...slow, channel_id: e.target.value })}
+              className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none">
+              <option value="">{channels.length ? 'Kanal wählen…' : 'Bot offline — keine Kanäle'}</option>
+              {channels.map(c => <option key={c.id} value={c.id}>#{c.name}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-[12px] text-white/45 mb-1.5 block">Wartezeit</span>
+            <select value={slow.seconds} onChange={e => setSlow({ ...slow, seconds: parseInt(e.target.value, 10) })}
+              className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none">
+              {SLOWMODE_STEPS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </label>
+          <div className="flex items-end">
+            <ActionBtn busy={busy} onClick={applySlowmode} icon={Clock} label="Setzen" />
+          </div>
+        </div>
       </div>
       <div className="glass-card rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-white/70 mb-3">Letzte Aktionen</h2>
@@ -428,9 +479,11 @@ function GithubTab({ flash }: { flash: (ok: boolean, m: string) => void }) {
   const [cfg, setCfg] = useState<Cfg>({});
   const [subs, setSubs] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
+  const [hook, setHook] = useState<any>(null);
   const load = useCallback(async () => {
     const c = await botCall<Cfg>('salenet', '/github/config'); if (c.ok) setCfg(c.data || {});
     const s = await botCall<any[]>('salenet', '/github/subscriptions'); if (s.ok) setSubs(Array.isArray(s.data) ? s.data : []);
+    const w = await botCall<any>('salenet', '/github/webhook-info'); if (w.ok) setHook(w.data);
   }, []);
   useEffect(() => { load(); }, [load]);
   const set = (k: string, v: string) => setCfg(p => ({ ...p, [k]: v }));
@@ -444,6 +497,29 @@ function GithubTab({ flash }: { flash: (ok: boolean, m: string) => void }) {
         <Field label="Webhook-Secret" value={cfg.github_webhook_secret || ''} onChange={v => set('github_webhook_secret', v)} type="password" mono />
         <SaveBtn busy={busy} onSave={save} />
       </div>
+      {hook && (
+        <div className="glass-card rounded-2xl p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <Link2 className="w-4 h-4 text-white/40" />
+            <h2 className="text-sm font-semibold text-white/70">Webhook bei GitHub eintragen</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 px-3 py-2 rounded-xl bg-black/30 border border-white/[0.08] font-mono text-[12px] text-white/75 truncate">{hook.url}</code>
+            <button
+              type="button"
+              onClick={() => { navigator.clipboard?.writeText(hook.url); flash(true, 'Adresse kopiert.'); }}
+              className="px-3 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-[13px] text-white/70 transition-colors"
+            >
+              Kopieren
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-white/40">
+            <span>Content-Type: <span className="text-white/60">{hook.content_type}</span></span>
+            <span>Secret: <span className={hook.secret_configured ? 'text-emerald-300/80' : 'text-amber-300/80'}>{hook.secret_configured ? 'gesetzt' : 'fehlt'}</span></span>
+            <span>Ereignisse: <span className="text-white/60">{(hook.events_supported || []).join(', ')}</span></span>
+          </div>
+        </div>
+      )}
       <div className="glass-card rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-white/70 mb-3">Repo-Abonnements ({subs.length})</h2>
         {subs.length === 0 ? <div className="text-white/30 text-sm py-4 text-center">Keine Abonnements.</div> : (

@@ -11,13 +11,13 @@ import { motion } from 'framer-motion';
 import {
   Bot, Circle, Play, Square, Save, Send, KeyRound, Hash, MessageSquare,
   Server as ServerIcon, Github, ScrollText, ArrowLeft, Users, Activity,
-  RefreshCw, Trash2, Loader2, CheckCircle2, AlertTriangle, Ticket,
+  RefreshCw, Trash2, Loader2, CheckCircle2, AlertTriangle, Ticket, Pickaxe,
 } from 'lucide-react';
 import { PageTransition } from '@/components/ui/PageTransition';
 import { botCall } from '@/lib/api';
 
 type Cfg = Record<string, string>;
-type Tab = 'general' | 'channels' | 'messages' | 'tickets' | 'servers' | 'github' | 'logs';
+type Tab = 'general' | 'channels' | 'messages' | 'tickets' | 'servers' | 'minecraft' | 'github' | 'logs';
 
 const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: 'general', label: 'Allgemein', icon: Bot },
@@ -25,6 +25,7 @@ const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: 'messages', label: 'Nachrichten', icon: MessageSquare },
   { id: 'tickets', label: 'Tickets', icon: Ticket },
   { id: 'servers', label: 'Meine Server', icon: ServerIcon },
+  { id: 'minecraft', label: 'Minecraft', icon: Pickaxe },
   { id: 'github', label: 'GitHub', icon: Github },
   { id: 'logs', label: 'Logs', icon: ScrollText },
 ];
@@ -384,6 +385,48 @@ export default function PortfolioBotPage() {
                   <SaveBar busy={busy === 'save'} onSave={() => saveConfig()} inline />
                   <ActionBtn busy={busy === 'servers-test'} onClick={async () => { setBusy('servers-test'); const r = await botCall('portfolio', '/servers-test'); setBusy(null); flash(r.ok, r.ok ? `Anbindung OK — ${r.data?.count ?? 0} Server gefunden.` : r.data?.error || 'Anbindung fehlgeschlagen'); }} icon={RefreshCw} label="Anbindung testen" />
                   <ActionBtn busy={busy === '/send-servers'} onClick={() => action('/send-servers', 'Server-Status gepostet.')} icon={Send} label="Jetzt posten" />
+                </div>
+              </div>
+            )}
+
+            {tab === 'minecraft' && (
+              <div className="space-y-4">
+                <div className="glass-card rounded-2xl p-5 space-y-4">
+                  <div>
+                    <h2 className="text-sm font-semibold text-white/70">Server-Status im Discord</h2>
+                    <p className="text-[12px] text-white/40 mt-0.5">
+                      Der Status kommt von mcstatus.io. Die gepostete Nachricht aktualisiert sich selbst — im Discord geht das auch mit <code className="text-white/60">/minecraft</code>.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label="Server-Adresse" value={cfg.mc_server_ip || ''} onChange={v => set('mc_server_ip', v)} placeholder="mas0n1x.online" mono />
+                    <Field label="Kanal für den Status" value={cfg.mc_channel || ''} onChange={v => set('mc_channel', v)} placeholder="Channel-ID" mono />
+                  </div>
+                  <Field label="Live-Karte (optional, erscheint als Button)" value={cfg.mc_map_url || ''} onChange={v => set('mc_map_url', v)} placeholder="https://map.example.com" mono />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label="Auto-Refresh (Sekunden, min. 60)" value={cfg.mc_refresh_seconds || ''} onChange={v => set('mc_refresh_seconds', v)} type="number" placeholder="120" />
+                    <div className="flex items-center justify-between pt-6">
+                      <span className="text-[13px] text-white/70">Auto-Refresh aktiv</span>
+                      <Toggle checked={cfg.mc_autorefresh_enabled !== 'false'} onChange={v => set('mc_autorefresh_enabled', v ? 'true' : 'false')} />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <SaveBar busy={busy === 'save'} onSave={() => saveConfig()} inline />
+                  <ActionBtn
+                    busy={busy === 'mc-test'}
+                    onClick={async () => {
+                      setBusy('mc-test');
+                      const r = await botCall<any>('portfolio', '/minecraft-test');
+                      setBusy(null);
+                      flash(r.ok, r.ok
+                        ? (r.data?.online ? `Server ist online — ${r.data.players} Spieler${r.data.version ? `, ${r.data.version}` : ''}.` : 'Abruf hat geklappt, der Server ist offline.')
+                        : r.data?.error || 'Abruf fehlgeschlagen');
+                    }}
+                    icon={RefreshCw}
+                    label="Abruf testen"
+                  />
+                  <ActionBtn busy={busy === '/send-minecraft'} onClick={() => action('/send-minecraft', 'Minecraft-Status gepostet.')} icon={Send} label="Jetzt posten" />
                 </div>
               </div>
             )}

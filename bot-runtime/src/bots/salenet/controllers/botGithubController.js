@@ -88,12 +88,15 @@ exports.deleteSubscription = (req, res) => {
 
 // Liefert die Webhook-URL (zum Anzeigen im Admin)
 exports.webhookInfo = (req, res) => {
-    const host = req.get('host');
-    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    // Der Host des Requests ist hier die Runtime hinter dem Dashboard-Proxy
+    // (localhost:3200) und der alte Pfad /api/webhooks/github existiert nicht
+    // mehr. GitHub braucht die öffentliche Dashboard-Adresse.
+    const base = (process.env.PUBLIC_DASHBOARD_URL || 'https://dash.mas0n1x.online').replace(/\/+$/, '');
     res.json({
-        url: `${proto}://${host}/api/webhooks/github`,
+        url: `${base}/api/bots/salenet/webhook/github`,
         content_type: 'application/json',
         signature_header: 'X-Hub-Signature-256',
+        secret_configured: !!Settings.get('github_webhook_secret'),
         events_supported: ['push', 'pull_request', 'issues', 'release', 'star', 'fork']
     });
 };

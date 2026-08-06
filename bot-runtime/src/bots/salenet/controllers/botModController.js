@@ -58,7 +58,9 @@ exports.setSlowmode = async (req, res) => {
 
         const channel = await state.guild.channels.fetch(channel_id);
         if (!channel) return res.status(404).json({ error: 'Channel nicht gefunden' });
-        await channel.setRateLimitPerUser(s, `Slowmode via Dashboard von ${req.session.userId}`);
+        // In der Runtime gibt es keine Session (Bearer-Auth) — req.session.userId
+        // hätte hier eine Exception geworfen.
+        await channel.setRateLimitPerUser(s, `Slowmode über das Dashboard (${req.session?.userId || 'Admin'})`);
 
         moderation.recordAction({
             action: 'slowmode',
