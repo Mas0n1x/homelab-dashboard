@@ -221,9 +221,12 @@
     .bento-3x1, .bento-4x1 { grid-column: span 2; }
   }
 
+  /* Mobil bleiben zwei Spalten: die Kennzahl-Kacheln stehen paarweise
+     (2×2 statt vier volle Zeilen), Listen nehmen die ganze Breite.
+     Eine Spalte machte die Startseite unnötig lang. */
   @media (max-width: 640px) {
-    .bento-grid { grid-template-columns: 1fr; }
-    .bento-2x1, .bento-2x2, .bento-3x1, .bento-4x1 { grid-column: span 1; }
+    .bento-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    .bento-2x1, .bento-2x2, .bento-3x1, .bento-4x1 { grid-column: span 2; }
     .bento-2x2 { grid-row: span 1; }
   }
 
@@ -434,10 +437,54 @@
   display: none;
 }
 
-/* ─── Mobile performance ─── */
-@media (max-width: 640px) {
+/* ─── Mobile performance ───
+   Auf dem Handy ist `backdrop-filter` der teuerste Effekt: jede Glas-Karte
+   zwingt den Compositor zu einem eigenen Blur-Durchlauf. Bei 20+ Karten pro
+   Seite reicht iOS das Zeichnen beim Scrollen nicht nach → sichtbar leere
+   Flächen. Darum mobil kein Blur, dafür etwas deckendere Flächen; Optik bleibt
+   nahezu identisch, das Scrollen wird flüssig. */
+@media (max-width: 767px) {
   :root {
-    --glass-blur: 10px;
+    --glass-blur: 0px;
+    --orb-opacity: 0.7;
+  }
+
+  .glass-card,
+  .glass-card-elevated {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: var(--glass-shadow-1), var(--glass-inset-shadow);
+  }
+
+  .glass-card-elevated {
+    background: rgba(255, 255, 255, 0.065);
+  }
+
+  /* Der Verlaufs-Glanz (::after) kostet je Karte eine weitere Ebene. */
+  .glass-card::after {
+    display: none;
+  }
+
+  /* Navigation deckend statt durchscheinend — sonst schimmert der Inhalt
+     unter der Bottom-Nav durch und das Menü wirkt „schmutzig". */
+  .glass-nav,
+  .sidebar-glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: #0a0a16;
+  }
+
+  /* Dauerläufer-Animationen im Hintergrund aus (Akku + Compositing). */
+  .animate-glow-pulse,
+  .animate-float,
+  .sidebar-logo-glow {
+    animation: none !important;
+  }
+
+  /* Mausverfolgung ist auf Touch sinnlos. */
+  .glass-card-interactive::before {
+    display: none;
   }
 }
 

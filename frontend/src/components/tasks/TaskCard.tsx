@@ -158,13 +158,13 @@ export function TaskCard({
           )}
         </div>
 
-        {/* Aktionen */}
-        <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        {/* Aktionen — auf Touch immer sichtbar, am Desktop erst beim Überfahren */}
+        <div className="flex items-center gap-0.5 flex-shrink-0 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">
           {task.status === 'open' && (
             <button
               onClick={() => onStatusChange('doing')}
               title="In Arbeit nehmen"
-              className="p-1 rounded-lg text-white/25 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors"
+              className="p-1.5 md:p-1 rounded-lg text-white/25 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors"
             >
               <Play className="w-3.5 h-3.5" />
             </button>
@@ -173,7 +173,7 @@ export function TaskCard({
             <button
               onClick={() => onStatusChange('open')}
               title="Zurück zu Offen"
-              className="p-1 rounded-lg text-white/25 hover:text-white/70 hover:bg-white/[0.06] transition-colors"
+              className="p-1.5 md:p-1 rounded-lg text-white/25 hover:text-white/70 hover:bg-white/[0.06] transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -181,14 +181,14 @@ export function TaskCard({
           <button
             onClick={onEdit}
             title="Bearbeiten"
-            className="p-1 rounded-lg text-white/25 hover:text-accent-light hover:bg-accent/10 transition-colors"
+            className="p-1.5 md:p-1 rounded-lg text-white/25 hover:text-accent-light hover:bg-accent/10 transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onDelete}
             title="Löschen"
-            className="p-1 rounded-lg text-white/25 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="p-1.5 md:p-1 rounded-lg text-white/25 hover:text-red-400 hover:bg-red-500/10 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

@@ -48,10 +48,20 @@ export default function TasksPage() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
 
+  // Drag & Drop gibt es nur mit Maus — HTML5-DnD löst auf Touch nichts aus,
+  // ein Griff-Symbol wäre dort ein leeres Versprechen.
+  const [isDesktop, setIsDesktop] = useState(false);
+
   // Ansicht pro Browser merken
   useEffect(() => {
     const saved = localStorage.getItem('tasks-view');
     if (saved === 'board' || saved === 'list') setView(saved);
+
+    const mq = window.matchMedia('(min-width: 768px) and (pointer: fine)');
+    const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
   }, []);
   const changeView = (next: ViewMode) => {
     setView(next);
@@ -189,7 +199,7 @@ export default function TasksPage() {
 
   const byStatus = (status: TaskStatus) => sortTasks(filtered.filter(t => t.status === status), sort);
 
-  const dragEnabled = sort === 'manual';
+  const dragEnabled = sort === 'manual' && isDesktop;
 
   // ─── Drag & Drop ───
 
@@ -304,12 +314,13 @@ export default function TasksPage() {
     <PageTransition>
       <PageHeader
         title="Aufgaben"
-        subtitle="Eigener Todo-Tracker mit Priorität, Fälligkeit, Projekten und Checklisten"
+        subtitle="Priorität, Fälligkeit, Projekte, Checklisten"
         icon={<ListChecks className="w-5 h-5" />}
         actions={
           <button
             onClick={() => { setEditing(null); setModalOpen(true); }}
             className="btn-primary flex items-center gap-1.5"
+            title="Neue Aufgabe"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Neue Aufgabe</span>
@@ -338,12 +349,9 @@ export default function TasksPage() {
         {/* Schnell-Eingabe */}
         <GlassCard delay={0.16}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-accent/15 border border-accent/20 flex items-center justify-center flex-shrink-0 text-accent-light">
-              <Plus className="w-4 h-4" />
-            </div>
             <input
               className="glass-input flex-1 min-w-0"
-              placeholder="Neue Aufgabe... (@Projekt, !hoch, heute/morgen werden erkannt)"
+              placeholder="Neue Aufgabe hinzufügen..."
               value={quick}
               onChange={e => setQuick(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); quickAdd(); } }}
@@ -351,16 +359,21 @@ export default function TasksPage() {
             <button
               onClick={quickAdd}
               disabled={!quick.trim() || createMutation.isPending}
-              className="btn-primary disabled:opacity-30 flex-shrink-0"
+              className="btn-primary disabled:opacity-30 flex-shrink-0 flex items-center gap-1.5 px-3 sm:px-4"
+              title="Aufgabe anlegen"
             >
-              Anlegen
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Anlegen</span>
             </button>
           </div>
+          <p className="text-[10px] text-white/25 mt-2">
+            <span className="text-white/40">@Projekt</span> · <span className="text-white/40">!hoch</span> · <span className="text-white/40">heute/morgen</span> werden erkannt
+          </p>
         </GlassCard>
 
         {/* Werkzeugleiste */}
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-          <div className="relative flex-1 min-w-0">
+        <div className="space-y-2 lg:space-y-0 lg:flex lg:items-center lg:gap-3">
+          <div className="relative lg:flex-1 lg:min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25 pointer-events-none" />
             <input
               className="glass-input w-full pl-9"
@@ -370,14 +383,15 @@ export default function TasksPage() {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <select className="glass-input py-2" value={projectFilter} onChange={e => setProjectFilter(e.target.value)}>
+          {/* Mobil: zwei gleich breite Spalten, damit nichts ausfranst */}
+          <div className="grid grid-cols-2 gap-2 lg:flex lg:items-center">
+            <select className="glass-input py-2 w-full lg:w-auto" value={projectFilter} onChange={e => setProjectFilter(e.target.value)}>
               <option value="">Alle Projekte</option>
               {projects.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
 
             <select
-              className="glass-input py-2"
+              className="glass-input py-2 w-full lg:w-auto"
               value={priorityFilter}
               onChange={e => setPriorityFilter(e.target.value as '' | TaskPriority)}
             >
@@ -385,28 +399,29 @@ export default function TasksPage() {
               {PRIORITY_ORDER.map(p => <option key={p} value={p}>{PRIORITY_META[p].label}</option>)}
             </select>
 
-            <select className="glass-input py-2" value={sort} onChange={e => setSort(e.target.value as SortMode)}>
+            <select className="glass-input py-2 w-full col-span-2 lg:w-auto lg:col-span-1" value={sort} onChange={e => setSort(e.target.value as SortMode)}>
               {(Object.keys(SORT_LABELS) as SortMode[]).map(m => (
                 <option key={m} value={m}>{SORT_LABELS[m]}</option>
               ))}
             </select>
 
             {/* Ansicht */}
-            <div className="flex gap-1 p-1 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+            <div className="col-span-2 flex gap-1 p-1 rounded-xl bg-white/[0.02] border border-white/[0.05] lg:col-span-1">
               {([
-                { id: 'list' as ViewMode, icon: <LayoutList className="w-4 h-4" />, title: 'Listenansicht' },
-                { id: 'board' as ViewMode, icon: <Columns3 className="w-4 h-4" />, title: 'Board-Ansicht' },
+                { id: 'list' as ViewMode, icon: <LayoutList className="w-4 h-4" />, label: 'Liste', title: 'Listenansicht' },
+                { id: 'board' as ViewMode, icon: <Columns3 className="w-4 h-4" />, label: 'Board', title: 'Board-Ansicht' },
               ]).map(v => (
                 <button
                   key={v.id}
                   onClick={() => changeView(v.id)}
                   title={v.title}
                   className={clsx(
-                    'p-2 rounded-lg transition-colors',
+                    'flex-1 lg:flex-initial flex items-center justify-center gap-1.5 p-2 rounded-lg transition-colors text-xs',
                     view === v.id ? 'bg-white/[0.08] text-white' : 'text-white/35 hover:text-white/70'
                   )}
                 >
                   {v.icon}
+                  <span className="lg:hidden">{v.label}</span>
                 </button>
               ))}
             </div>
@@ -494,8 +509,9 @@ export default function TasksPage() {
                       </button>
                     )}
                   </div>
-                  <div className="flex-1 min-h-[240px]">
-                    {renderTaskList(status, list, status === 'done' ? 'Noch nichts erledigt' : 'Leer — Karten hierher ziehen')}
+                  {/* Mindesthöhe nur am Desktop — mobil würde sie leere Flächen erzeugen */}
+                  <div className="flex-1 md:min-h-[240px]">
+                    {renderTaskList(status, list, status === 'done' ? 'Noch nichts erledigt' : dragEnabled ? 'Leer — Karten hierher ziehen' : 'Leer')}
                   </div>
                 </GlassCard>
               );
@@ -503,7 +519,7 @@ export default function TasksPage() {
           </div>
         )}
 
-        {!dragEnabled && view === 'board' && (
+        {isDesktop && !dragEnabled && view === 'board' && (
           <p className="text-[11px] text-white/25 text-center">
             Sortierung „{SORT_LABELS[sort]}" aktiv — für eigenes Sortieren per Drag &amp; Drop auf „{SORT_LABELS.manual}" umstellen.
           </p>

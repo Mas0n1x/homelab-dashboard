@@ -67,7 +67,10 @@ export function FleetSummaryBar() {
     {
       icon: <MemoryStick className="w-4 h-4" />,
       label: 'Gesamt RAM',
-      value: totalMem > 0 ? `${formatBytes(usedMem)} / ${formatBytes(totalMem)}` : 'N/A',
+      // Einheit nur einmal — „9.4 GB / 19.8 GB" wurde in der Mobil-Kachel abgeschnitten.
+      value: totalMem > 0
+        ? `${(usedMem / 1024 ** 3).toFixed(1)} / ${(totalMem / 1024 ** 3).toFixed(1)} GB`
+        : 'N/A',
       color: 'text-purple-400',
       bg: 'bg-purple-500/10',
     },

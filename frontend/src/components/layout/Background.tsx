@@ -30,9 +30,9 @@ export function Background() {
         }}
       />
 
-      {/* Subtle scan line effect */}
+      {/* Subtle scan line effect — mobil aus (eine Vollbild-Ebene weniger) */}
       <div
-        className="absolute inset-0 opacity-[0.012] pointer-events-none"
+        className="absolute inset-0 opacity-[0.012] pointer-events-none hidden md:block"
         style={{
           backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.05) 2px, rgba(255,255,255,0.05) 4px)',
           backgroundSize: '100% 4px',
@@ -51,9 +51,9 @@ export function Background() {
         style={{ background: 'rgba(var(--accent-rgb), calc(0.05 * var(--orb-opacity)))', animationDelay: '2s' }}
       />
 
-      {/* Tertiary orb - complementary purple */}
+      {/* Tertiary orb - complementary purple (mobil aus) */}
       <div
-        className="absolute top-[30%] right-[15%] w-[400px] h-[400px] rounded-full blur-[100px] animate-glow-pulse"
+        className="absolute top-[30%] right-[15%] w-[400px] h-[400px] rounded-full blur-[100px] animate-glow-pulse hidden md:block"
         style={{ background: 'rgba(139, 92, 246, calc(0.04 * var(--orb-opacity)))', animationDelay: '4s' }}
       />
 
@@ -72,8 +72,8 @@ export function Background() {
         }}
       />
 
-      {/* Floating particles (pure CSS) */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* Floating particles (pure CSS) — 12 dauerhaft animierte Punkte, mobil aus */}
+      <div className="absolute inset-0 overflow-hidden hidden md:block">
         {Array.from({ length: 12 }).map((_, i) => (
           <div
             key={i}

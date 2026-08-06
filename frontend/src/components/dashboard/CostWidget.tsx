@@ -49,10 +49,11 @@ export function CostWidget() {
                 <span className="text-white/40 text-sm">€</span>
               </div>
               <p className="text-[11px] text-white/30 mt-1">{withCost.length} von {servers.length} Servern erfasst · {(totalEur * 12).toFixed(0)} €/Jahr</p>
+              {/* In der schmalen Mobil-Kachel klebten Label und Wert aneinander */}
               {next && next.days != null && (
-                <div className="mt-2 pt-2 border-t border-white/[0.06] flex items-center justify-between">
-                  <span className="flex items-center gap-1 text-[11px] text-white/40"><CalendarClock className="w-3 h-3" /> Nächste Verlängerung</span>
-                  <span className={`text-[11px] font-medium ${next.days <= 14 ? 'text-amber-400' : 'text-white/50'}`}>{next.days <= 0 ? 'fällig' : `${next.days} T`}</span>
+                <div className="mt-2 pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1 text-[11px] text-white/40 min-w-0"><CalendarClock className="w-3 h-3 flex-shrink-0" /> <span className="truncate">Nächste Verlängerung</span></span>
+                  <span className={`text-[11px] font-medium flex-shrink-0 ${next.days <= 14 ? 'text-amber-400' : 'text-white/50'}`}>{next.days <= 0 ? 'fällig' : `${next.days} T`}</span>
                 </div>
               )}
             </>

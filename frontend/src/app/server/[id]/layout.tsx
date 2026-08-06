@@ -66,8 +66,9 @@ export default function ServerLayout({ children }: { children: React.ReactNode }
       {/* Server Header */}
       <ServerHeader server={server} data={data} />
 
-      {/* Tab Navigation */}
-      <div className="flex items-center gap-1 border-b border-white/[0.04] overflow-x-auto scrollbar-hide">
+      {/* Tab-Navigation — mobil verteilen sich die vier Tabs über die Breite,
+          vorher lief „Wartung" aus dem Bild und wirkte wie nicht vorhanden. */}
+      <div className="grid grid-cols-4 sm:flex sm:items-center gap-1 border-b border-white/[0.04]">
         {TABS.map(tab => {
           const isActive = tab.id === activeTab;
           const Icon = tab.icon;
@@ -76,7 +77,7 @@ export default function ServerLayout({ children }: { children: React.ReactNode }
               key={tab.id}
               href={`${basePath}${tab.path}`}
               className={clsx(
-                'relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap',
+                'relative flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-sm font-medium transition-colors whitespace-nowrap',
                 isActive ? 'text-white' : 'text-white/40 hover:text-white/70'
               )}
             >

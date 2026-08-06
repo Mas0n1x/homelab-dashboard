@@ -44,13 +44,18 @@ export default function ServerOverviewPage() {
         )}
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <CpuChart cpuTotal={system?.cpu.total || 0} />
-        <MemoryChart memPercent={system?.memory.percent || 0} />
-      </div>
+      {/* Live-Charts nur ab großen Schirmen: CPU, RAM und Netz stehen mobil
+          bereits als Kachel (SystemGauges) und als Verlauf (MetricsHistoryPanel)
+          auf der Seite. Sie sammeln ihre Kurve erst zur Laufzeit und wären auf
+          dem Handy drei fast leere Flächen zum Durchscrollen. */}
+      <div className="hidden lg:block space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <CpuChart cpuTotal={system?.cpu.total || 0} />
+          <MemoryChart memPercent={system?.memory.percent || 0} />
+        </div>
 
-      <NetworkChart network={system?.network || null} />
+        <NetworkChart network={system?.network || null} />
+      </div>
     </motion.div>
   );
 }

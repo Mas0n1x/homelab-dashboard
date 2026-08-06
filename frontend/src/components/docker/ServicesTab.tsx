@@ -51,8 +51,11 @@ export function ServicesTab() {
     refetchInterval: 30000,
   });
 
+  // Status kommt per WebSocket in den Cache; queryFn nur, damit React Query
+  // nicht „No queryFn was passed" in die Konsole schreibt.
   const { data: serviceStatus } = useQuery<any[]>({
     queryKey: ['serviceStatus', activeServerId],
+    queryFn: async () => [],
     enabled: false,
   });
 

@@ -210,9 +210,9 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
         {/* Statusstreifen oben */}
         <div className={clsx('absolute top-0 left-0 right-0 h-[2px]', hasAlert ? 'bg-gradient-to-r from-red-500/0 via-red-400 to-red-500/0' : isOnline ? 'bg-gradient-to-r from-emerald-500/0 via-emerald-400/70 to-emerald-500/0' : 'bg-gradient-to-r from-red-500/0 via-red-400/70 to-red-500/0')} />
 
-        <div className="relative z-10 p-5 flex-1">
+        <div className="relative z-10 p-4 sm:p-5 flex-1">
           {/* Header */}
-          <div className="flex items-start gap-3 mb-4">
+          <div className="flex items-start gap-3 mb-3 sm:mb-4">
             <div className="relative">
               <div className={clsx('w-10 h-10 rounded-xl flex items-center justify-center', isOnline ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20')}>
                 <Server className={clsx('w-5 h-5', isOnline ? 'text-emerald-400' : 'text-red-400')} />
@@ -297,9 +297,10 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
                 </div>
               </div>
 
-              {/* Sparklines (Verlauf 60 Min) */}
+              {/* Sparklines (Verlauf 60 Min) — mobil aus: die Werte stehen
+                  schon oben, der Verlauf gehört auf die Detailseite */}
               {cpuSeries.length >= 2 && (
-                <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="hidden sm:grid grid-cols-3 gap-2 mb-4">
                   <MiniSpark label="CPU" value={`${Math.round(cpuPercent)}`} unit="%" series={cpuSeries} color="#10b981" min={0} max={100} />
                   <MiniSpark label="RAM" value={`${Math.round(memPercent)}`} unit="%" series={memSeries} color="#8b5cf6" min={0} max={100} />
                   <MiniSpark label="Netz" value={formatRate(rxRate + txRate).split(' ')[0]} unit={` ${formatRate(rxRate + txRate).split(' ')[1]}`} series={netSeries} color="#06b6d4" />
@@ -318,8 +319,9 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
                   return (
                     <>
                       <StatBar label="Speicher" percent={aggPct} right={`${formatBytes(totalUsed)} / ${formatBytes(totalCap)}`} color={aggColor} icon={<HardDrive className="w-2.5 h-2.5 text-cyan-400/60" />} />
+                      {/* Einzelne Laufwerke mobil aus — der Summenbalken genügt */}
                       {disks.length >= 1 && (
-                        <div className="space-y-1 pl-4">
+                        <div className="hidden sm:block space-y-1 pl-4">
                           {disks.map(d => (
                             <div key={d.device} className="flex items-center gap-2 text-[10px] text-white/35">
                               <span className="font-mono text-white/50 w-14 truncate" title={`${d.mountPoint} (${d.device})`}>{d.mountPoint}</span>

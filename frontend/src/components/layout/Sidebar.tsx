@@ -338,6 +338,8 @@ function SidebarLink({
 function MobileBottomNav({ pathname }: { pathname: string }) {
   const { servers } = useServerStore();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expandedServers, setExpandedServers] = useState<Record<string, boolean>>({});
+  const toggleServer = (id: string) => setExpandedServers(prev => ({ ...prev, [id]: !prev[id] }));
 
   // Menü-Overlay bei Navigationswechsel schließen
   useEffect(() => { setMenuOpen(false); }, [pathname]);
@@ -429,37 +431,8 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
                 <div className="mx-4 h-px bg-white/[0.06] flex-shrink-0" />
 
                 <div className="flex-1 overflow-y-auto px-3 py-3 pb-[calc(1rem+env(safe-area-inset-bottom))] space-y-4">
-                  {/* Server mit Unterpunkten */}
-                  <div>
-                    <p className="px-2 mb-1.5 text-[10px] uppercase tracking-widest text-white/25 font-medium">Server</p>
-                    <div className="space-y-2">
-                      {servers.map(server => (
-                        <div key={server.id} className="rounded-2xl bg-white/[0.02] border border-white/[0.05] p-2">
-                          <div className="flex items-center gap-2.5 px-2 py-1">
-                            <div className="relative flex-shrink-0">
-                              <Server className="w-4 h-4 text-white/60" />
-                              <span className={clsx('absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0a0a1a]',
-                                server.status === 'connected' ? 'bg-emerald-400' : 'bg-red-400')} />
-                            </div>
-                            <span className="text-[13px] font-medium truncate">{server.name}</span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-1 mt-1">
-                            {SERVER_SUB_NAV.map(sub => {
-                              const href = sub.href(server.id);
-                              return (
-                                <Link key={href} href={href} className={linkCls(pathname === href)}>
-                                  {sub.icon}
-                                  <span className="text-[13px]">{sub.label}</span>
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Tools */}
+                  {/* Tools zuerst — die werden am häufigsten angetippt und lagen
+                      vorher unterhalb der drei Server-Blöcke außerhalb des Bildes. */}
                   <div>
                     <p className="px-2 mb-1.5 text-[10px] uppercase tracking-widest text-white/25 font-medium">Tools</p>
                     <div className="grid grid-cols-2 gap-1">
@@ -468,17 +441,60 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
                           {item.icon}<span>{item.label}</span>
                         </Link>
                       ))}
+                      {SYSTEM_NAV.map(item => (
+                        <Link key={item.href} href={item.href} className={linkCls(pathname === item.href)}>
+                          {item.icon}<span>{item.label}</span>
+                        </Link>
+                      ))}
                     </div>
                   </div>
 
-                  {/* System */}
+                  {/* Server: Kopfzeile führt direkt zur Übersicht, Unterpunkte
+                      klappen erst auf Wunsch aus — spart drei Viertel der Höhe. */}
                   <div>
-                    <p className="px-2 mb-1.5 text-[10px] uppercase tracking-widest text-white/25 font-medium">System</p>
-                    {SYSTEM_NAV.map(item => (
-                      <Link key={item.href} href={item.href} className={linkCls(pathname === item.href)}>
-                        {item.icon}<span>{item.label}</span>
-                      </Link>
-                    ))}
+                    <p className="px-2 mb-1.5 text-[10px] uppercase tracking-widest text-white/25 font-medium">Server</p>
+                    <div className="space-y-1.5">
+                      {servers.map(server => {
+                        const open = !!expandedServers[server.id];
+                        return (
+                          <div key={server.id} className="rounded-2xl bg-white/[0.02] border border-white/[0.05] overflow-hidden">
+                            <div className="flex items-center">
+                              <Link
+                                href={`/server/${server.id}`}
+                                className="flex items-center gap-2.5 px-3 py-2.5 flex-1 min-w-0 active:bg-white/[0.04]"
+                              >
+                                <div className="relative flex-shrink-0">
+                                  <Server className="w-4 h-4 text-white/60" />
+                                  <span className={clsx('absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0a0a1a]',
+                                    server.status === 'connected' ? 'bg-emerald-400' : 'bg-red-400')} />
+                                </div>
+                                <span className="text-[13px] font-medium truncate">{server.name}</span>
+                              </Link>
+                              <button
+                                onClick={() => toggleServer(server.id)}
+                                className="px-3 py-3 text-white/30 active:text-white/70"
+                                aria-label={open ? 'Unterpunkte einklappen' : 'Unterpunkte anzeigen'}
+                              >
+                                <ChevronDown className={clsx('w-4 h-4 transition-transform', open && 'rotate-180')} />
+                              </button>
+                            </div>
+                            {open && (
+                              <div className="grid grid-cols-2 gap-1 px-2 pb-2">
+                                {SERVER_SUB_NAV.map(sub => {
+                                  const href = sub.href(server.id);
+                                  return (
+                                    <Link key={href} href={href} className={linkCls(pathname === href)}>
+                                      {sub.icon}
+                                      <span className="text-[13px]">{sub.label}</span>
+                                    </Link>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>

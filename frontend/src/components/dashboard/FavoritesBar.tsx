@@ -29,8 +29,11 @@ export function FavoritesBar() {
     staleTime: 30000,
   });
 
+  // Der Status kommt ausschließlich per WebSocket in den Cache — die leere
+  // queryFn verhindert die Warnung „No queryFn was passed" in der Konsole.
   const { data: serviceStatus } = useQuery<any[]>({
     queryKey: ['serviceStatus', activeServerId],
+    queryFn: async () => [],
     enabled: false,
   });
 

@@ -134,7 +134,9 @@ export default function StatusPage() {
                         <div className="flex-1 min-w-0">
                           <UptimeBars timeline={timeline} />
                         </div>
-                        <div className="flex items-center gap-4 sm:w-40 justify-end flex-shrink-0 text-xs tabular-nums">
+                        {/* Mobil die Kennzahlen über die Breite verteilen —
+                            rechtsbündig ließ sie neben viel Leerraum kleben. */}
+                        <div className="flex items-center gap-4 justify-between sm:w-40 sm:justify-end flex-shrink-0 text-xs tabular-nums">
                           <div className="text-right">
                             <p className={clsx('font-semibold', !hasData ? 'text-white/30' : (uptime ?? 0) >= 99 ? 'text-emerald-400' : (uptime ?? 0) >= 80 ? 'text-amber-400' : 'text-red-400')}>
                               {hasData && uptime !== null ? `${uptime}%` : '–'}

@@ -76,7 +76,7 @@ export function FleetActions() {
       <button
         onClick={() => updateMutation.mutate()}
         disabled={busy || servers.length === 0}
-        className="flex items-center gap-1.5 text-[11px] text-white/50 hover:text-white/90 disabled:opacity-40 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/[0.04]"
+        className="flex items-center gap-1.5 text-[11px] text-white/50 hover:text-white/90 disabled:opacity-40 transition-colors px-2.5 py-1.5 rounded-lg bg-white/[0.03] sm:bg-transparent border border-white/[0.06] sm:border-transparent hover:bg-white/[0.06]"
       >
         {updateMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PackageCheck className="w-3.5 h-3.5" />}
         Updates prüfen
@@ -84,7 +84,7 @@ export function FleetActions() {
       <button
         onClick={() => setConfirmPrune(true)}
         disabled={busy || servers.length === 0}
-        className="flex items-center gap-1.5 text-[11px] text-white/50 hover:text-white/90 disabled:opacity-40 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/[0.04]"
+        className="flex items-center gap-1.5 text-[11px] text-white/50 hover:text-white/90 disabled:opacity-40 transition-colors px-2.5 py-1.5 rounded-lg bg-white/[0.03] sm:bg-transparent border border-white/[0.06] sm:border-transparent hover:bg-white/[0.06]"
       >
         <Sparkles className="w-3.5 h-3.5" />
         Docker aufräumen

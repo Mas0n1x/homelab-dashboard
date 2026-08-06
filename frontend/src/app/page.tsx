@@ -65,9 +65,11 @@ export default function FleetOverviewPage() {
 
         {/* Server Topology / Grid */}
         <div>
-          <div className="flex items-center justify-between mb-3 gap-3">
+          {/* Mobil: Überschrift in eigener Zeile, Aktionen darunter als gleich
+              breite Schaltflächen — nebeneinander franst es auf 390 px aus. */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <h2 className="text-xs uppercase tracking-widest text-white/25 font-medium flex-shrink-0">Server</h2>
-            <div className="flex items-center gap-1 flex-wrap justify-end">
+            <div className="flex items-center gap-1 flex-wrap justify-start sm:justify-end">
               <FleetActions />
               <button
                 onClick={() => router.push('/settings')}

@@ -53,17 +53,19 @@ const EMPTY_SERVER = { name: '', host: '', glancesUrl: '', sshHost: '', sshPort:
 // Einheitlicher Sektions-Kopf: Icon-Kachel + Titel + Beschreibung + optionale Aktion rechts.
 function SectionHeader({ icon: Icon, tint, title, desc, action }: { icon: LucideIcon; tint: string; title: string; desc?: string; action?: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-3 mb-4">
-      <div className="flex items-center gap-3">
-        <div className={clsx('w-9 h-9 rounded-xl flex items-center justify-center border', tint)}>
+    /* Mobil steht die Aktion unter der Überschrift — nebeneinander brach der
+       Knopf zweizeilig um und drängte den Titel zusammen. */
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3 mb-4">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={clsx('w-9 h-9 rounded-xl flex items-center justify-center border flex-shrink-0', tint)}>
           <Icon className="w-4 h-4" />
         </div>
-        <div>
+        <div className="min-w-0">
           <h2 className="text-sm font-semibold leading-tight">{title}</h2>
           {desc && <p className="text-xs text-white/35 mt-0.5">{desc}</p>}
         </div>
       </div>
-      {action}
+      {action && <div className="flex-shrink-0 [&>button]:w-full sm:[&>button]:w-auto [&>button]:justify-center">{action}</div>}
     </div>
   );
 }
@@ -424,7 +426,9 @@ export default function SettingsPage() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Navigations-Leiste */}
-        <nav className="lg:w-60 flex-shrink-0 flex lg:flex-col gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1">
+        {/* Mobil als Raster: in der Scroll-Leiste waren nur drei der sechs
+            Bereiche sichtbar und der Rest praktisch unauffindbar. */}
+        <nav className="lg:w-60 flex-shrink-0 grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-col gap-1.5">
           {SETTINGS_TABS.map(tab => {
             const Icon = tab.icon;
             const isActive = tab.id === activeTab;
@@ -494,9 +498,11 @@ export default function SettingsPage() {
                           {server.glances_url && (
                             <span className="hidden sm:inline text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/15">Glances</span>
                           )}
-                          <span className={clsx('flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full', m.bg, m.text)}>
+                          {/* Mobil nur der Statuspunkt — die Textpille fraß die
+                              Breite, sodass Servernamen abgeschnitten wurden. */}
+                          <span className={clsx('flex items-center gap-1.5 text-xs px-1.5 sm:px-2 py-0.5 rounded-full', m.bg, m.text)} title={m.label}>
                             <span className={clsx('w-1.5 h-1.5 rounded-full', m.dot)} />
-                            {m.label}
+                            <span className="hidden sm:inline">{m.label}</span>
                           </span>
                           <button onClick={() => openEditServer(server)} className="p-1.5 rounded-lg text-white/25 hover:text-white/80 hover:bg-white/[0.06] transition-all" title="Bearbeiten">
                             <Pencil className="w-3.5 h-3.5" />
