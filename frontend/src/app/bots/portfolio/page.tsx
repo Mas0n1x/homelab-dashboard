@@ -11,21 +11,35 @@ import { motion } from 'framer-motion';
 import {
   Bot, Circle, Play, Square, Save, Send, KeyRound, Hash, MessageSquare,
   Server as ServerIcon, Github, ScrollText, ArrowLeft, Users, Activity,
-  RefreshCw, Trash2, Loader2, CheckCircle2, AlertTriangle,
+  RefreshCw, Trash2, Loader2, CheckCircle2, AlertTriangle, Ticket,
 } from 'lucide-react';
 import { PageTransition } from '@/components/ui/PageTransition';
 import { botCall } from '@/lib/api';
 
 type Cfg = Record<string, string>;
-type Tab = 'general' | 'channels' | 'messages' | 'servers' | 'github' | 'logs';
+type Tab = 'general' | 'channels' | 'messages' | 'tickets' | 'servers' | 'github' | 'logs';
 
 const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: 'general', label: 'Allgemein', icon: Bot },
   { id: 'channels', label: 'Kanäle', icon: Hash },
   { id: 'messages', label: 'Nachrichten', icon: MessageSquare },
+  { id: 'tickets', label: 'Tickets', icon: Ticket },
   { id: 'servers', label: 'Meine Server', icon: ServerIcon },
   { id: 'github', label: 'GitHub', icon: Github },
   { id: 'logs', label: 'Logs', icon: ScrollText },
+];
+
+// Feinschalter des Moderation-Logs. Fehlender Wert = aktiv (der Bot prüft
+// ausschließlich auf 'false'), darum unten Toggle checked={… !== 'false'}.
+const MODLOG_EVENTS: { key: string; label: string }[] = [
+  { key: 'modlog_message_delete', label: 'Gelöschte Nachrichten' },
+  { key: 'modlog_message_edit', label: 'Bearbeitete Nachrichten' },
+  { key: 'modlog_bans', label: 'Bans & Kicks' },
+  { key: 'modlog_timeouts', label: 'Timeouts' },
+  { key: 'modlog_role_changes', label: 'Rollenänderungen' },
+  { key: 'modlog_nickname', label: 'Namensänderungen' },
+  { key: 'modlog_channels', label: 'Kanäle erstellt / gelöscht' },
+  { key: 'modlog_audit', label: 'Übrige Server-Aktionen' },
 ];
 
 const CHANNELS: { key: string; label: string }[] = [
@@ -45,6 +59,7 @@ const CHANNELS: { key: string; label: string }[] = [
 const ROLES: { key: string; label: string }[] = [
   { key: 'role_autorole', label: 'Auto-Rolle (nach Regel-Akzept)' },
   { key: 'role_support', label: 'Support-Rolle (Tickets)' },
+  { key: 'requests_ping_role', label: 'Ping-Rolle (neue Anfragen)' },
 ];
 
 const MESSAGES: { key: string; label: string; send?: { path: string; label: string } }[] = [
@@ -236,6 +251,24 @@ export default function PortfolioBotPage() {
                     </div>
                   ))}
                 </div>
+                <div className={`glass-card rounded-2xl p-5 space-y-3 transition-opacity ${cfg.modlog_enabled === 'false' ? 'opacity-40' : ''}`}>
+                  <div className="mb-1">
+                    <h2 className="text-sm font-semibold text-white/70">Was das Moderation-Log erfasst</h2>
+                    <p className="text-[12px] text-white/40 mt-0.5">
+                      {cfg.modlog_enabled === 'false'
+                        ? 'Das Moderation-Log ist oben abgeschaltet — diese Schalter greifen erst danach.'
+                        : 'Gilt für den Kanal unter „Kanäle → Moderation-Log".'}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+                    {MODLOG_EVENTS.map(row => (
+                      <div key={row.key} className="flex items-center justify-between py-1">
+                        <span className="text-[13px] text-white/70">{row.label}</span>
+                        <Toggle checked={cfg[row.key] !== 'false'} onChange={v => set(row.key, v ? 'true' : 'false')} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 <SaveBar busy={busy === 'save'} onSave={() => saveConfig()} />
               </div>
             )}
@@ -247,22 +280,24 @@ export default function PortfolioBotPage() {
                     <Field key={c.key} label={c.label} value={cfg[c.key] || ''} onChange={v => set(c.key, v)} placeholder="Channel-ID" mono />
                   ))}
                 </div>
-                <div className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {ROLES.map(r => (
                     <Field key={r.key} label={r.label} value={cfg[r.key] || ''} onChange={v => set(r.key, v)} placeholder="Rollen-ID" mono />
                   ))}
-                  <Field label="Ticket-Panel Channel senden an" value="" onChange={() => {}} placeholder="(unten: Panel posten)" />
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <SaveBar busy={busy === 'save'} onSave={() => saveConfig()} inline />
                   <ActionBtn busy={busy === '/send-active-projects'} onClick={() => action('/send-active-projects', 'Projekte gepostet.')} icon={Send} label="Projekte posten" />
-                  <ActionBtn busy={busy === '/send-ticket-panel'} onClick={() => { const ch = prompt('Ticket-Panel in welchen Channel? (Channel-ID)'); if (ch) action('/send-ticket-panel', 'Ticket-Panel gepostet.', { channelId: ch }); }} icon={Send} label="Ticket-Panel posten" />
                 </div>
               </div>
             )}
 
             {tab === 'messages' && (
               <div className="space-y-4">
+                <div className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="Regel-Reaktion (vergibt die Auto-Rolle)" value={cfg.rules_reaction_emoji || ''} onChange={v => set('rules_reaction_emoji', v)} placeholder="✅" />
+                  <Field label="ID der geposteten Regel-Nachricht" value={cfg.rules_message_id || ''} onChange={v => set('rules_message_id', v)} placeholder="wird beim Posten gesetzt" mono />
+                </div>
                 {MESSAGES.map(m => (
                   <div key={m.key} className="glass-card rounded-2xl p-5">
                     <div className="flex items-center justify-between mb-2">
@@ -282,6 +317,48 @@ export default function PortfolioBotPage() {
                   </div>
                 ))}
                 <SaveBar busy={busy === 'save'} onSave={() => saveConfig()} />
+              </div>
+            )}
+
+            {tab === 'tickets' && (
+              <div className="space-y-4">
+                <div className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="Ticket-Kategorie (Channel-Kategorie-ID)" value={cfg.channel_tickets || ''} onChange={v => set('channel_tickets', v)} placeholder="Kategorie-ID" mono />
+                  <Field label="Support-Rolle" value={cfg.role_support || ''} onChange={v => set('role_support', v)} placeholder="Rollen-ID" mono />
+                </div>
+                <div className="glass-card rounded-2xl p-5">
+                  <h3 className="text-sm font-semibold text-white/70 mb-2">Text im neuen Ticket</h3>
+                  <textarea
+                    value={cfg.ticket_welcome_msg || ''}
+                    onChange={e => set('ticket_welcome_msg', e.target.value)}
+                    rows={3}
+                    placeholder="Beschreibe dein Anliegen so detailliert wie möglich."
+                    className="w-full px-3 py-2.5 rounded-xl bg-black/30 border border-white/[0.08] text-[13px] leading-relaxed text-white/80 outline-none focus:border-accent/40 resize-y"
+                  />
+                </div>
+                <div className="glass-card rounded-2xl p-5">
+                  <h3 className="text-sm font-semibold text-white/70 mb-2">Kategorien im Ticket-Panel</h3>
+                  <p className="text-[12px] text-white/40 mb-2">
+                    JSON-Liste aus <code className="text-white/60">name</code>, <code className="text-white/60">emoji</code> und <code className="text-white/60">description</code>.
+                  </p>
+                  <textarea
+                    value={cfg.ticket_categories || ''}
+                    onChange={e => set('ticket_categories', e.target.value)}
+                    spellCheck={false}
+                    rows={8}
+                    placeholder='[{"name":"Allgemeine Frage","emoji":"❓","description":"…"}]'
+                    className="w-full px-3 py-2.5 rounded-xl bg-black/30 border border-white/[0.08] font-mono text-[12px] leading-relaxed text-white/80 outline-none focus:border-accent/40 resize-y"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <SaveBar busy={busy === 'save'} onSave={() => saveConfig()} inline />
+                  <ActionBtn
+                    busy={busy === '/send-ticket-panel'}
+                    onClick={() => { const ch = prompt('Ticket-Panel in welchen Channel? (Channel-ID)'); if (ch) action('/send-ticket-panel', 'Ticket-Panel gepostet.', { channelId: ch }); }}
+                    icon={Send}
+                    label="Ticket-Panel posten"
+                  />
+                </div>
               </div>
             )}
 
