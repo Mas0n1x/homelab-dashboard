@@ -14,7 +14,7 @@ const crypto = require('crypto');
 const RESET_DEFAULTS = {
   msg_welcome: JSON.stringify({
     title: 'Willkommen!',
-    description: 'Willkommen auf dem **Mas0n1x Development** Server, {user}!\nWir freuen uns, dich in unserer Community begrüssen zu dürfen.\nHier findest du professionellen Support, kannst Projekte anfragen und dich mit anderen Entwicklern austauschen.',
+    description: 'Willkommen auf dem **Mas0n1x Development** Server, {user}!\nWir freuen uns, dich in unserer Community begrüßen zu dürfen.\nHier findest du professionellen Support, kannst Projekte anfragen und dich mit anderen Entwicklern austauschen.',
     color: '#00ff88',
     footer: 'Du bist unser {memberCount}. Mitglied!'
   }),
@@ -354,7 +354,9 @@ function createPortfolioRouter(bot) {
 
   router.get('/github-repos', async (req, res) => {
     try {
-      const token = bot.getConfig('github_token');
+      // Wie in github-setup-*: der Token aus der .env hat Vorrang, damit das
+      // Secret nicht zusätzlich in der Bot-DB liegen muss.
+      const token = process.env.GITHUB_TOKEN || bot.getConfig('github_token');
       if (!token) return res.status(400).json({ error: 'GitHub Token fehlt – bitte zuerst GitHub einrichten.' });
 
       let allRepos = [], page = 1;

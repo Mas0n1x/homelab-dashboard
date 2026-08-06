@@ -85,7 +85,7 @@ const KEY_LABELS = {
   avatar_hash: 'Avatar', description: 'Beschreibung', type: 'Typ', enabled: 'Aktiviert',
 };
 
-// Kuratierte Projektliste fuer die "Projekte"-Nachricht (eine Nachricht, alle Projekte).
+// Kuratierte Projektliste für die "Projekte"-Nachricht (eine Nachricht, alle Projekte).
 // status: 'live' (gruen), 'dev' (gelb), 'building' (blau). since: Freitext. url: optional.
 const CURATED_PROJECTS = [
   { name: 'LawNet', status: 'live', since: '2024', url: 'https://lawnet.sale',
@@ -381,7 +381,7 @@ class DiscordBot {
     }
   }
 
-  // Generischer Admin-Alert in den Anfragen-Channel (fuer Bewertungen, Nachrichten, ...)
+  // Generischer Admin-Alert in den Anfragen-Channel (für Bewertungen, Nachrichten, ...)
   async sendAlert(title, description) {
     const channelId = this.getConfig('channel_requests');
     if (!this.client || !this.isConnected || !channelId) return;
@@ -793,7 +793,7 @@ class DiscordBot {
       const closeRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId('ticket_close')
-          .setLabel('Ticket schliessen')
+          .setLabel('Ticket schließen')
           .setEmoji('🔒')
           .setStyle(ButtonStyle.Danger)
       );
