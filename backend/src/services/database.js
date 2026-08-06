@@ -148,6 +148,35 @@ export function initDatabase() {
       created_at TEXT DEFAULT (datetime('now'))
     );
 
+    -- Aufgaben-Tracker (Todos mit Priorität, Fälligkeit, Projekt und Checkliste)
+    CREATE TABLE IF NOT EXISTS tasks (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      notes TEXT DEFAULT '',
+      status TEXT DEFAULT 'open',
+      priority TEXT DEFAULT 'medium',
+      project TEXT DEFAULT '',
+      due_date TEXT,
+      sort_order INTEGER DEFAULT 0,
+      completed_at TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_tasks_status_order ON tasks(status, sort_order);
+    CREATE INDEX IF NOT EXISTS idx_tasks_due ON tasks(due_date);
+
+    CREATE TABLE IF NOT EXISTS task_subtasks (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      done INTEGER DEFAULT 0,
+      sort_order INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_task_subtasks_task ON task_subtasks(task_id);
+
     CREATE TABLE IF NOT EXISTS calendar_events (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,

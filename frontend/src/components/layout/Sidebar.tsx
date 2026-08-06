@@ -12,6 +12,7 @@ import {
   Activity, Box, Mail, Settings, ChevronLeft, ChevronRight,
   Server, Terminal, FileText, Wrench, LayoutDashboard, ChevronDown,
   Cpu,
+  ListChecks,
   Gamepad2,
   Globe,
   Cloud,
@@ -43,6 +44,7 @@ const SERVER_SUB_NAV: ServerSubNav[] = [
 ];
 
 const TOOL_NAV: NavItem[] = [
+  { href: '/tasks', label: 'Aufgaben', icon: <ListChecks className="w-4 h-4" /> },
   { href: '/status', label: 'Status', icon: <Activity className="w-4 h-4" /> },
   { href: '/terminal', label: 'Terminal', icon: <Terminal className="w-4 h-4" /> },
   { href: '/mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },

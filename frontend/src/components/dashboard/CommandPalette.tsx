@@ -11,7 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   Search, ArrowRight, Box, Settings, LogOut, Zap, Command,
   Server, Terminal, FileText, Wrench, LayoutDashboard, Mail,
-  Cpu, HardDrive
+  Cpu, HardDrive, ListChecks
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/stores/authStore';
@@ -98,6 +98,7 @@ export function CommandPalette() {
     // Navigation
     const navItems = [
       { href: '/', label: 'Fleet Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
+      { href: '/tasks', label: 'Aufgaben', icon: <ListChecks className="w-4 h-4" /> },
       { href: '/docker', label: 'Docker (Alle Server)', icon: <Box className="w-4 h-4" /> },
       { href: '/mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },
       { href: '/settings', label: 'Einstellungen', icon: <Settings className="w-4 h-4" /> },

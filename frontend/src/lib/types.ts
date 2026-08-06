@@ -436,3 +436,41 @@ export interface UpdateStatus {
   lastCheck: string | null
   error: string | null
 }
+
+// ─── Aufgaben-Tracker ───
+
+export type TaskStatus = 'open' | 'doing' | 'done'
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
+
+export interface TaskSubtask {
+  id: string
+  task_id: string
+  title: string
+  done: number
+  sort_order: number
+  created_at: string
+}
+
+export interface Task {
+  id: string
+  title: string
+  notes: string
+  status: TaskStatus
+  priority: TaskPriority
+  project: string
+  due_date: string | null
+  sort_order: number
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+  subtasks: TaskSubtask[]
+}
+
+export interface TaskInput {
+  title: string
+  notes?: string
+  status?: TaskStatus
+  priority?: TaskPriority
+  project?: string
+  dueDate?: string | null
+}

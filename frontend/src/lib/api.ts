@@ -4,7 +4,10 @@
  * Licensed under the MIT License.
  */
 import { useAuthStore } from '@/stores/authStore';
-import type { MetricSample, TunnelInfo, ServiceStatusEntry } from './types';
+import type {
+  MetricSample, TunnelInfo, ServiceStatusEntry,
+  Task, TaskInput, TaskStatus, TaskSubtask,
+} from './types';
 
 const API_BASE = typeof window !== 'undefined'
   ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api`
@@ -314,6 +317,25 @@ export const updateCalendarEvent = (id: string, data: Record<string, unknown>) =
   fetchApi(`/calendar/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteCalendarEvent = (id: string) =>
   fetchApi(`/calendar/${id}`, { method: 'DELETE' });
+
+// Aufgaben-Tracker
+export const getTasks = () => fetchApi<{ tasks: Task[]; projects: string[] }>('/tasks');
+export const addTask = (data: TaskInput) =>
+  fetchApi<Task>('/tasks', { method: 'POST', body: JSON.stringify(data) });
+export const updateTask = (id: string, data: Partial<TaskInput> & { sortOrder?: number }) =>
+  fetchApi<Task>(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteTask = (id: string) =>
+  fetchApi<{ ok: boolean }>(`/tasks/${id}`, { method: 'DELETE' });
+export const reorderTasks = (items: { id: string; status?: TaskStatus; sortOrder: number }[]) =>
+  fetchApi<{ ok: boolean; updated: number }>('/tasks/reorder', { method: 'POST', body: JSON.stringify({ items }) });
+export const clearDoneTasks = () =>
+  fetchApi<{ ok: boolean; deleted: number }>('/tasks/clear-done', { method: 'POST' });
+export const addSubtask = (taskId: string, title: string) =>
+  fetchApi<TaskSubtask>(`/tasks/${taskId}/subtasks`, { method: 'POST', body: JSON.stringify({ title }) });
+export const updateSubtask = (subId: string, data: { title?: string; done?: boolean }) =>
+  fetchApi<TaskSubtask>(`/tasks/subtasks/${subId}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteSubtask = (subId: string) =>
+  fetchApi<{ ok: boolean }>(`/tasks/subtasks/${subId}`, { method: 'DELETE' });
 
 // Container Templates
 export const getTemplates = () => fetchApi('/templates');
