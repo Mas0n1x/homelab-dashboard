@@ -7,9 +7,9 @@
 /*
  * Registry der Minecraft-Server. Erlaubt mehrere Server (je eigener mc-agent).
  * Konfiguration bevorzugt per MC_SERVERS (JSON-Array), z. B.:
- *   MC_SERVERS=[{"id":"survival","name":"Survival","host":"45.133.9.70:25565",
+ *   MC_SERVERS=[{"id":"survival","name":"Survival","host":"188.34.130.109:25565",
  *     "version":"Paper 26.2","map":"https://map.mas0n1x.online",
- *     "url":"http://45.133.9.70:8100","token":"..."}]
+ *     "url":"http://188.34.130.109:8100","token":"..."}]
  * Fallback (Abwärtskompatibilität): einzelner Server aus MC_AGENT_URL/MC_AGENT_TOKEN.
  */
 
