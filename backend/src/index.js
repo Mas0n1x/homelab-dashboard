@@ -38,7 +38,7 @@ import auditRoutes from './routes/audit.js';
 import backupRoutes from './routes/backup.js';
 import maintenanceRoutes from './routes/maintenance.js';
 import minecraftRoutes from './routes/minecraft.js';
-import { getServer as getMcServer } from './services/mcServers.js';
+import { getServer as getMcServer, accessHeaders as mcAccessHeaders } from './services/mcServers.js';
 import trafficRoutes from './routes/traffic.js';
 import salenetRoutes from './routes/salenet.js';
 import businessRoutes from './routes/business.js';
@@ -140,7 +140,8 @@ mcConsoleWss.on('connection', (client, req) => {
   } catch { client.close(4001, 'Unauthorized'); return; }
   if (!mcServer || !mcServer.url || !mcServer.token) { client.close(4002, 'Agent nicht konfiguriert'); return; }
   const agentWsUrl = mcServer.url.replace(/^http/, 'ws') + '/console?token=' + encodeURIComponent(mcServer.token);
-  const upstream = new WebSocket(agentWsUrl);
+  // Access-Header müssen schon im Handshake mitgehen — nachträglich geht es nicht.
+  const upstream = new WebSocket(agentWsUrl, { headers: mcAccessHeaders(mcServer) });
   const queue = [];
   upstream.on('open', () => { queue.forEach(m => upstream.send(m)); queue.length = 0; });
   upstream.on('message', (data) => { if (client.readyState === client.OPEN) client.send(data.toString()); });

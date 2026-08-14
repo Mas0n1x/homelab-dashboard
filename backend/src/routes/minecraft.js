@@ -4,7 +4,7 @@
  * Licensed under the MIT License.
  */
 import { Router } from 'express';
-import { getServer, publicServers } from '../services/mcServers.js';
+import { getServer, publicServers, accessHeaders } from '../services/mcServers.js';
 
 const router = Router();
 
@@ -18,6 +18,9 @@ async function agentFetch(server, path, opts = {}) {
       headers: {
         Authorization: `Bearer ${server.token}`,
         'Content-Type': 'application/json',
+        // Liegt der Agent hinter Cloudflare Access, kommt sonst Access' Login-Seite
+        // statt der Agent-Antwort zurück.
+        ...accessHeaders(server),
         ...(opts.headers || {}),
       },
       signal: AbortSignal.timeout(20000),
