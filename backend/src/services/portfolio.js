@@ -4,9 +4,13 @@
  * Licensed under the MIT License.
  */
 const PORTFOLIO_API = process.env.PORTFOLIO_API_URL || 'http://host.docker.internal:3000';
+// Bevorzugter Weg: eigener lesender Dienst-Schlüssel im Portfolio
+// (SERVICE_API_KEY dort). Das Admin-Passwort hier zu hinterlegen war fragil —
+// bei jedem Passwortwechsel im Portfolio brach die Anbindung still ab.
+const PORTFOLIO_API_KEY = process.env.PORTFOLIO_API_KEY;
 const PORTFOLIO_PASSWORD = process.env.PORTFOLIO_PASSWORD;
-if (!PORTFOLIO_PASSWORD) {
-  console.warn('[WARN] PORTFOLIO_PASSWORD ist nicht gesetzt — die Portfolio-Anbindung kann sich nicht einloggen. Bitte in der .env setzen.');
+if (!PORTFOLIO_API_KEY && !PORTFOLIO_PASSWORD) {
+  console.warn('[WARN] Weder PORTFOLIO_API_KEY noch PORTFOLIO_PASSWORD ist gesetzt — die Portfolio-Anbindung kann nichts lesen. Bitte in der .env setzen.');
 }
 
 let lastKnownState = {
@@ -55,6 +59,19 @@ async function login() {
 }
 
 async function fetchPortfolio(endpoint) {
+  // Schlüssel-Weg: kein Login, keine Session, kein Cookie-Ablauf.
+  if (PORTFOLIO_API_KEY) {
+    const response = await fetch(`${PORTFOLIO_API}${endpoint}`, {
+      headers: { 'Accept': 'application/json', 'X-Api-Key': PORTFOLIO_API_KEY },
+    });
+    if (!response.ok) {
+      throw new Error(`Portfolio API error: ${response.status}`);
+    }
+    portfolioAvailable = true;
+    return response.json();
+  }
+
+  // Fallback: Anmeldung mit dem Admin-Passwort (alter Weg).
   // Try with existing session first
   if (sessionCookie) {
     const response = await fetch(`${PORTFOLIO_API}${endpoint}`, {
