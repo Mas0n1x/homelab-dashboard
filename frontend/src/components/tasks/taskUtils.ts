@@ -170,3 +170,50 @@ export function parseQuickInput(raw: string): QuickParse {
   result.title = text.replace(/\s+/g, ' ').trim();
   return result;
 }
+
+// ─── Gruppierung ───
+
+export type GroupMode = 'status' | 'due' | 'project';
+
+export const GROUP_LABELS: Record<GroupMode, string> = {
+  status: 'Nach Status',
+  due: 'Nach Fälligkeit',
+  project: 'Nach Projekt',
+};
+
+export type DueBucket = 'overdue' | 'today' | 'week' | 'later' | 'none';
+
+export const DUE_BUCKET_ORDER: DueBucket[] = ['overdue', 'today', 'week', 'later', 'none'];
+
+export const DUE_BUCKET_META: Record<DueBucket, { label: string; dot: string }> = {
+  overdue: { label: 'Überfällig', dot: 'bg-red-400' },
+  today: { label: 'Heute fällig', dot: 'bg-amber-400' },
+  week: { label: 'Diese Woche', dot: 'bg-cyan-400' },
+  later: { label: 'Später', dot: 'bg-indigo-400' },
+  none: { label: 'Ohne Datum', dot: 'bg-white/25' },
+};
+
+/** Aufgabe einem Fälligkeits-Abschnitt zuordnen (für die Gruppierung). */
+export function dueBucket(task: Task): DueBucket {
+  const meta = dueMeta(task.due_date);
+  if (!meta) return 'none';
+  if (meta.days < 0) return 'overdue';
+  if (meta.days === 0) return 'today';
+  if (meta.days <= 7) return 'week';
+  return 'later';
+}
+
+// ─── Schnellfilter (die Chips über der Liste) ───
+
+export type QuickFilter = 'all' | 'open' | 'doing' | 'today' | 'overdue' | 'done';
+
+export function matchesQuickFilter(task: Task, filter: QuickFilter): boolean {
+  switch (filter) {
+    case 'open': return task.status === 'open';
+    case 'doing': return task.status === 'doing';
+    case 'today': return isDueToday(task);
+    case 'overdue': return isOverdue(task);
+    case 'done': return task.status === 'done';
+    default: return true;
+  }
+}

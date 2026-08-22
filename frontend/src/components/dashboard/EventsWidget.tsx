@@ -45,7 +45,7 @@ export function EventsWidget() {
     raw.push({ ts, label: f.label, detail: f.detail, Icon: f.Icon, tint: f.tint, count: 1 });
   }
 
-  // Aufeinanderfolgende identische Ereignisse buendeln (z. B. mehrere Anmeldungen).
+  // Aufeinanderfolgende identische Ereignisse bündeln (z. B. mehrere Anmeldungen).
   const sorted = raw.filter(e => !isNaN(e.ts)).sort((a, b) => b.ts - a.ts);
   const merged: Ev[] = [];
   for (const e of sorted) {

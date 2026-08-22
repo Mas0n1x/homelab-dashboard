@@ -63,8 +63,8 @@ export function createGlancesClient(baseUrl) {
           },
           disk: (() => {
             if (!Array.isArray(disk)) return [];
-            // Nur echte Block-Devices, Host-Mount-Praefix (/hostfs/root) entfernen,
-            // pro Device den kuerzesten Mountpoint behalten (echte Partition statt Bind-Mount-Datei)
+            // Nur echte Block-Devices, Host-Mount-Präfix (/hostfs/root) entfernen,
+            // pro Device den kürzesten Mountpoint behalten (echte Partition statt Bind-Mount-Datei)
             const byDev = new Map();
             for (const d of disk) {
               const device = d.device_name || '';

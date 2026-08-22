@@ -20,7 +20,7 @@ router.get('/summary', (req, res) => {
 });
 
 // Get 30-day timeline for a service
-// Status-Board (fuer die Status-Seite): je Service 24h/7d/aktuell + Tages-Timeline
+// Status-Board (für die Status-Seite): je Service 24h/7d/aktuell + Tages-Timeline
 router.get('/status', (req, res) => {
   try {
     const serverId = req.query.serverId || 'local';

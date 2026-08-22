@@ -405,7 +405,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
         </div>
       </nav>
 
-      {/* Vollstaendiges Navigations-Overlay (alle Tools + Server-Details) */}
+      {/* Vollständiges Navigations-Overlay (alle Tools + Server-Details) */}
       <AnimatePresence>
         {menuOpen && (
           <div className="md:hidden fixed inset-0 z-[60]">

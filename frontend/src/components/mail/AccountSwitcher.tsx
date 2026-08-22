@@ -102,7 +102,7 @@ export function AccountSwitcher({ onAddAccount }: AccountSwitcherProps) {
       </button>
 
       {isOpen && (
-          <div className="absolute top-full right-0 mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+          <div className="absolute top-full right-0 mt-2 w-[calc(100vw-2rem)] max-w-xs sm:w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
             <div className="py-2">
               {accounts.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-400 text-center">

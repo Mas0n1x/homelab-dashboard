@@ -38,12 +38,12 @@ export function UpdateStatus({ serverId }: UpdateStatusProps) {
           className="btn-glass text-xs py-1 px-2.5 flex items-center gap-1.5"
         >
           <RefreshCw className={clsx('w-3 h-3', isLoading && 'animate-spin')} />
-          Pruefen
+          Prüfen
         </button>
       </div>
 
       {isLoading ? (
-        <div className="py-6 text-center text-white/20 text-xs">Pruefe Updates...</div>
+        <div className="py-6 text-center text-white/20 text-xs">Prüfe Updates...</div>
       ) : error ? (
         <div className="py-6 text-center text-red-400/60 text-xs">Fehler: {(error as Error).message}</div>
       ) : data?.error ? (

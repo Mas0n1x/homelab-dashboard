@@ -170,12 +170,12 @@ export default function DockerPage() {
                 onClick={() => toggleProject(projectName)}
                 className="relative z-10 w-full flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors rounded-t-2xl"
               >
-                <div className="flex items-center gap-3">
-                  {expandedProjects.has(projectName) ? <ChevronDown className="w-4 h-4 text-white/40" /> : <ChevronRight className="w-4 h-4 text-white/40" />}
-                  <span className="font-medium">{projectName}</span>
-                  <span className="text-xs text-white/30">{projectContainers.length} Container</span>
+                <div className="flex items-center gap-3 min-w-0">
+                  {expandedProjects.has(projectName) ? <ChevronDown className="w-4 h-4 text-white/40 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-white/40 flex-shrink-0" />}
+                  <span className="font-medium truncate">{projectName}</span>
+                  <span className="text-xs text-white/30 flex-shrink-0 hidden sm:inline">{projectContainers.length} Container</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0 pl-2">
                   <span className="text-xs text-emerald-400">{projectContainers.filter(c => c.state === 'running').length} laufend</span>
                 </div>
               </button>

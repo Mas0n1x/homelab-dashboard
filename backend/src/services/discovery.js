@@ -11,14 +11,14 @@ let previousDiscovered = new Map();
 const DB_PORTS = new Set([5432, 3306, 27017, 6379, 11211, 9200, 5672, 4369, 15672, 2181, 9092]);
 // Ports that are typically web-accessible
 const WEB_PORTS = new Set([80, 443, 3000, 3001, 4000, 5000, 5173, 8000, 8080, 8081, 8090, 8096, 8123, 8384, 8443, 8888, 9000, 9090, 61208]);
-// Nicht-HTTP-Ports (Mail, SSH, Sync-Protokolle): nie als Web-URL waehlen —
+// Nicht-HTTP-Ports (Mail, SSH, Sync-Protokolle): nie als Web-URL wählen —
 // sonst probt der Uptime-Check den falschen Port und meldet den Dienst offline.
 const NON_WEB_PORTS = new Set([22, 25, 110, 143, 465, 587, 993, 995, 21027, 22000, 24007]);
 
 // Container names to always skip (our own dashboard containers)
 const SKIP_CONTAINERS = new Set(['homelab-frontend', 'homelab-backend', 'homelab-nginx']);
 
-// Compose-Projekte, die nicht mehr aufs Dashboard gehoeren (nach vps2 umgezogen).
+// Compose-Projekte, die nicht mehr aufs Dashboard gehören (nach vps2 umgezogen).
 const SKIP_PROJECTS = new Set(['azubinet', 'personet-cc']);
 
 // Known name mappings for common images
@@ -34,8 +34,8 @@ export async function discoverServices(serverId = 'local') {
   const docker = serverManager.getDocker(serverId);
   if (!docker) return [];
 
-  // Host fuer die anklickbaren Service-URLs: echter Host des jeweiligen Servers
-  // (lokal = Pi-LAN-IP, remote = dessen oeffentliche IP) statt hardcoded.
+  // Host für die anklickbaren Service-URLs: echter Host des jeweiligen Servers
+  // (lokal = Pi-LAN-IP, remote = dessen öffentliche IP) statt hardcoded.
   const host = serverManager.getConnection(serverId)?.config?.host || '192.168.2.103';
 
   try {
@@ -150,8 +150,8 @@ function detectUrlFromPorts(ports, host = '192.168.2.103') {
   if (publicPorts.length === 0) return null;
 
   // Bekannte Web-Ports bevorzugen; sonst ein Nicht-Mail-/Sync-Port; als letztes
-  // irgendein Port. Mail-Only-Dienste (Stalwart) behalten so ein Pruefziel — der
-  // Uptime-Check faellt dann auf einen TCP-Verbindungstest zurueck.
+  // irgendein Port. Mail-Only-Dienste (Stalwart) behalten so ein Prüfziel — der
+  // Uptime-Check fällt dann auf einen TCP-Verbindungstest zurück.
   const webPort =
     publicPorts.find(p => WEB_PORTS.has(p.PrivatePort)) ||
     publicPorts.find(p => !NON_WEB_PORTS.has(p.PrivatePort)) ||

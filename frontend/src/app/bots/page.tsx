@@ -46,23 +46,25 @@ export default function BotsOverviewPage() {
 
   return (
     <PageTransition>
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="max-w-6xl mx-auto md:py-2">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-accent/15 border border-accent/25 flex items-center justify-center">
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-accent/15 border border-accent/25 flex items-center justify-center flex-shrink-0">
               <Bot className="w-5 h-5 text-accent-light" />
             </div>
-            <div>
-              <h1 className="text-xl font-semibold">Discord-Bots</h1>
-              <p className="text-sm text-white/40">Zentrale Steuerung aller Bots an einem Ort.</p>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-semibold">Discord-Bots</h1>
+              <p className="text-[11px] sm:text-sm text-white/40 truncate">Zentrale Steuerung aller Bots an einem Ort.</p>
             </div>
           </div>
           <button
             onClick={load}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white/50 hover:text-white/80 hover:bg-white/[0.04] transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white/50 hover:text-white/80 hover:bg-white/[0.04] transition-colors flex-shrink-0"
+            title="Aktualisieren"
           >
-            <RefreshCw className="w-4 h-4" /> Aktualisieren
+            <RefreshCw className="w-4 h-4" />
+            <span className="hidden sm:inline">Aktualisieren</span>
           </button>
         </div>
 

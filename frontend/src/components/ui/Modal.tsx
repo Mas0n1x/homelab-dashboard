@@ -36,7 +36,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -50,7 +50,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 24 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className={`relative w-full ${sizes[size]} glass-card p-0 max-h-[85vh] flex flex-col`}
+            className={`relative w-full ${sizes[size]} glass-card p-0 max-h-[88dvh] sm:max-h-[85vh] flex flex-col`}
           >
             <div className="relative z-10 flex items-center justify-between p-5 border-b border-white/[0.06]">
               <h2 className="text-lg font-semibold">{title}</h2>
@@ -62,7 +62,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
               </button>
             </div>
             <div className="absolute bottom-[calc(100%-73px)] left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent z-20" />
-            <div className="relative z-10 p-5 overflow-y-auto">
+            <div className="relative z-10 p-5 overflow-y-auto overscroll-contain pb-[max(1.25rem,env(safe-area-inset-bottom))]">
               {children}
             </div>
           </motion.div>

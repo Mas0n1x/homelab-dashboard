@@ -72,7 +72,7 @@ function ContainerOverview() {
 
 export function FleetBentoGrid() {
   // Anordnung: kurze Widgets in eine Reihe, hohe in die nächste, plus
-  // [&>*]:h-full, damit alle Karten ihre Rasterzelle fuellen (keine Luecken).
+  // [&>*]:h-full, damit alle Karten ihre Rasterzelle füllen (keine Lücken).
   return (
     <div className="bento-grid">
       {/* Reihe 1: Kennzahlen (4 Spalten, symmetrisch) */}

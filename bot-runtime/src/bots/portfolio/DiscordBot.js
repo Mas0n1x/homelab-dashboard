@@ -1585,7 +1585,7 @@ class DiscordBot {
 
   // ── Aktive Projekte (Components V2) ───────────────────────────
 
-  // Letzte Repos (eigener Account + Org) nach Aktivitaet, live von der GitHub-API
+  // Letzte Repos (eigener Account + Org) nach Aktivität, live von der GitHub-API
   async fetchRecentRepos(limit = 5) {
     const token = process.env.GITHUB_TOKEN;
     if (!token) return [];
@@ -1613,7 +1613,7 @@ class DiscordBot {
     const channel = await this.client.channels.fetch(channelId);
     if (!channel) throw new Error('Channel nicht gefunden');
 
-    // Vorherige Projekt-Nachricht(en) loeschen -> immer genau eine saubere Nachricht
+    // Vorherige Projekt-Nachricht(en) löschen -> immer genau eine saubere Nachricht
     const prev = this._parseJSON(this.getConfig('projects_message_ids'), []);
     if (Array.isArray(prev)) {
       for (const id of prev) {

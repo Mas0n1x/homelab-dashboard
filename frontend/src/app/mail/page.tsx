@@ -79,10 +79,10 @@ export default function MailPage() {
   const totalUnread = folders.reduce((sum, f) => sum + (f.unreadEmails || 0), 0);
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       <PageTransition>
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Mail</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Mail</h1>
           <AccountSwitcher onAddAccount={() => setShowAddAccountModal(true)} />
         </div>
 
@@ -97,9 +97,9 @@ export default function MailPage() {
         {activeTab === 'posteingang' && (
           <>
             <MailSearch />
-            {/* Mobile folder sidebar - shown above email list */}
-            <div className="md:hidden mt-4 overflow-x-auto">
-              <FolderSidebar folders={folders} />
+            {/* Ordner mobil: waagerechte Chip-Leiste statt einer vollen Spalte */}
+            <div className="md:hidden mt-4">
+              <FolderSidebar folders={folders} layout="bar" />
             </div>
             <div className="flex gap-4 items-start mt-4">
               <div className="w-56 shrink-0 hidden md:block">

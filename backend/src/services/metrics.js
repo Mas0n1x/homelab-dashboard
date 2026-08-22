@@ -5,7 +5,7 @@
  */
 import { getDb } from './database.js';
 
-// Ein Metrik-Sample je Server persistieren (fuer Sparklines/Verlauf).
+// Ein Metrik-Sample je Server persistieren (für Sparklines/Verlauf).
 export function recordMetric(serverId, m) {
   if (!serverId) return;
   const db = getDb();
@@ -31,7 +31,7 @@ export function getMetrics(serverId, minutes = 60) {
   ).all(serverId, since);
 }
 
-// Retention: alte Samples entfernen (Standard 48h), damit die DB nicht waechst.
+// Retention: alte Samples entfernen (Standard 48h), damit die DB nicht wächst.
 export function pruneMetrics(hours = 48) {
   const db = getDb();
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();

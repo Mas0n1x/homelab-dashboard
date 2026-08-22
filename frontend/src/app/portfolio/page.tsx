@@ -100,7 +100,7 @@ export default function PortfolioPage() {
             className="btn-primary flex items-center gap-2"
           >
             <ExternalLink className="w-4 h-4" />
-            Admin Panel öffnen
+            <span className="hidden sm:inline">Admin Panel öffnen</span>
           </a>
         }
       />

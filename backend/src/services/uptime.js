@@ -11,7 +11,7 @@ import net from 'node:net';
 const CHECK_TIMEOUT = 8000;
 
 // Private/Loopback-Hosts, die der Backend-Container NICHT direkt erreicht.
-// Fuer lokale Dienste laeuft der Zugriff ueber das Host-Gateway.
+// Für lokale Dienste läuft der Zugriff über das Host-Gateway.
 function isPrivateHost(hostname) {
   return hostname === 'localhost' ||
     /^127\./.test(hostname) ||
@@ -20,8 +20,8 @@ function isPrivateHost(hostname) {
     /^172\.(1[6-9]|2\d|3[01])\./.test(hostname);
 }
 
-// Der Checker laeuft IM Container. Lokale LAN-/Loopback-URLs sind von dort nicht
-// erreichbar -> auf host.docker.internal umbiegen. Oeffentliche Domains bleiben.
+// Der Checker läuft IM Container. Lokale LAN-/Loopback-URLs sind von dort nicht
+// erreichbar -> auf host.docker.internal umbiegen. Öffentliche Domains bleiben.
 function toReachableUrl(serverId, url) {
   if (serverId !== 'local') return url;
   try {
@@ -34,10 +34,10 @@ function toReachableUrl(serverId, url) {
   return url;
 }
 
-// HTTP(S)-Probe ueber node:http/https. Wichtig: rejectUnauthorized:false —
+// HTTP(S)-Probe über node:http/https. Wichtig: rejectUnauthorized:false —
 // interne Dienste (Stalwart, Vaultwarden, Syncthing-GUI …) nutzen self-signed
-// Zertifikate; global fetch wuerfe die als Fehler -> faelschlich "offline".
-// Ergebnis: { ok, statusCode, responded }. responded=true, sobald ueberhaupt
+// Zertifikate; global fetch würfe die als Fehler -> fälschlich "offline".
+// Ergebnis: { ok, statusCode, responded }. responded=true, sobald überhaupt
 // eine HTTP-Antwort kam (auch 5xx) — sonst greift der TCP-Fallback.
 function httpProbe(target) {
   return new Promise((resolve) => {
@@ -55,7 +55,7 @@ function httpProbe(target) {
     }, (res) => {
       const status = res.statusCode || 0;
       res.destroy(); // Body nicht laden — es zaehlt nur, dass geantwortet wurde
-      // Alles < 500 = laeuft (Redirect, 401/403 Auth, 404 ohne Root-Route).
+      // Alles < 500 = läuft (Redirect, 401/403 Auth, 404 ohne Root-Route).
       done({ ok: status > 0 && status < 500, statusCode: status, responded: true });
     });
     req.on('error', () => done({ ok: false, statusCode: 0, responded: false }));
@@ -99,7 +99,7 @@ export async function checkServiceHealth(serviceId, serverId, url) {
       online = true;
     } else if (!probe.responded) {
       // Keine HTTP-Antwort (Nicht-HTTP-Port, Protokoll-Mismatch, Reset):
-      // Port-Verbindung pruefen. Offen -> Dienst laeuft.
+      // Port-Verbindung prüfen. Offen -> Dienst läuft.
       const port = u.port ? parseInt(u.port, 10) : (u.protocol === 'https:' ? 443 : 80);
       online = await tcpProbe(u.hostname, port);
     }
@@ -200,8 +200,8 @@ export function getUptimeTimeline(serviceId, days = 30) {
   };
 }
 
-// Komplettes Status-Board fuer eine Status-Seite: je Service 24h/7d-Uptime,
-// aktueller Zustand und eine Tages-Timeline ueber N Tage. Ein einziger Call.
+// Komplettes Status-Board für eine Status-Seite: je Service 24h/7d-Uptime,
+// aktueller Zustand und eine Tages-Timeline über N Tage. Ein einziger Call.
 export function getStatusBoard(serverId = 'local', days = 30) {
   const db = getDb();
   const sinceDays = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();

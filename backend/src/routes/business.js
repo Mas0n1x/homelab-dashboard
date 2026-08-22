@@ -16,7 +16,7 @@ function dismissedSet() {
   return new Set(rows.map(r => r.ref));
 }
 
-// Zusammengefuehrte Business-Anfragen (SaleNet + Portfolio), erledigte ausgeblendet.
+// Zusammengeführte Business-Anfragen (SaleNet + Portfolio), erledigte ausgeblendet.
 router.get('/requests', async (req, res) => {
   try {
     const dismissed = dismissedSet();

@@ -11,7 +11,7 @@ import { logAudit } from '../services/audit.js';
 
 const router = Router();
 
-// Einfaches In-Memory-Rate-Limit fuer Login (Brute-Force-Schutz)
+// Einfaches In-Memory-Rate-Limit für Login (Brute-Force-Schutz)
 const loginAttempts = new Map();
 const MAX_ATTEMPTS = 8;
 const WINDOW_MS = 15 * 60 * 1000;

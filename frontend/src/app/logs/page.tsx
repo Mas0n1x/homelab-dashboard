@@ -174,8 +174,8 @@ export default function LogsPage() {
 
   return (
     <PageTransition>
-    <div className="space-y-4 h-[calc(100vh-10rem)] mb-20 md:mb-0">
-      <div className="space-y-3">
+    <div className="flex flex-col gap-4 h-[calc(100dvh-12rem)] md:h-[calc(100dvh-10rem)]">
+      <div className="space-y-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -259,10 +259,10 @@ export default function LogsPage() {
         </div>
       </div>
 
-      <GlassCard padding={false} className="flex-1 h-full overflow-hidden">
+      <GlassCard padding={false} className="flex-1 min-h-0 overflow-hidden">
         <div
           ref={logRef}
-          className="relative z-10 h-full min-h-[400px] overflow-y-auto p-3 font-mono text-xs leading-5"
+          className="relative z-10 h-full overflow-y-auto p-3 font-mono text-xs leading-5"
         >
           {filteredLogs.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-white/20 gap-3">
@@ -272,7 +272,7 @@ export default function LogsPage() {
           ) : (
             filteredLogs.map((line, i) => (
               <div key={i} className="flex hover:bg-white/[0.02] px-1 rounded">
-                <span className={`${getContainerColor(line.container)} w-32 flex-shrink-0 truncate mr-3 opacity-70`}>
+                <span className={`${getContainerColor(line.container)} w-20 sm:w-32 flex-shrink-0 truncate mr-2 sm:mr-3 opacity-70`}>
                   {line.container}
                 </span>
                 <span className="text-white/70 whitespace-pre-wrap break-all">{line.text}</span>

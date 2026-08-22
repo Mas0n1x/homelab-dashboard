@@ -164,7 +164,7 @@ export default function PortfolioBotPage() {
 
   return (
     <PageTransition>
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="max-w-5xl mx-auto md:py-2">
         {/* Breadcrumb + header */}
         <Link href="/bots" className="inline-flex items-center gap-1.5 text-[13px] text-white/40 hover:text-white/70 mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Alle Bots

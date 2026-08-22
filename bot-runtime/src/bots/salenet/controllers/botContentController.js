@@ -1,5 +1,5 @@
 // SaleNet -> Admin-Endpunkte für den Discord Content-Poster
-// Verwaltet Konfiguration (Regeln/Links/Titel/Channels) und loest das Posten aus.
+// Verwaltet Konfiguration (Regeln/Links/Titel/Channels) und löst das Posten aus.
 
 const Settings = require('../models/Settings');
 const contentPoster = require('../services/contentPoster');

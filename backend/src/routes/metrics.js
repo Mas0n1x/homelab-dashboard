@@ -8,7 +8,7 @@ import { getMetrics } from '../services/metrics.js';
 
 const router = Router();
 
-// Metrik-Verlauf eines Servers (Standard 60 Min) fuer Sparklines/Charts.
+// Metrik-Verlauf eines Servers (Standard 60 Min) für Sparklines/Charts.
 router.get('/:serverId', (req, res) => {
   try {
     const minutes = Math.min(parseInt(req.query.minutes) || 60, 2880);

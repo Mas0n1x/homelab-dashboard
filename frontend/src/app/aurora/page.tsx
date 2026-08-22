@@ -36,7 +36,7 @@ export default function AuroraPage() {
           </a>
         </div>
 
-        <div className="rounded-2xl overflow-hidden border border-white/[0.08] bg-black/20 h-[calc(100dvh-9.5rem)] min-h-[420px]">
+        <div className="rounded-2xl overflow-hidden border border-white/[0.08] bg-black/20 h-[calc(100dvh-14rem)] md:h-[calc(100dvh-9.5rem)] min-h-[420px]">
           <iframe
             src="/aurora-app/"
             title="Aurora"

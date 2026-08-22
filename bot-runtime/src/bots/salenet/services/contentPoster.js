@@ -13,10 +13,10 @@ const PRIMARY = 0xF97316; // Brand-Orange
 const SITE_URL_DEFAULT = 'https://lawnet.sale';
 
 // Die globale Sanitize-Middleware escaped ' " ; \ im Body. Für die Discord-Ausgabe
-// machen wir das wieder rueckgaengig, damit Apostrophe & Co. sauber dargestellt werden.
+// machen wir das wieder rückgängig, damit Apostrophe & Co. sauber dargestellt werden.
 const clean = (s) => (s == null ? '' : String(s).replace(/\\(['";\\])/g, '$1'));
 
-// Haeufige HTML-Entities -> echte Zeichen (manche Produktnamen sind als Entities gepflegt).
+// Häufige HTML-Entities -> echte Zeichen (manche Produktnamen sind als Entities gepflegt).
 const decodeEntities = (s) => clean(s)
     .replace(/&auml;/g, 'ä').replace(/&ouml;/g, 'ö').replace(/&uuml;/g, 'ü')
     .replace(/&Auml;/g, 'Ä').replace(/&Ouml;/g, 'Ö').replace(/&Uuml;/g, 'Ü')
@@ -133,8 +133,8 @@ const buildLinksEmbed = () => {
         embed.setDescription('*Es wurden noch keine Links hinterlegt.*');
         return embed;
     }
-    // Schoenere Darstellung: fett verlinktes Label, optional Beschreibung darunter,
-    // Leerzeile zwischen den Eintraegen.
+    // Schönere Darstellung: fett verlinktes Label, optional Beschreibung darunter,
+    // Leerzeile zwischen den Einträgen.
     const desc = links.map(l => l.desc
         ? `**[${l.label}](${l.href})**\n${l.desc}`
         : `**[${l.label}](${l.href})**`

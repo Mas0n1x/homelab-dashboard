@@ -21,9 +21,11 @@ const ROLE_CONFIG: Record<string, { label: string; icon: LucideIcon; order: numb
 
 interface FolderSidebarProps {
   folders: MailFolder[];
+  /** `bar` = waagerechte Chip-Leiste für schmale Bildschirme statt einer Spalte. */
+  layout?: 'sidebar' | 'bar';
 }
 
-export function FolderSidebar({ folders }: FolderSidebarProps) {
+export function FolderSidebar({ folders, layout = 'sidebar' }: FolderSidebarProps) {
   const { activeFolderId, setActiveFolderId, setComposeOpen, setComposeMode, setReplyToEmail } = useMailStore();
 
   const sorted = [...folders].sort((a, b) => {
@@ -38,6 +40,53 @@ export function FolderSidebar({ folders }: FolderSidebarProps) {
     setReplyToEmail(null);
     setComposeOpen(true);
   };
+
+  if (layout === 'bar') {
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleCompose}
+          className="btn-primary py-2 px-3 flex items-center gap-1.5 text-sm flex-shrink-0"
+          title="Neue E-Mail"
+        >
+          <PenLine className="w-4 h-4" />
+          Neu
+        </button>
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide min-w-0">
+          {sorted.map((folder) => {
+            const config = folder.role ? ROLE_CONFIG[folder.role] : null;
+            const Icon = config?.icon || Folder;
+            const label = config?.label || folder.name;
+            const isActive = activeFolderId === folder.id;
+
+            return (
+              <button
+                key={folder.id}
+                onClick={() => setActiveFolderId(folder.id)}
+                className={clsx(
+                  'flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] border transition-colors flex-shrink-0',
+                  isActive
+                    ? 'bg-white/[0.08] border-white/[0.12] text-white'
+                    : 'bg-white/[0.02] border-white/[0.06] text-white/50'
+                )}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+                {folder.unreadEmails > 0 && (
+                  <span className={clsx(
+                    'text-[10px] px-1.5 py-0.5 rounded-full font-medium',
+                    isActive ? 'bg-accent/20 text-accent-light' : 'bg-white/[0.08] text-white/50'
+                  )}>
+                    {folder.unreadEmails}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">

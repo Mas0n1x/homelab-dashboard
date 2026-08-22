@@ -100,7 +100,7 @@ export function TaskModal({
         {/* Priorität */}
         <div>
           <label className="block text-[11px] uppercase tracking-widest text-white/30 mb-1.5">Priorität</label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {PRIORITY_ORDER.map(p => (
               <button
                 key={p}
@@ -154,7 +154,7 @@ export function TaskModal({
           <div className="flex flex-wrap items-center gap-2">
             <input
               type="date"
-              className="glass-input"
+              className="glass-input w-full sm:w-auto"
               value={form.dueDate}
               onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
             />
@@ -260,17 +260,17 @@ export function TaskModal({
         </div>
 
         {/* Aktionen */}
-        <div className="flex items-center justify-end gap-2 pt-1">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 pt-1">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm text-white/50 hover:text-white/80 hover:bg-white/[0.05] transition-colors"
+            className="px-4 py-2.5 sm:py-2 rounded-xl text-sm text-white/50 hover:text-white/80 hover:bg-white/[0.05] transition-colors"
           >
             Abbrechen
           </button>
           <button
             onClick={submit}
             disabled={!form.title.trim() || saving}
-            className="btn-primary disabled:opacity-30"
+            className="btn-primary py-2.5 sm:py-2 disabled:opacity-30"
           >
             {saving ? 'Speichert...' : task ? 'Speichern' : 'Aufgabe anlegen'}
           </button>

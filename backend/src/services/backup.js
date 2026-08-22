@@ -71,7 +71,7 @@ export async function runBackup(type, userId = null) {
       case 'database': {
         backupPath = join(BACKUP_DIR, `dashboard-${timestamp}.db`);
         // Eingebaute Online-Backup-API von better-sqlite3 (kein sqlite3-CLI im
-        // Container noetig, WAL-konsistent ueber dieselbe Verbindung).
+        // Container nötig, WAL-konsistent über dieselbe Verbindung).
         await db.backup(backupPath);
         size = statSync(backupPath).size;
         break;
@@ -177,13 +177,13 @@ export function getBackupFile(id) {
 const DEFAULT_SCHEDULE = { enabled: false, type: 'database', intervalHours: 24 };
 
 // Backup wiederherstellen. Legt vorher eine Sicherheitskopie an und startet
-// das Backend neu, damit die DB frisch geoeffnet wird.
+// das Backend neu, damit die DB frisch geöffnet wird.
 export async function restoreBackup(id, userId = null) {
   const db = getDb();
   const backup = db.prepare('SELECT * FROM backups WHERE id = ?').get(id);
   if (!backup) throw new Error('Backup nicht gefunden');
   if (backup.status !== 'completed' || !backup.path || !existsSync(backup.path)) {
-    throw new Error('Backup-Datei nicht verfuegbar');
+    throw new Error('Backup-Datei nicht verfügbar');
   }
   const dbPath = process.env.DB_PATH || '/app/data/dashboard.db';
   ensureBackupDir();
@@ -197,7 +197,7 @@ export async function restoreBackup(id, userId = null) {
 
   if (backup.type === 'database') {
     copyFileSync(backup.path, dbPath);
-    // Alte WAL/SHM entfernen, sonst wird die wiederhergestellte DB ueberschrieben
+    // Alte WAL/SHM entfernen, sonst wird die wiederhergestellte DB überschrieben
     for (const ext of ['-wal', '-shm']) {
       try { if (existsSync(dbPath + ext)) unlinkSync(dbPath + ext); } catch { /* egal */ }
     }

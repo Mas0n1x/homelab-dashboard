@@ -132,7 +132,7 @@ export default function TerminalPage() {
 
   return (
     <PageTransition>
-      <div className="flex flex-col gap-4 h-[calc(100dvh-9rem)] mb-20 md:mb-0">
+      <div className="flex flex-col gap-4 h-[calc(100dvh-11rem)] md:h-[calc(100dvh-9rem)]">
         {/* Header */}
         <div className="space-y-3">
           <div>

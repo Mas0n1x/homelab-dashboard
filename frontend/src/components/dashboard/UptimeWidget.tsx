@@ -23,7 +23,7 @@ export function UptimeWidget() {
   const { servers } = useServerStore();
   const ids = servers.map(s => s.id);
 
-  // Fleet-weit: Uptime-Summary aller Server zusammenfuehren (nicht nur der aktive)
+  // Fleet-weit: Uptime-Summary aller Server zusammenführen (nicht nur der aktive)
   const { data: summaries } = useQuery<Record<string, UptimeEntry>[]>({
     queryKey: ['uptimeSummaryFleet', ids.join(',')],
     queryFn: () => Promise.all(ids.map(id => api.getUptimeSummary(id).catch(() => ({})) as Promise<Record<string, UptimeEntry>>)),

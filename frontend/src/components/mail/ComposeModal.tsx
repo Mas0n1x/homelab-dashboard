@@ -205,7 +205,7 @@ export function ComposeModal() {
               type="text"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              placeholder="empfaenger@example.com"
+              placeholder="name@example.com"
               className="glass-input w-full text-sm"
               autoFocus
             />
