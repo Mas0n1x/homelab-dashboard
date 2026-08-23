@@ -5,7 +5,7 @@
 // Ingress-Regeln liegen also in der Cloud und werden per API **als Ganzes
 // ersetzt**. Ein Fehlgriff nimmt alle Domains gleichzeitig offline (darunter
 // lawnet.sale und das Portfolio). Jede Regel enthält außerdem die LAN-IP des
-// Pi (`http://192.168.2.67:<port>`) — zieht der Pi in ein anderes Netz, sind
+// Pi (`http://192.168.2.67:<port>`) – zieht der Pi in ein anderes Netz, sind
 // alle Domains tot, bis die IP in jeder Regel getauscht ist.
 //
 // Dieses Skript macht genau das sicher: sichern, anzeigen, gezielt patchen,
@@ -21,6 +21,7 @@
 //   node cf-tunnel.mjs add <hostname> <service>  Regel vor die 404-Auffangregel
 //   node cf-tunnel.mjs remove <hostname>         Regel entfernen
 //   node cf-tunnel.mjs dns <hostname>            proxied CNAME auf den Tunnel
+//                                                (biegt einen vorhandenen CNAME um)
 //
 // Ohne --apply ist alles ein Dry-Run mit Diff. Beispiel Umzug:
 //   node cf-tunnel.mjs backup
@@ -39,6 +40,8 @@ import { join } from 'node:path';
 const ACCOUNT_ID = '2916e63238fd7f5347e2b5a250125c9b';
 const ZONES = {
   'mas0n1x.online': '39c3eed9b086cd9452316d4df82dd0f3',
+  'corleone-lspd.de': 'e1f3751e9a41c1c5282c7266b1708ee0',
+  'lawnet.sale': 'ab7899425d9319f09c47e6ce0393a9e7',
 };
 const API = 'https://api.cloudflare.com/client/v4';
 const BACKUP_DIR = process.env.CF_BACKUP_DIR || join(process.cwd(), 'cf-backups');
@@ -86,7 +89,7 @@ async function findTunnel() {
   }
   if (tunnels.length > 1) {
     console.log('Mehrere Tunnel vorhanden:');
-    for (const t of tunnels) console.log(`  ${t.name} (${t.id}) — Status ${t.status}`);
+    for (const t of tunnels) console.log(`  ${t.name} (${t.id}) – Status ${t.status}`);
     console.log('Mit --tunnel=<name> auswählen.');
   }
   return tunnels[0];
@@ -113,7 +116,7 @@ function backupConfig(tunnel, config) {
 async function putConfig(tunnel, config, ingress) {
   const neu = { ...config.config, ingress };
   if (!APPLY) {
-    console.log('\nDRY-RUN — nichts geschrieben. Mit --apply ausführen.');
+    console.log('\nDRY-RUN – nichts geschrieben. Mit --apply ausführen.');
     return;
   }
   await cf(`/accounts/${ACCOUNT_ID}/cfd_tunnel/${tunnel.id}/configurations`, {
@@ -129,8 +132,8 @@ async function putConfig(tunnel, config, ingress) {
 // sonst greift sie für alles und der ganze Tunnel liefert 404.
 function assertCatchAllLast(ingress) {
   const idx = ingress.findIndex((r) => !r.hostname);
-  if (idx === -1) throw new Error('Keine Auffangregel gefunden — Abbruch, das wäre gefährlich.');
-  if (idx !== ingress.length - 1) throw new Error('Auffangregel steht nicht am Ende — Abbruch.');
+  if (idx === -1) throw new Error('Keine Auffangregel gefunden – Abbruch, das wäre gefährlich.');
+  if (idx !== ingress.length - 1) throw new Error('Auffangregel steht nicht am Ende – Abbruch.');
 }
 
 const tunnel = await findTunnel();
@@ -201,18 +204,38 @@ switch (cmd) {
     const [, hostname] = positional;
     if (!hostname) throw new Error('Aufruf: dns <hostname>');
     const zone = Object.keys(ZONES).find((z) => hostname.endsWith(z));
-    if (!zone) throw new Error(`Zone für ${hostname} unbekannt — in ZONES ergänzen.`);
+    if (!zone) throw new Error(`Zone für ${hostname} unbekannt – in ZONES ergänzen.`);
     const target = `${tunnel.id}.cfargotunnel.com`;
     const vorhanden = await cf(`/zones/${ZONES[zone]}/dns_records?name=${encodeURIComponent(hostname)}`);
     if (vorhanden.length) {
       console.log(`Vorhanden: ${vorhanden.map((r) => `${r.type} ${r.name} → ${r.content} (proxied=${r.proxied})`).join(', ')}`);
       if (vorhanden.some((r) => r.type === 'CNAME' && r.content === target && r.proxied)) {
-        console.log('Zeigt schon korrekt auf den Tunnel — nichts zu tun.');
+        console.log('Zeigt schon korrekt auf den Tunnel – nichts zu tun.');
         break;
       }
     }
+    // Ein vorhandener CNAME wird umgebogen, nicht ein zweiter angelegt –
+    // sonst scheitert der POST an „record already exists". Andere Typen
+    // (A/AAAA) fasst das Skript nicht an, das waere zu riskant.
+    const cname = vorhanden.find((r) => r.type === 'CNAME');
+    const blocker = vorhanden.filter((r) => r.type !== 'CNAME' && ['A', 'AAAA'].includes(r.type));
+    if (blocker.length) {
+      throw new Error(
+        `${hostname} hat ${blocker.map((r) => r.type).join('/')}-Eintraege – bitte manuell klaeren.`
+      );
+    }
+    if (cname) {
+      console.log(`Geplant: CNAME ${hostname} umbiegen ${cname.content} → ${target} (proxied)`);
+      if (!APPLY) { console.log('DRY-RUN – nichts geschrieben.'); break; }
+      await cf(`/zones/${ZONES[zone]}/dns_records/${cname.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ type: 'CNAME', name: hostname, content: target, proxied: true, ttl: 1 }),
+      });
+      console.log('CNAME umgebogen.');
+      break;
+    }
     console.log(`Geplant: CNAME ${hostname} → ${target} (proxied)`);
-    if (!APPLY) { console.log('DRY-RUN — nichts geschrieben.'); break; }
+    if (!APPLY) { console.log('DRY-RUN – nichts geschrieben.'); break; }
     await cf(`/zones/${ZONES[zone]}/dns_records`, {
       method: 'POST',
       body: JSON.stringify({ type: 'CNAME', name: hostname, content: target, proxied: true }),
