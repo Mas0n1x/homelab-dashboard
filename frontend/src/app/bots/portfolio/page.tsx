@@ -228,6 +228,9 @@ export default function PortfolioBotPage() {
                     { key: 'welcome_enabled', label: 'Willkommensnachrichten' },
                     { key: 'leave_enabled', label: 'Verabschiedungen' },
                     { key: 'modlog_enabled', label: 'Moderation-Log' },
+                    { key: 'modlog_member_join', label: 'Mod-Log: Beitritte' },
+                    { key: 'modlog_member_leave', label: 'Mod-Log: Verlassen' },
+                    { key: 'modlog_audit', label: 'Mod-Log: Server-Aktionen (Audit)' },
                     { key: 'requests_enabled', label: 'Anfragen-Benachrichtigungen' },
                   ].map(row => (
                     <div key={row.key} className="flex items-center justify-between py-1">
