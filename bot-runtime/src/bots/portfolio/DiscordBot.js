@@ -376,7 +376,7 @@ class DiscordBot {
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildModeration,
       ],
-      partials: [Partials.Message, Partials.Reaction, Partials.User],
+      partials: [Partials.Message, Partials.Reaction, Partials.User, Partials.GuildMember],
     });
 
     this._registerEvents();
@@ -516,6 +516,7 @@ class DiscordBot {
       this._registerSlashCommands();
       this._startServersRefresh();
       this._startMinecraftRefresh();
+      this._warmMemberCache();
     });
 
     this.client.on(Events.GuildMemberAdd, (member) => this._onMemberJoin(member));
@@ -531,6 +532,20 @@ class DiscordBot {
     this.client.on(Events.ChannelDelete, (channel) => this._onChannelChange('delete', channel));
     // Umfassendes Audit-Log: fängt alle übrigen administrativen Aktionen ab.
     this.client.on(Events.GuildAuditLogEntryCreate, (entry, guild) => this._onAuditLogEntry(entry, guild));
+  }
+
+  // Mitglieder einmalig in den Cache holen. Ohne warmen Cache liefert ein
+  // Leave-Event nur ein Teil-Mitglied (kein „Dabei seit“, kein Nickname).
+  async _warmMemberCache() {
+    try {
+      const guildId = this.getConfig('guild_id');
+      const guild = guildId ? this.client.guilds.cache.get(guildId) : this.client.guilds.cache.first();
+      if (!guild) return;
+      const members = await guild.members.fetch();
+      console.log(`Mitglieder-Cache geladen: ${members.size}`);
+    } catch (e) {
+      console.error('Mitglieder-Cache konnte nicht geladen werden:', e.message);
+    }
   }
 
   // ── Welcome (Components V2) ────────────────────────────────────
@@ -999,6 +1014,10 @@ class DiscordBot {
   }
 
   async _onMemberUpdate(oldMember, newMember) {
+    // Ist der Vorzustand nur teilweise bekannt, sind Rollen- und Nickname-Cache
+    // leer — ein Vergleich würde falsche Änderungen melden. Dann lieber nichts.
+    if (oldMember.partial) return;
+
     const channel = await this._modlogChannel();
     if (!channel) return;
 
@@ -1165,7 +1184,7 @@ class DiscordBot {
   // Beitritte/Verlassen im Modlog (zusätzlich zum Willkommens-System).
   async _modlogMemberFlow(type, member) {
     const key = type === 'join' ? 'modlog_member_join' : 'modlog_member_leave';
-    if (this.getConfig(key) !== 'true') return; // standardmäßig aus
+    if (this.getConfig(key) === 'false') return; // standardmäßig AN, im Panel abschaltbar
     const channel = await this._modlogChannel();
     if (!channel) return;
 
@@ -1204,6 +1223,10 @@ class DiscordBot {
     ]);
     if (SKIP.has(entry.action)) return;
 
+    // Eigene Aktionen nie loggen — der Bot pflegt u. a. zyklisch Channel-Themen
+    // (Minecraft-Status) und würde das Mod-Log sonst im Minutentakt zuspammen.
+    if (entry.executorId && this.client?.user && entry.executorId === this.client.user.id) return;
+
     const channel = await this._modlogChannel();
     if (!channel) return;
 
@@ -1215,6 +1238,10 @@ class DiscordBot {
       if (!executor && entry.executorId) {
         executor = await this.client.users.fetch(entry.executorId).catch(() => null);
       }
+
+      // Status-Bridges (z. B. Minecraft) aktualisieren Channel-Themen im Takt —
+      // reine Bot-Channel-Updates sind kein Moderationsvorgang.
+      if (entry.action === Number(AuditLogEvent.ChannelUpdate) && executor?.bot) return;
 
       const desc = [];
       const targetLabel = await this._auditTargetLabel(entry, guild);
