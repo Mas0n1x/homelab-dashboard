@@ -7,6 +7,7 @@ import Docker from 'dockerode';
 import fs from 'fs';
 import { getDb } from './database.js';
 import { createGlancesClient } from './glances.js';
+import { createSshDockerAgent } from './sshDockerAgent.js';
 
 class ServerManager {
   constructor() {
@@ -23,7 +24,13 @@ class ServerManager {
   }
 
   connect(serverConfig) {
+    // Beim Neuverbinden (Server bearbeitet, Neustart der Verbindung) zuerst die
+    // alte SSH-Verbindung schließen — sonst bleibt pro Bearbeitung eine
+    // dauerhafte Verbindung als Leiche zurück.
+    this.connections.get(serverConfig.id)?.sshAgent?.close?.();
+
     let dockerInstance;
+    let sshAgent;
     try {
       if (serverConfig.ssh_host) {
         // Sicherer Remote-Zugriff über SSH — kein offener Docker-Port nötig.
@@ -35,15 +42,28 @@ class ServerManager {
         if (keyPath && fs.existsSync(keyPath)) {
           sshOptions.privateKey = fs.readFileSync(keyPath);
         }
-        // Kein dockerode-`timeout` hier: über SSH ist der Transport ein ssh2-Stream
-        // ohne socket.setTimeout -> würde bei jedem Docker-Call crashen. Das
-        // App-seitige withTimeout() in index.js deckt hängende Aufrufe ab.
-        dockerInstance = new Docker({
-          protocol: 'ssh',
+
+        // NICHT `protocol: 'ssh'` benutzen: docker-modem baut dann für JEDE
+        // Docker-Anfrage eine komplett neue SSH-Verbindung auf und schließt sie
+        // sofort wieder (~3 Anmeldungen/s, siehe sshDockerAgent.js). Der eigene
+        // Agent hält eine Verbindung offen und öffnet pro Aufruf nur einen
+        // Exec-Kanal; bei `protocol: 'http'` reicht docker-modem ihn durch.
+        // `host`/`port` unten landen nur im Host-Header, nie in einem Socket.
+        sshAgent = createSshDockerAgent({
           host: serverConfig.ssh_host,
           port: serverConfig.ssh_port || 22,
           username: serverConfig.ssh_user || 'root',
-          sshOptions,
+          ...sshOptions,
+        }, serverConfig.id);
+
+        // Kein dockerode-`timeout` hier: der Transport ist ein ssh2-Stream
+        // ohne socket.setTimeout -> würde bei jedem Docker-Call crashen. Das
+        // App-seitige withTimeout() in index.js deckt hängende Aufrufe ab.
+        dockerInstance = new Docker({
+          protocol: 'http',
+          host: serverConfig.ssh_host,
+          port: serverConfig.ssh_port || 22,
+          agent: sshAgent,
         });
       } else if (serverConfig.is_local || serverConfig.docker_socket) {
         dockerInstance = new Docker({
@@ -69,11 +89,19 @@ class ServerManager {
     this.connections.set(serverConfig.id, {
       config: serverConfig,
       docker: dockerInstance,
+      sshAgent,
       glances: glancesClient,
       // 'connected' = Docker-Zugriff, 'monitoring' = nur Glances, sonst 'disconnected'
       status: dockerInstance ? 'connected' : (glancesClient ? 'monitoring' : 'disconnected'),
       lastSeen: new Date().toISOString()
     });
+  }
+
+  // Alle dauerhaften SSH-Verbindungen schließen (Graceful Shutdown).
+  closeAll() {
+    for (const verbindung of this.connections.values()) {
+      try { verbindung.sshAgent?.close?.(); } catch { /* beim Herunterfahren egal */ }
+    }
   }
 
   getConnection(serverId = 'local') {
@@ -120,6 +148,9 @@ class ServerManager {
     }
     const db = getDb();
     db.prepare('DELETE FROM servers WHERE id = ?').run(serverId);
+    // Die dauerhafte SSH-Verbindung mitschließen, sonst bleibt sie nach dem
+    // Entfernen des Servers offen.
+    this.connections.get(serverId)?.sshAgent?.close?.();
     this.connections.delete(serverId);
   }
 

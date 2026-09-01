@@ -812,6 +812,8 @@ function gracefulShutdown(signal) {
   shuttingDown = true;
   console.log(`${signal} empfangen — fahre sauber herunter...`);
   try { server.close(); } catch { /* egal */ }
+  // Dauerhafte SSH-Verbindungen zu den Remote-Servern sauber beenden.
+  try { serverManager.closeAll(); } catch { /* egal */ }
   try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch (e) { console.error('WAL-Checkpoint fehlgeschlagen:', e.message); }
   try { db.close(); } catch (e) { console.error('DB-Close fehlgeschlagen:', e.message); }
   process.exit(0);
