@@ -5,55 +5,21 @@
  */
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { Cloud, ExternalLink, LogIn, AlertTriangle, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { Cloud, ExternalLink, RefreshCw } from 'lucide-react';
 import { PageTransition } from '@/components/ui/PageTransition';
-import * as api from '@/lib/api';
 
 /**
- * Aurora läuft als eigener Dienst auf dem Pi und wird same-origin unter
+ * Aurora laeuft als eigener Dienst auf dem Pi und wird same-origin unter
  * /aurora-app/ eingebettet (nginx-Proxy).
  *
- * Die zweite Anmeldung entfällt: das Dashboard holt sich beim Öffnen ein
- * Aurora-Sitzungscookie über die Durchreiche-Anmeldung. Erst danach wird das
- * Fenster geladen — sonst zeigte Aurora seine eigene Anmeldemaske und der
- * Wechsel wäre wieder da.
+ * Keine zweite Anmeldung: der Dashboard-nginx weist sich gegenueber Aurora als
+ * vertrauenswuerdiger Reverse-Proxy aus (geteiltes Header-Secret, AURORA_PROXY_AUTH_*).
+ * Aurora legt dann automatisch eine Sitzung fuer das hinterlegte Konto an. Der
+ * Dashboard-Login davor schuetzt den Zugang.
  */
 export default function AuroraPage() {
-  const [bereit, setBereit] = useState(false);
-  const [hinweis, setHinweis] = useState<string | null>(null);
-
-  const { data: session, isLoading, refetch } = useQuery({
-    queryKey: ['aurora-session'],
-    queryFn: api.getAuroraSession,
-    retry: false,
-    staleTime: 60000,
-  });
-
-  const anmelden = useMutation({
-    mutationFn: api.auroraSignIn,
-    onSuccess: () => { setHinweis(null); setBereit(true); },
-    onError: (e: Error) => {
-      // Fehlgeschlagene Durchreiche ist kein Grund, die Seite leer zu lassen —
-      // Aurora zeigt dann eben seine eigene Anmeldung im Fenster.
-      setHinweis(e.message);
-      setBereit(true);
-    },
-  });
-
-  useEffect(() => {
-    if (isLoading || !session) return;
-    if (session.authenticated) { setBereit(true); return; }
-    if (session.ssoConfigured) {
-      anmelden.mutate();
-    } else {
-      setHinweis('Keine Aurora-Zugangsdaten hinterlegt (AURORA_SSO_EMAIL / AURORA_SSO_PASSWORD).');
-      setBereit(true);
-    }
-    // Nur beim ersten brauchbaren Sitzungsstand auslösen.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, session?.authenticated, session?.ssoConfigured]);
+  const [neuLaden, setNeuLaden] = useState(0);
 
   return (
     <PageTransition>
@@ -70,21 +36,10 @@ export default function AuroraPage() {
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
-            {hinweis && (
-              <button
-                onClick={() => { setBereit(false); anmelden.mutate(); }}
-                disabled={anmelden.isPending}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm text-white/50 hover:text-white/80 hover:bg-white/[0.04] transition-all disabled:opacity-40"
-                title="Anmeldung erneut versuchen"
-              >
-                <LogIn className={anmelden.isPending ? 'w-4 h-4 animate-pulse' : 'w-4 h-4'} />
-                <span className="hidden sm:inline">Anmelden</span>
-              </button>
-            )}
             <button
-              onClick={() => refetch()}
+              onClick={() => setNeuLaden((n) => n + 1)}
               className="p-2 rounded-xl text-white/40 hover:text-white/80 hover:bg-white/[0.04] transition-all"
-              title="Status prüfen"
+              title="Neu laden"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -93,7 +48,7 @@ export default function AuroraPage() {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm text-white/50 hover:text-white/80 hover:bg-white/[0.04] transition-all duration-200"
-              title="In neuem Tab öffnen"
+              title="In neuem Tab oeffnen"
             >
               <ExternalLink className="w-4 h-4" />
               <span className="hidden sm:inline">Neuer Tab</span>
@@ -101,29 +56,14 @@ export default function AuroraPage() {
           </div>
         </div>
 
-        {hinweis && (
-          <div className="flex items-start gap-2.5 p-3 rounded-xl border border-amber-400/20 bg-amber-500/[0.06]">
-            <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-            <p className="text-[12px] text-amber-200/80">
-              Automatische Anmeldung nicht möglich: {hinweis} Du kannst dich unten wie gewohnt selbst anmelden.
-            </p>
-          </div>
-        )}
-
         <div className="rounded-2xl overflow-hidden border border-white/[0.08] bg-black/20 h-[calc(100dvh-14rem)] md:h-[calc(100dvh-9.5rem)] min-h-[420px]">
-          {bereit ? (
-            <iframe
-              src="/aurora-app/"
-              title="Aurora"
-              className="w-full h-full border-0"
-              allow="clipboard-read; clipboard-write; fullscreen"
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-              <div className="w-8 h-8 border-2 border-white/15 border-t-accent-light rounded-full animate-spin" />
-              <p className="text-sm text-white/35">Melde bei Aurora an …</p>
-            </div>
-          )}
+          <iframe
+            key={neuLaden}
+            src="/aurora-app/"
+            title="Aurora"
+            className="w-full h-full border-0"
+            allow="clipboard-read; clipboard-write; fullscreen"
+          />
         </div>
       </div>
     </PageTransition>

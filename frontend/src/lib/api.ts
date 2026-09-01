@@ -599,8 +599,4 @@ export const getUnifiedInbox = (limit = 40) =>
 
 // ─── Aurora: Durchreiche-Anmeldung ───
 
-export const getAuroraSession = () =>
-  fetchApi<{ authenticated: boolean; ssoConfigured: boolean; user: unknown }>('/aurora/session');
 
-export const auroraSignIn = () =>
-  fetchApi<{ ok: boolean }>('/aurora/sso', { method: 'POST' });
