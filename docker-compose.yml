@@ -89,6 +89,8 @@ services:
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
       - PORTFOLIO_WEBHOOK_URL=${PORTFOLIO_WEBHOOK_URL:-}
+      # Projektliste für die "Projekte"-Nachricht: kuratierte Auswahl aus dem Portfolio-Admin
+      - PORTFOLIO_PROJECTS_URL=${PORTFOLIO_PROJECTS_URL:-https://mas0n1x.online/api/projects}
       - HOMELAB_API_URL=${BOT_HOMELAB_API_URL:-http://backend:3001}
       - HOMELAB_USER=${BOT_HOMELAB_USER:-}
       - HOMELAB_PASSWORD=${BOT_HOMELAB_PASSWORD:-}

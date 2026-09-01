@@ -85,7 +85,21 @@ const KEY_LABELS = {
   avatar_hash: 'Avatar', description: 'Beschreibung', type: 'Typ', enabled: 'Aktiviert',
 };
 
-// Kuratierte Projektliste für die "Projekte"-Nachricht (eine Nachricht, alle Projekte).
+// Anzeige der Projekt-Zustände. completed/in_progress/planned kommen aus dem
+// Portfolio-Admin, live/dev/building stammen aus der alten Notfallliste unten.
+const PROJECT_STATUS = {
+  completed:   { dot: '🟢', label: 'Aktiv' },
+  in_progress: { dot: '🟡', label: 'In Arbeit' },
+  planned:     { dot: '🔵', label: 'Geplant' },
+  live:        { dot: '🟢', label: 'Live' },
+  dev:         { dot: '🟡', label: 'In Entwicklung' },
+  building:    { dot: '🔵', label: 'Im Aufbau' },
+};
+
+// Höchstzahl der Projekte in einer Nachricht (Discord begrenzt Container-Komponenten).
+const MAX_PROJECTS = 10;
+
+// Notfallliste: greift nur, wenn das Portfolio keine Projekte liefert.
 // status: 'live' (grün), 'dev' (gelb), 'building' (blau). since/stack: Freitext.
 // url + cta ergeben den Button rechts; ohne url wird er ausgegraut (Label = private).
 const CURATED_PROJECTS = [
@@ -273,6 +287,7 @@ const DEFAULT_SOCIALS = {
   description: 'Alles von mir an einem Ort — Software, 3D-Druck und der direkte Draht.',
   links: [
     { emoji: '🌍', name: 'Portfolio & Anfragen', url: 'https://mas0n1x.online', description: 'Meine Arbeit, meine Leistungen und der Weg zu einer Projektanfrage.' },
+    { emoji: '✨', name: 'Alle Links auf einen Blick', url: 'https://socials.mas0n1x.online', description: 'Meine Link-Seite — jeder Kanal von mir auf einer Seite.' },
     { emoji: '🛒', name: 'LawNet.Sale', url: 'https://lawnet.sale', description: 'Mein Shop für das LawNet-Ökosystem — inklusive Demo zum Ausprobieren.' },
     { emoji: '🖨️', name: 'PrintOasis3D', url: 'https://www.etsy.com/shop/PrintOasis3D', description: '3D-Druck auf Etsy: Simracing-Teile und Zubehör fürs Setup.' },
     { emoji: '🐙', name: 'GitHub', url: 'https://github.com/Mas0n1x', description: 'Code, Open Source und der Stand meiner Projekte.' },
@@ -377,6 +392,10 @@ class DiscordBot {
         GatewayIntentBits.GuildModeration,
       ],
       partials: [Partials.Message, Partials.Reaction, Partials.User, Partials.GuildMember],
+      // Presence schon beim IDENTIFY leeren. Ein späteres setPresence allein
+      // reicht nicht: Discord hält die zuletzt gesetzte Aktivität serverseitig
+      // fest und zeigt sie beim Verbinden sofort wieder an ("Spielt Minecraft").
+      presence: { activities: [], status: 'online' },
     });
 
     this._registerEvents();
@@ -1612,18 +1631,70 @@ class DiscordBot {
 
   // ── Aktive Projekte (Components V2) ───────────────────────────
 
-  // Letzte Repos (eigener Account + Org) nach Aktivität, live von der GitHub-API
-  async fetchRecentRepos(limit = 5) {
-    const token = process.env.GITHUB_TOKEN;
-    if (!token) return [];
-    try {
-      const r = await fetch('https://api.github.com/user/repos?per_page=' + limit + '&affiliation=owner,organization_member&sort=pushed', {
-        headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'User-Agent': 'mas0n1x-portfolio', 'X-GitHub-Api-Version': '2022-11-28' }
-      });
-      if (!r.ok) return [];
-      return await r.json();
-    } catch (e) { console.error('fetchRecentRepos:', e.message); return []; }
+  // Quelle der Projektliste: der öffentliche Endpunkt des Portfolios. Dort stehen
+  // genau die Repos, die im Portfolio-Admin ausgewählt und beschriftet wurden —
+  // so muss die Liste nicht ein zweites Mal im Bot gepflegt werden.
+  _projectsSourceUrl() {
+    const raw = process.env.PORTFOLIO_PROJECTS_URL
+      || this.getConfig('portfolio_projects_url')
+      || 'https://mas0n1x.online/api/projects';
+    return String(raw).replace(/\/+$/, '');
   }
+
+  async fetchPortfolioProjects() {
+    const url = this._projectsSourceUrl();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      const r = await fetch(url, {
+        headers: { Accept: 'application/json', 'User-Agent': 'mas0n1x-portfolio-bot' },
+        signal: controller.signal,
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.error('fetchPortfolioProjects:', e.message);
+      return [];
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // Portfolio-Eintrag -> einheitliche Form für die Discord-Nachricht
+  _mapPortfolioProject(p) {
+    const tags = Array.isArray(p.tags) ? p.tags.filter(Boolean).map(String).slice(0, 4) : [];
+    const link = typeof p.link === 'string' && /^https?:\/\//i.test(p.link) ? p.link : null;
+    const isRepoLink = !!(link && p.repo_url && link === p.repo_url);
+    // Privates Repo ohne eigene Adresse: der GitHub-Link wäre für Fremde eine 404.
+    const usable = link && !(p.private && isRepoLink);
+    const updated = p.pushed_at ? this._relTime(p.pushed_at) : '';
+    const desc = String(p.description || '').trim();
+    return {
+      name: String(p.title || '').trim() || 'Ohne Titel',
+      status: p.status || 'completed',
+      desc: desc.length > 300 ? `${desc.slice(0, 297)}…` : desc,
+      meta: [...tags, updated ? `aktualisiert ${updated}` : ''].filter(Boolean),
+      url: usable ? link : null,
+      cta: isRepoLink ? 'Auf GitHub' : 'Ansehen',
+      // Privates Repo heißt "Privat", ein öffentliches ohne Adresse "Bald".
+      privateLabel: p.private ? 'Privat' : 'Bald',
+    };
+  }
+
+  // Eintrag der Notfallliste -> dieselbe Form
+  _mapCuratedProject(p) {
+    return {
+      name: p.name,
+      status: p.status,
+      desc: p.desc,
+      meta: [`seit ${p.since}`, p.stack, p.note].filter(Boolean),
+      url: p.url || null,
+      cta: p.cta || 'Ansehen',
+      privateLabel: p.private || 'Privat',
+    };
+  }
+
   _relTime(iso) {
     const d = Date.parse(iso); if (isNaN(d)) return '';
     const s = Math.floor((Date.now() - d) / 1000);
@@ -1648,11 +1719,13 @@ class DiscordBot {
       }
     }
 
-    const STATUS = {
-      live:     { dot: '🟢', label: 'Live' },
-      dev:      { dot: '🟡', label: 'In Entwicklung' },
-      building: { dot: '🔵', label: 'Im Aufbau' },
-    };
+    // Projekte kommen aus dem Portfolio-Admin. Antwortet das Portfolio nicht,
+    // greift die Notfallliste, damit im Kanal nie eine leere Nachricht landet.
+    const live = await this.fetchPortfolioProjects();
+    const fromPortfolio = live.length > 0;
+    const projects = fromPortfolio
+      ? live.slice(0, MAX_PROJECTS).map(p => this._mapPortfolioProject(p))
+      : CURATED_PROJECTS.map(p => this._mapCuratedProject(p));
 
     // Alles in EINEM Container = eine Nachricht. Jedes Projekt ist eine Section
     // mit Button rechts — dadurch stehen alle Einträge gleich hoch und die Links
@@ -1666,14 +1739,14 @@ class DiscordBot {
     );
     container.addSeparatorComponents(new SeparatorBuilder().setDivider(true));
 
-    CURATED_PROJECTS.forEach((p, i) => {
-      const s = STATUS[p.status] || STATUS.dev;
+    projects.forEach((p, i) => {
+      const s = PROJECT_STATUS[p.status] || PROJECT_STATUS.in_progress;
 
       const section = new SectionBuilder().addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          `**${p.name}**  ${s.dot} ${s.label}\n` +
-          `${p.desc}\n` +
-          `-# ${[`seit ${p.since}`, p.stack, p.note].filter(Boolean).join('  ·  ')}`
+          `**${p.name}**  ${s.dot} ${s.label}` +
+          (p.desc ? `\n${p.desc}` : '') +
+          (p.meta.length ? `\n-# ${p.meta.join('  ·  ')}` : '')
         )
       );
 
@@ -1682,14 +1755,14 @@ class DiscordBot {
       section.setButtonAccessory(
         p.url
           ? new ButtonBuilder().setLabel(p.cta || 'Ansehen').setURL(p.url).setStyle(ButtonStyle.Link)
-          : new ButtonBuilder().setLabel(p.private || 'Privat').setCustomId(`project_locked_${i}`)
+          : new ButtonBuilder().setLabel(p.privateLabel || 'Privat').setCustomId(`project_locked_${i}`)
               .setStyle(ButtonStyle.Secondary).setDisabled(true)
       );
 
       container.addSectionComponents(section);
 
       // Luft zwischen den Einträgen, aber nur zwischen ihnen.
-      if (i < CURATED_PROJECTS.length - 1) {
+      if (i < projects.length - 1) {
         container.addSeparatorComponents(new SeparatorBuilder().setDivider(false));
       }
     });
@@ -1703,7 +1776,10 @@ class DiscordBot {
 
     const sent = await channel.send({ components: [container], flags: CV2_FLAGS });
     this.setConfig('projects_message_ids', JSON.stringify([sent.id]));
-    this.log('projects', channelId, sent.id, null, { count: CURATED_PROJECTS.length });
+    this.log('projects', channelId, sent.id, null, {
+      count: projects.length,
+      source: fromPortfolio ? 'portfolio' : 'fallback',
+    });
     return [sent.id];
   }
 
