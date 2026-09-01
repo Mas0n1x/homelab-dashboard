@@ -8,14 +8,6 @@
 // Geteilt zwischen Docker-Container-Tab und Services-Tab, damit beide identisch gruppieren.
 export const PROJECT_CATEGORIES: { name: string; projects: string[] }[] = [
   {
-    name: 'Police Department-CC',
-    projects: ['leitstelle-max', 'asdhandbuch', 'gta-map', 'lspd-dashboard', 'dienstblatt', 'diensthandbuch-pd', 'swat-handbuch'],
-  },
-  {
-    name: 'CC-Systeme',
-    projects: ['straftatenrechner-standalone'],
-  },
-  {
     name: 'LawNet',
     projects: ['salenet'],
   },

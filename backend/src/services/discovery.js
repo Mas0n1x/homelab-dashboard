@@ -18,8 +18,8 @@ const NON_WEB_PORTS = new Set([22, 25, 110, 143, 465, 587, 993, 995, 21027, 2200
 // Container names to always skip (our own dashboard containers)
 const SKIP_CONTAINERS = new Set(['homelab-frontend', 'homelab-backend', 'homelab-nginx']);
 
-// Compose-Projekte, die nicht mehr aufs Dashboard gehören (nach vps2 umgezogen).
-const SKIP_PROJECTS = new Set(['azubinet', 'personet-cc']);
+// Compose-Projekte, die nicht aufs Dashboard gehören (z. B. abgeschaltete Dienste).
+const SKIP_PROJECTS = new Set([]);
 
 // Known name mappings for common images
 const IMAGE_NAMES = {

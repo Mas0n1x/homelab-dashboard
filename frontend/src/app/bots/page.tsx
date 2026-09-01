@@ -152,13 +152,9 @@ function BotCard({ bot, delay }: { bot: BotOverviewEntry; delay: number }) {
           <ChevronRight className="w-4 h-4" />
         </div>
       ) : (
-        <Link
-          href="/bots/personet"
-          className="flex items-center justify-between text-[13px] text-accent-light/80 hover:text-accent-light transition-colors"
-        >
-          <span>Ansehen &amp; Sync</span>
-          <ChevronRight className="w-4 h-4" />
-        </Link>
+        <div className="flex items-center justify-between text-[13px] text-white/30">
+          <span>Kein Steuerpanel</span>
+        </div>
       )}
     </motion.div>
   );

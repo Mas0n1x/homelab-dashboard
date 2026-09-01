@@ -446,10 +446,10 @@ export const getSystemdServices = (serverId: string) => fetchApi<SystemdService[
 export const getUpdateStatus = (serverId: string) => fetchApi<UpdateStatus>(`/maintenance/${serverId}/updates`);
 
 // ─── Discord-Bots (Steuerzentrale) ───
-// Übersicht aller Bots (Portfolio, SaleNet, PersoNet) inkl. Status.
+// Übersicht aller Bots (Portfolio, SaleNet) inkl. Status.
 export const getBots = () => fetchApi<{ bots: BotOverviewEntry[] }>('/bots');
 
-// Generischer, statusbewusster Aufruf an einen Bot (proxyt zur Bot-Runtime bzw. PersoNet).
+// Generischer, statusbewusster Aufruf an einen Bot (proxyt zur Bot-Runtime).
 export async function botCall<T = any>(
   bot: string,
   path: string,

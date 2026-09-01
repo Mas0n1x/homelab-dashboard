@@ -92,46 +92,11 @@
       "description": "Sales Administration"
     },
     {
-      "id": "14",
-      "name": "LSPD Dashboard",
-      "url": "https://dashboard.corleone-lspd.de",
-      "icon": "shield",
-      "description": "LSPD Übersicht"
-    },
-    {
       "id": "15",
       "name": "LSPD Generatoren",
       "url": "https://generator.corleone-lspd.de",
       "icon": "settings",
       "description": "Akten & Einsatzbericht Generator"
-    },
-    {
-      "id": "16",
-      "name": "Personalsystem",
-      "url": "https://personal.corleone-lspd.de",
-      "icon": "server",
-      "description": "Personal Management"
-    },
-    {
-      "id": "17",
-      "name": "Straftatenrechner",
-      "url": "http://192.168.2.103:8102",
-      "icon": "settings",
-      "description": "LSPD Strafberechnung"
-    },
-    {
-      "id": "18",
-      "name": "Diensthandbuch",
-      "url": "https://diensthandbuch.corleone-lspd.de",
-      "icon": "file",
-      "description": "LSPD Wiki"
-    },
-    {
-      "id": "19",
-      "name": "WordPress",
-      "url": "http://diensthandbuch.corleone-lspd.de",
-      "icon": "globe",
-      "description": "Diensthandbuch (alt)"
     },
     {
       "id": "20",
