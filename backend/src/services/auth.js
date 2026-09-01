@@ -12,7 +12,14 @@ const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '24h';
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 
-export const JWT_SECRET = process.env.JWT_SECRET || 'homelab-dashboard-change-me';
+// Kein Fallback-Default: mit bekanntem Secret koennte jeder gueltige Tokens
+// signieren. Fehlt es, wird der Start bewusst abgebrochen statt still unsicher
+// weiterzulaufen. (Der Default 'homelab-dashboard-change-me' stand hier bis zum
+// 01.09.2026 und war auf dem Pi auch wirklich der aktive Wert.)
+export const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET ist nicht gesetzt. Start abgebrochen - bitte ein starkes JWT_SECRET in der .env setzen.');
+}
 
 export async function hashPassword(password) {
   return bcrypt.hash(password, SALT_ROUNDS);
