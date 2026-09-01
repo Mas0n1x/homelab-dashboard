@@ -57,6 +57,12 @@ router.post('/jmap', async (req, res) => {
       return res.status(400).json({ error: 'methodCalls erforderlich' });
     }
     const result = await mail.jmapRequest(authHeader, methodCalls);
+    // Alles, was Mails verändert (gelesen, verschoben, gelöscht), macht die
+    // zwischengespeicherten Ungelesen-Zähler sofort ungültig — sonst hinkt das
+    // Zeichen an der Bottom-Bar bis zu 20 Sekunden hinterher.
+    if (methodCalls.some(c => typeof c?.[0] === 'string' && c[0].endsWith('/set'))) {
+      overviewCache.delete(req.user.id);
+    }
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -105,6 +111,162 @@ router.get('/download/:accountId/:blobId/:name', async (req, res) => {
       res.end();
     };
     await pump();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─── Übersicht über ALLE Postfächer ───
+
+/** Zugangsdaten eines Kontos anhand seiner E-Mail-Adresse (ohne Header). */
+function authFor(userId, email) {
+  const db = getDb();
+  const row = db.prepare(
+    'SELECT email, password_encrypted, account_id FROM mail_accounts WHERE user_id = ? AND email = ?'
+  ).get(userId, email);
+  if (!row) throw new Error('Mail-Konto nicht gefunden');
+  const password = mail.decryptPassword(row.password_encrypted);
+  const username = row.email.includes('@') ? row.email.split('@')[0] : row.email;
+  return {
+    account: row.email,
+    accountId: row.account_id,
+    authHeader: 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
+  };
+}
+
+// Kurzer Cache je Nutzer: Übersicht und Sammel-Eingang fragen dieselben Postfächer
+// ab, und die Oberfläche lädt beides gleichzeitig. Ohne Cache wären das bei fünf
+// Konten zehn JMAP-Runden pro Seitenaufruf — mobil deutlich spürbar.
+const overviewCache = new Map();
+const OVERVIEW_TTL = 20000;
+
+async function loadOverview(userId) {
+  const cached = overviewCache.get(userId);
+  if (cached && Date.now() - cached.at < OVERVIEW_TTL) return cached.data;
+
+  const db = getDb();
+  const accounts = db.prepare(`
+    SELECT id, email, account_id, display_name, sort_order
+    FROM mail_accounts WHERE user_id = ? ORDER BY sort_order ASC, added_at ASC
+  `).all(userId);
+
+  // Alle Konten PARALLEL — ein langsamer Server darf die anderen nicht ausbremsen.
+  const results = await Promise.all(accounts.map(async (acc) => {
+    const base = {
+      id: acc.id,
+      email: acc.email,
+      accountId: acc.account_id,
+      displayName: acc.display_name || acc.email.split('@')[0],
+      sortOrder: acc.sort_order,
+    };
+    try {
+      const { authHeader, accountId } = authFor(userId, acc.email);
+      if (!accountId) return { ...base, folders: [], unread: 0, total: 0, error: 'Konto-Kennung fehlt' };
+
+      const result = await mail.jmapRequest(authHeader, [
+        ['Mailbox/get', { accountId, ids: null }, '0'],
+      ]);
+      const folders = result?.methodResponses?.[0]?.[1]?.list || [];
+      const inbox = folders.find(f => f.role === 'inbox');
+
+      return {
+        ...base,
+        accountId,
+        folders: folders.map(f => ({
+          id: f.id,
+          name: f.name,
+          role: f.role,
+          unread: f.unreadEmails || 0,
+          total: f.totalEmails || 0,
+        })),
+        // Als „ungelesen" zählt der Posteingang. Die Summe über alle Ordner wäre
+        // irreführend: ungelesene Werbung im Spam-Ordner ist keine offene Mail.
+        unread: inbox?.unreadEmails || 0,
+        total: inbox?.totalEmails || 0,
+        error: null,
+      };
+    } catch (error) {
+      // Ein defektes Konto darf die Übersicht nicht kippen — es wird mit
+      // Fehlertext angezeigt, die anderen laden normal.
+      return { ...base, folders: [], unread: 0, total: 0, error: error.message };
+    }
+  }));
+
+  const data = {
+    accounts: results,
+    totalUnread: results.reduce((s, a) => s + a.unread, 0),
+  };
+  overviewCache.set(userId, { data, at: Date.now() });
+  return data;
+}
+
+// GET /overview — alle Postfächer mit Ordnern und Ungelesen-Zählern auf einmal.
+router.get('/overview', async (req, res) => {
+  try {
+    res.json(await loadOverview(req.user.id));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /unread — nur die Zähler, für Badge in Navigation und Bottom-Bar.
+router.get('/unread', async (req, res) => {
+  try {
+    const data = await loadOverview(req.user.id);
+    res.json({
+      total: data.totalUnread,
+      accounts: data.accounts.map(a => ({ id: a.id, email: a.email, unread: a.unread })),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /unified — Posteingänge ALLER Konten zu einer Liste zusammengeführt.
+router.get('/unified', async (req, res) => {
+  try {
+    const limit = Math.min(100, Math.max(5, parseInt(req.query.limit, 10) || 40));
+    const overview = await loadOverview(req.user.id);
+
+    const perAccount = await Promise.all(overview.accounts.map(async (acc) => {
+      const inbox = acc.folders.find(f => f.role === 'inbox');
+      if (!inbox || acc.error) return [];
+      try {
+        const { authHeader } = authFor(req.user.id, acc.email);
+        const result = await mail.jmapRequest(authHeader, [
+          ['Email/query', {
+            accountId: acc.accountId,
+            filter: { inMailbox: inbox.id },
+            sort: [{ property: 'receivedAt', isAscending: false }],
+            limit,
+          }, '0'],
+          ['Email/get', {
+            accountId: acc.accountId,
+            '#ids': { resultOf: '0', name: 'Email/query', path: '/ids' },
+            properties: ['id', 'subject', 'from', 'to', 'receivedAt', 'preview', 'keywords', 'hasAttachment', 'mailboxIds', 'threadId'],
+          }, '1'],
+        ]);
+        const emails = result?.methodResponses?.[1]?.[1]?.list || [];
+        // Jede Mail trägt ihr Konto mit — die Liste zeigt sonst nicht, in
+        // welchem Postfach sie liegt, und Antworten gingen vom falschen ab.
+        return emails.map(e => ({
+          ...e,
+          accountEmail: acc.email,
+          accountId: acc.accountId,
+          accountDisplayName: acc.displayName,
+          mailboxId: inbox.id,
+        }));
+      } catch {
+        return [];
+      }
+    }));
+
+    const merged = perAccount
+      .flat()
+      .sort((a, b) => String(b.receivedAt || '').localeCompare(String(a.receivedAt || '')))
+      .slice(0, limit);
+
+    res.json({ emails: merged });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

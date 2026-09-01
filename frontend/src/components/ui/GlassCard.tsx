@@ -8,6 +8,7 @@
 import { useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
+import { useLowMotion } from '@/hooks/useLowMotion';
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -42,6 +43,7 @@ export function GlassCard({
   mouseTracking = true,
 }: GlassCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const lowMotion = useLowMotion();
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!mouseTracking || !cardRef.current) return;
@@ -51,6 +53,40 @@ export function GlassCard({
     cardRef.current.style.setProperty('--mouse-x', `${x}%`);
     cardRef.current.style.setProperty('--mouse-y', `${y}%`);
   }, [mouseTracking]);
+
+  const klassen = clsx(
+    elevated ? 'glass-card-elevated' : 'glass-card',
+    hover && 'glass-card-hover cursor-pointer',
+    mouseTracking && 'glass-card-interactive',
+    glow && glowShadows[glow],
+    padding && 'p-4 sm:p-5',
+    className
+  );
+
+  const inhalt = (
+    <>
+      {accentBorder && (
+        <div
+          className="absolute top-0 left-4 right-4 h-[2px] rounded-full opacity-60 z-20"
+          style={{
+            background: `linear-gradient(90deg, transparent, ${accentBorder}, transparent)`,
+          }}
+        />
+      )}
+      <div className="relative z-10">{children}</div>
+    </>
+  );
+
+  // Mobil ohne Einblend-Animation: zwanzig gleichzeitige Motion-Komponenten
+  // waren beim Seitenwechsel deutlich zu spüren. Das Aussehen ändert sich nicht,
+  // nur der Auftritt.
+  if (lowMotion) {
+    return (
+      <div ref={cardRef} className={klassen}>
+        {inhalt}
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -63,24 +99,9 @@ export function GlassCard({
         ease: [0.16, 1, 0.3, 1],
       }}
       onMouseMove={handleMouseMove}
-      className={clsx(
-        elevated ? 'glass-card-elevated' : 'glass-card',
-        hover && 'glass-card-hover cursor-pointer',
-        mouseTracking && 'glass-card-interactive',
-        glow && glowShadows[glow],
-        padding && 'p-4 sm:p-5',
-        className
-      )}
+      className={klassen}
     >
-      {accentBorder && (
-        <div
-          className="absolute top-0 left-4 right-4 h-[2px] rounded-full opacity-60 z-20"
-          style={{
-            background: `linear-gradient(90deg, transparent, ${accentBorder}, transparent)`,
-          }}
-        />
-      )}
-      <div className="relative z-10">{children}</div>
+      {inhalt}
     </motion.div>
   );
 }

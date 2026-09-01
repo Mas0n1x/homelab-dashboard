@@ -7,6 +7,9 @@ import { useAuthStore } from '@/stores/authStore';
 import type {
   MetricSample, TunnelInfo, ServiceStatusEntry,
   Task, TaskInput, TaskStatus, TaskSubtask,
+  StatusBoard, FleetChange, TimeEntry, TimeSummary, BillingRate, BillingProfile, InvoiceDraft,
+  ImageUpdateSummary, DiskForecast, EtsyStatus, EtsyOrders,
+  MailOverview, UnifiedEmail,
 } from './types';
 
 const API_BASE = typeof window !== 'undefined'
@@ -26,20 +29,27 @@ async function refreshAccessToken(): Promise<boolean> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
     });
-    if (!res.ok) {
+
+    if (res.ok) {
+      const data = await res.json();
+      setTokens(data.accessToken, data.refreshToken);
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      return true;
+    }
+
+    // Nur ein ausdrückliches „Token ungültig" beendet die Sitzung. Ein 500er
+    // oder ein kurz nicht erreichbares Backend darf das NICHT — genau daran lag
+    // das ständige Neuanmelden am Handy: jeder Funklochmoment flog raus.
+    if (res.status === 401 || res.status === 403) {
       logout();
       window.location.href = '/login';
-      return false;
     }
-    const data = await res.json();
-    setTokens(data.accessToken, data.refreshToken);
-    if (data.user) {
-      localStorage.setItem('user', JSON.stringify(data.user));
-    }
-    return true;
+    return false;
   } catch {
-    logout();
-    window.location.href = '/login';
+    // Netzfehler (Funkloch, WLAN-Wechsel, Backend startet neu): Anmeldung
+    // behalten, der nächste Aufruf versucht es erneut.
     return false;
   }
 }
@@ -262,7 +272,7 @@ export const getBackups = (limit = 20) => fetchApi(`/backup?limit=${limit}`);
 export const getBackupStatus = () => fetchApi<{ running: boolean; latest: any }>('/backup/status');
 export const runBackup = (type = 'database') => fetchApi('/backup/run', { method: 'POST', body: JSON.stringify({ type }) });
 export const deleteBackup = (id: number | string) => fetchApi(`/backup/${id}`, { method: 'DELETE' });
-export type BackupSchedule = { enabled: boolean; type: 'database' | 'full'; intervalHours: number };
+export type BackupSchedule = { enabled: boolean; type: 'database' | 'full'; intervalHours: number; retentionDays: number };
 export const getBackupSchedule = () => fetchApi<BackupSchedule>('/backup/schedule');
 export const setBackupSchedule = (cfg: Partial<BackupSchedule>) =>
   fetchApi<BackupSchedule>('/backup/schedule', { method: 'PUT', body: JSON.stringify(cfg) });
@@ -476,3 +486,121 @@ export interface BotOverviewEntry {
     error?: string;
   } | null;
 }
+
+// ─── Status-Board ───
+// EIN Aufruf für alle Server. Vorher lud die Statusseite pro Server zwei
+// Endpunkte, von denen jeder eine frische Docker-Abfrage über SSH auslöste —
+// daher die langen Wartezeiten.
+export const getStatusBoard = (days = 30) =>
+  fetchApi<StatusBoard>(`/status/board?days=${days}`);
+
+/** Neu aufgetauchte und verschwundene Dienste der letzten Tage. */
+export const getFleetChanges = (days = 7) =>
+  fetchApi<{ changes: FleetChange[]; days: number }>(`/status/changes?days=${days}`);
+
+// ─── Image-Updates über die ganze Flotte ───
+// Liest das Ergebnis des 6-Stunden-Hintergrundlaufs. `refreshImageUpdates`
+// stößt eine neue Prüfung an — die dauert, weil sie mit den Registries spricht.
+export const getImageUpdateSummary = () =>
+  fetchApi<ImageUpdateSummary>('/docker/updates/summary');
+
+export const refreshImageUpdates = () =>
+  fetchApi<ImageUpdateSummary>('/docker/updates/refresh', { method: 'POST' });
+
+// ─── Füllstand-Prognose ───
+export const getDiskForecast = (days = 30) =>
+  fetchApi<DiskForecast>(`/metrics/disk-forecast?days=${days}`);
+
+// ─── Etsy (PrintOasis3D) ───
+export const getEtsyStatus = () => fetchApi<EtsyStatus>('/etsy/status');
+
+export const getEtsyOrders = (refresh = false) =>
+  fetchApi<EtsyOrders>(`/etsy/orders${refresh ? '?refresh=1' : ''}`);
+
+export const connectEtsy = () =>
+  fetchApi<{ url: string }>('/etsy/connect', { method: 'POST' });
+
+export const disconnectEtsy = () =>
+  fetchApi<{ ok: boolean }>('/etsy/disconnect', { method: 'POST' });
+
+// ─── Zeiterfassung ───
+
+export const getRunningTimer = () => fetchApi<TimeEntry | null>('/time/running');
+
+export const startTimer = (data: { taskId?: string; project?: string; description?: string }) =>
+  fetchApi<{ entry: TimeEntry; stopped: { id: string; seconds: number } | null }>('/time/start', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const stopTimer = () => fetchApi<TimeEntry | null>('/time/stop', { method: 'POST' });
+
+export const getTimeEntries = (params: {
+  from?: string; to?: string; project?: string; taskId?: string; uninvoiced?: boolean;
+} = {}) => {
+  const q = new URLSearchParams();
+  if (params.from) q.set('from', params.from);
+  if (params.to) q.set('to', params.to);
+  if (params.project) q.set('project', params.project);
+  if (params.taskId) q.set('taskId', params.taskId);
+  if (params.uninvoiced) q.set('uninvoiced', '1');
+  return fetchApi<TimeEntry[]>(`/time/entries?${q.toString()}`);
+};
+
+export const addTimeEntry = (data: {
+  taskId?: string | null; project?: string; description?: string;
+  startedAt: string; endedAt?: string; minutes?: number; billable?: boolean;
+}) => fetchApi<TimeEntry>('/time/entries', { method: 'POST', body: JSON.stringify(data) });
+
+export const updateTimeEntry = (id: string, data: Record<string, unknown>) =>
+  fetchApi<TimeEntry>(`/time/entries/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+
+export const deleteTimeEntry = (id: string) =>
+  fetchApi<{ ok: boolean }>(`/time/entries/${id}`, { method: 'DELETE' });
+
+export const getTimeSummary = (from: string, to: string) =>
+  fetchApi<TimeSummary>(`/time/summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+
+export const getBillingRates = () => fetchApi<BillingRate[]>('/time/rates');
+
+export const setBillingRate = (project: string, data: Partial<BillingRate>) =>
+  fetchApi<{ ok: boolean }>(`/time/rates/${encodeURIComponent(project)}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+
+export const deleteBillingRate = (project: string) =>
+  fetchApi<{ ok: boolean }>(`/time/rates/${encodeURIComponent(project)}`, { method: 'DELETE' });
+
+export const getBillingProfile = () => fetchApi<BillingProfile>('/time/profile');
+
+export const setBillingProfile = (data: Partial<BillingProfile>) =>
+  fetchApi<BillingProfile>('/time/profile', { method: 'PUT', body: JSON.stringify(data) });
+
+export const buildInvoiceDraft = (data: {
+  project: string; from: string; to: string; commit?: boolean; onlyUninvoiced?: boolean; note?: string;
+}) => fetchApi<InvoiceDraft>('/time/invoice', { method: 'POST', body: JSON.stringify(data) });
+
+export const revertInvoice = (entryIds: string[]) =>
+  fetchApi<{ ok: boolean; reverted: number }>('/time/invoice/revert', {
+    method: 'POST',
+    body: JSON.stringify({ entryIds }),
+  });
+
+// ─── Mail: alle Postfächer auf einmal ───
+
+export const getMailOverview = () => fetchApi<MailOverview>('/mail/overview');
+
+export const getMailUnread = () =>
+  fetchApi<{ total: number; accounts: { id: number; email: string; unread: number }[] }>('/mail/unread');
+
+export const getUnifiedInbox = (limit = 40) =>
+  fetchApi<{ emails: UnifiedEmail[] }>(`/mail/unified?limit=${limit}`);
+
+// ─── Aurora: Durchreiche-Anmeldung ───
+
+export const getAuroraSession = () =>
+  fetchApi<{ authenticated: boolean; ssoConfigured: boolean; user: unknown }>('/aurora/session');
+
+export const auroraSignIn = () =>
+  fetchApi<{ ok: boolean }>('/aurora/sso', { method: 'POST' });

@@ -102,6 +102,43 @@ export function useWebSocket() {
     };
   }, [connect]);
 
+  // Verbindung im Hintergrund trennen.
+  //
+  // Der Server schiebt alle 10 Sekunden System- und alle 5 Sekunden
+  // Container-Werte an JEDEN offenen Socket. Auf dem Handy lief das auch dann
+  // weiter, wenn das Dashboard nur in einem Tab im Hintergrund stand: Funk an,
+  // Akku leer, und beim Zurückkommen ein Schwall veralteter Daten. Nach einer
+  // halben Minute im Hintergrund wird deshalb getrennt und beim Zurückkommen
+  // sofort neu verbunden — die Verzögerung verhindert, dass kurzes Wegtippen
+  // (Passwort nachschauen) die Verbindung abreißen lässt.
+  useEffect(() => {
+    let trennTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        trennTimer = setTimeout(() => {
+          if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+          const ws = wsRef.current;
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.onclose = null; // kein automatischer Neuaufbau im Hintergrund
+            ws.close();
+            wsRef.current = null;
+            setConnected(false);
+          }
+        }, 30000);
+      } else {
+        if (trennTimer) clearTimeout(trennTimer);
+        if (!wsRef.current || wsRef.current.readyState > WebSocket.OPEN) connect();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (trennTimer) clearTimeout(trennTimer);
+    };
+  }, [connect]);
+
   // When server changes, re-subscribe
   useEffect(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {

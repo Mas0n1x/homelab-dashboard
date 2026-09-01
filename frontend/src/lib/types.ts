@@ -464,6 +464,12 @@ export interface Task {
   created_at: string
   updated_at: string
   subtasks: TaskSubtask[]
+  /** Geschätzter Aufwand in Minuten (Soll), null = keine Schätzung. */
+  estimate_minutes: number | null
+  /** Bereits erfasste Zeit in Sekunden (Ist), inkl. laufender Uhr. */
+  tracked_seconds: number
+  /** Läuft die Uhr gerade auf DIESER Aufgabe? */
+  timer_running: boolean
 }
 
 export interface TaskInput {
@@ -473,4 +479,258 @@ export interface TaskInput {
   priority?: TaskPriority
   project?: string
   dueDate?: string | null
+  estimateMinutes?: number | null
+}
+
+// ─── Zeiterfassung & Abrechnung ───
+
+export interface TimeEntry {
+  id: string
+  taskId: string | null
+  taskTitle: string | null
+  project: string
+  description: string
+  startedAt: string
+  endedAt: string | null
+  seconds: number
+  running: boolean
+  billable: boolean
+  invoicedAt: string | null
+  source: 'timer' | 'manual'
+}
+
+export interface BillingRate {
+  project: string
+  customer: string
+  hourlyRate: number
+  currency: string
+  roundingMinutes: number
+  notes: string
+}
+
+export interface TimeSummaryProject {
+  project: string
+  customer: string
+  hourlyRate: number
+  currency: string
+  roundingMinutes: number
+  seconds: number
+  billableSeconds: number
+  billedSeconds: number
+  uninvoicedSeconds: number
+  amount: number
+  entries: number
+}
+
+export interface TimeSummary {
+  from: string
+  to: string
+  totalSeconds: number
+  totalAmount: number
+  projects: TimeSummaryProject[]
+  days: { date: string; seconds: number }[]
+}
+
+export interface BillingProfile {
+  issuerName: string
+  issuerAddress: string
+  issuerEmail: string
+  taxId: string
+  vatRate: number
+  smallBusiness: boolean
+  paymentTermsDays: number
+  invoicePrefix: string
+  nextInvoiceNumber: number
+}
+
+export interface InvoicePosition {
+  label: string
+  hours: number
+  hourlyRate: number
+  amount: number
+  entries: number
+  dates: string[]
+}
+
+export interface InvoiceDraft {
+  invoiceNumber: string
+  issuedAt: string
+  dueAt: string
+  project: string
+  customer: string
+  currency: string
+  period: { from: string; to: string }
+  issuer: { name: string; address: string; email: string; taxId: string }
+  positions: InvoicePosition[]
+  totals: { net: number; vatRate: number; vat: number; gross: number }
+  smallBusiness: boolean
+  note: string
+  entryIds: string[]
+  committed: boolean
+}
+
+// ─── Status-Board ───
+
+export interface StatusService extends ServiceStatusEntry {
+  id: string
+  name: string
+  url: string | null
+  category: string
+  project?: string
+  source: 'docker' | 'manual'
+  state?: string
+  /** Seit weniger als 24 Stunden bekannt — frisch deployt. */
+  isNew: boolean
+  /** Steht im Register, taucht auf dem Server aber nicht mehr auf. */
+  vanished: boolean
+  firstSeen?: string | null
+}
+
+export interface StatusGroup {
+  server: { id: string; name: string; status: string }
+  services: StatusService[]
+  /** Letzte Erkennung liegt über 5 Minuten zurück — Daten womöglich veraltet. */
+  stale: boolean
+  lastDiscovery: string | null
+}
+
+// ─── Image-Updates, Platten-Prognose, Shop ───
+
+export interface ImageUpdateEntry {
+  containerId: string
+  containerName: string
+  project: string | null
+  image: string
+  state: string
+  localDigest: string
+  remoteDigest: string | null
+  hasUpdate: boolean
+  error: string | null
+}
+
+export interface ImageUpdateSummary {
+  servers: { serverId: string; serverName: string; containers: ImageUpdateEntry[]; skipped: string | null }[]
+  outdated: ImageUpdateEntry[]
+  counts: { outdated: number; checked: number; failed: number }
+  /** Registry-Limit erreicht — das Ergebnis ist dann unvollständig. */
+  rateLimited: boolean
+  checkedAt: string | null
+  /** Noch kein Durchlauf seit dem Start. */
+  pending: boolean
+}
+
+export interface DiskForecastServer {
+  serverId: string
+  serverName: string
+  usedBytes: number | null
+  totalBytes: number | null
+  percent: number | null
+  historyDays: number
+  bytesPerDay: number | null
+  /** `null` heißt bewusst „keine Aussage möglich" — siehe `reason`. */
+  daysUntilFull: number | null
+  fullAt: string | null
+  /** Bestimmtheitsmaß der Regression, 0–1. */
+  confidence: number | null
+  trend: 'steigend' | 'fallend' | 'stabil' | 'unbekannt'
+  reason?: string
+}
+
+export interface DiskForecast {
+  servers: DiskForecastServer[]
+  windowDays: number
+  minDays: number
+}
+
+export interface EtsyStatus {
+  configured: boolean
+  connected: boolean
+  shopId: number | null
+  shopName: string | null
+  redirectUri: string | null
+  scopes: string[]
+}
+
+export interface EtsyOrder {
+  receiptId: number
+  buyer: string
+  total: number
+  currency: string
+  createdAt: string | null
+  itemCount: number
+  isShipped: boolean
+  country: string | null
+}
+
+export interface EtsyOrders {
+  connected: boolean
+  shopId?: number
+  shopName?: string | null
+  openCount: number
+  orders: EtsyOrder[]
+  revenue30d?: number
+  orders30d?: number
+  currency?: string
+  fetchedAt?: string
+  error?: string
+}
+
+/** Ein Zu- oder Abgang auf der Flotte. */
+export interface FleetChange {
+  type: 'neu' | 'entfernt'
+  id: string
+  name: string
+  server: string
+  at: string
+}
+
+export interface StatusBoard {
+  groups: StatusGroup[]
+  summary: { up: number; down: number; total: number; servers: number }
+  generatedAt: string
+}
+
+// ─── Mail: Übersicht über alle Postfächer ───
+
+export interface MailOverviewFolder {
+  id: string
+  name: string
+  role: string | null
+  unread: number
+  total: number
+}
+
+export interface MailOverviewAccount {
+  id: number
+  email: string
+  accountId: string | null
+  displayName: string
+  sortOrder: number
+  folders: MailOverviewFolder[]
+  unread: number
+  total: number
+  error: string | null
+}
+
+export interface MailOverview {
+  accounts: MailOverviewAccount[]
+  totalUnread: number
+}
+
+/** Mail aus dem Sammel-Eingang — trägt ihr Herkunfts-Konto mit. */
+export interface UnifiedEmail {
+  id: string
+  threadId: string
+  subject: string
+  from: { name?: string | null; email: string }[]
+  to: { name?: string | null; email: string }[]
+  receivedAt: string
+  preview: string
+  keywords: Record<string, boolean>
+  hasAttachment: boolean
+  mailboxIds: Record<string, boolean>
+  accountEmail: string
+  accountId: string
+  accountDisplayName: string
+  mailboxId: string
 }

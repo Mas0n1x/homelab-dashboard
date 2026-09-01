@@ -73,6 +73,9 @@ export function EmailList({ folders }: EmailListProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mail-emails'] });
       queryClient.invalidateQueries({ queryKey: ['mail-folders'] });
+      // Die Zähler in Postfachleiste und Bottom-Bar hängen an diesen beiden.
+      queryClient.invalidateQueries({ queryKey: ['mail-overview'] });
+      queryClient.invalidateQueries({ queryKey: ['mail-unread'] });
     },
   });
 
@@ -116,6 +119,8 @@ export function EmailList({ folders }: EmailListProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mail-emails'] });
       queryClient.invalidateQueries({ queryKey: ['mail-folders'] });
+      queryClient.invalidateQueries({ queryKey: ['mail-overview'] });
+      queryClient.invalidateQueries({ queryKey: ['mail-unread'] });
     },
   });
 

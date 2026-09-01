@@ -75,6 +75,25 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_uptime_service_time ON uptime_checks(service_id, checked_at);
     CREATE INDEX IF NOT EXISTS idx_uptime_server_time ON uptime_checks(server_id, checked_at);
 
+    -- Dienst-Register: merkt sich JEDEN je entdeckten Dienst mit erstem und
+    -- letztem Sichtkontakt. Daraus weiß die Statusseite ohne Zutun, was frisch
+    -- deployt ist ("Neu") und was vom Server verschwunden ist — und ab wann ein
+    -- Dienst samt Historie endgültig aufgeräumt werden darf.
+    CREATE TABLE IF NOT EXISTS service_registry (
+      service_id TEXT NOT NULL,
+      server_id TEXT NOT NULL,
+      name TEXT,
+      category TEXT,
+      url TEXT,
+      project TEXT,
+      container_name TEXT,
+      first_seen TEXT DEFAULT (datetime('now')),
+      last_seen TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (service_id, server_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_service_registry_server ON service_registry(server_id, last_seen);
+
     CREATE TABLE IF NOT EXISTS metrics_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       server_id TEXT NOT NULL,
@@ -87,6 +106,24 @@ export function initDatabase() {
     );
 
     CREATE INDEX IF NOT EXISTS idx_metrics_server_time ON metrics_history(server_id, ts);
+
+    -- Tages-Zusammenfassung der Plattenbelegung, EINE Zeile je Server und Tag.
+    -- metrics_history wird nach 48 Stunden aufgeräumt — daraus lässt sich keine
+    -- Prognose rechnen, weil die normale Tagesschwankung den echten Trend
+    -- überdeckt. Diese Tabelle bleibt ein Jahr stehen und kostet dabei fast
+    -- nichts (4 Server × 365 Tage = 1460 Zeilen).
+    CREATE TABLE IF NOT EXISTS disk_daily (
+      server_id TEXT NOT NULL,
+      day TEXT NOT NULL,
+      used_bytes INTEGER,
+      total_bytes INTEGER,
+      percent REAL,
+      samples INTEGER DEFAULT 1,
+      updated_at TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (server_id, day)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_disk_daily_server ON disk_daily(server_id, day);
 
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
@@ -176,6 +213,45 @@ export function initDatabase() {
     );
 
     CREATE INDEX IF NOT EXISTS idx_task_subtasks_task ON task_subtasks(task_id);
+
+    -- Zeiterfassung: ein Eintrag je Arbeitsabschnitt. Ein leeres ended_at heißt,
+    -- die Uhr läuft gerade. Die Dauer wird beim Stoppen festgeschrieben, damit
+    -- ein nachträglich korrigierter Eintrag nicht wieder überschrieben wird.
+    CREATE TABLE IF NOT EXISTS time_entries (
+      id TEXT PRIMARY KEY,
+      task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+      project TEXT DEFAULT '',
+      description TEXT DEFAULT '',
+      started_at TEXT NOT NULL,
+      ended_at TEXT,
+      seconds INTEGER DEFAULT 0,
+      billable INTEGER DEFAULT 1,
+      invoiced_at TEXT,
+      source TEXT DEFAULT 'timer',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_time_entries_start ON time_entries(started_at);
+    CREATE INDEX IF NOT EXISTS idx_time_entries_task ON time_entries(task_id);
+    CREATE INDEX IF NOT EXISTS idx_time_entries_project ON time_entries(project, started_at);
+    -- Höchstens eine laufende Uhr — verhindert Doppelbuchungen, wenn der Timer
+    -- auf zwei Geräten gleichzeitig gestartet wird. Als Ausdrucks-Index: laufende
+    -- Zeilen tragen alle die 1 und kollidieren, beendete tragen NULL und sind in
+    -- SQLite untereinander verschieden (ein WHERE-Index auf ended_at griffe nicht).
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_time_entries_running
+      ON time_entries((CASE WHEN ended_at IS NULL THEN 1 END));
+
+    -- Abrechnungs-Stammdaten je Projekt: Kunde, Stundensatz, Währung.
+    CREATE TABLE IF NOT EXISTS billing_rates (
+      project TEXT PRIMARY KEY,
+      customer TEXT DEFAULT '',
+      hourly_rate REAL DEFAULT 0,
+      currency TEXT DEFAULT 'EUR',
+      rounding_minutes INTEGER DEFAULT 0,
+      notes TEXT DEFAULT '',
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
 
     CREATE TABLE IF NOT EXISTS calendar_events (
       id TEXT PRIMARY KEY,
@@ -308,6 +384,12 @@ export function initDatabase() {
     if (!serverCols.includes(col)) {
       db.exec(`ALTER TABLE servers ADD COLUMN ${col} ${type}`);
     }
+  }
+
+  // Migration: geschätzter Aufwand je Aufgabe (Soll/Ist-Vergleich der Zeiterfassung)
+  const taskCols = db.prepare('PRAGMA table_info(tasks)').all().map(c => c.name);
+  if (!taskCols.includes('estimate_minutes')) {
+    db.exec('ALTER TABLE tasks ADD COLUMN estimate_minutes INTEGER');
   }
 
   // Migration: Stichzeit, ab der Access-Token eines Benutzers gültig sind.

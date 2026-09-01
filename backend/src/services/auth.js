@@ -10,7 +10,16 @@ import { getDb } from './database.js';
 
 const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '24h';
-const REFRESH_TOKEN_EXPIRY_DAYS = 7;
+// 7 Tage waren der Grund für das ständige Neuanmelden am Handy: wer das
+// Dashboard eine Woche nicht aufmacht, ist raus. 90 Tage, gleitend verlängert
+// bei jeder Erneuerung.
+const REFRESH_TOKEN_EXPIRY_DAYS = 90;
+
+// Nach einer Erneuerung bleibt das alte Token noch kurz gültig. Ohne diese
+// Schonfrist reicht EIN paralleler Aufruf (zweiter Tab, Wiederholung nach
+// Netzwechsel), damit das gerade ersetzte Token abgelehnt wird und die Sitzung
+// scheinbar grundlos endet.
+const ROTATION_GRACE_SECONDS = 60;
 
 // Kein Fallback-Default: mit bekanntem Secret könnte jeder gültige Tokens
 // signieren (und es ist zugleich der Mail-Verschlüsselungs-Key). Fehlt es,
@@ -57,6 +66,20 @@ export function revokeRefreshToken(token) {
   const db = getDb();
   const hash = crypto.createHash('sha256').update(token).digest('hex');
   db.prepare('DELETE FROM refresh_tokens WHERE token_hash = ?').run(hash);
+}
+
+/**
+ * Altes Token nach der Erneuerung NICHT sofort löschen, sondern nur noch
+ * kurz gültig lassen. Parallele Anfragen, die noch mit dem alten Token
+ * unterwegs sind, laufen damit sauber durch, statt die Sitzung zu beenden.
+ */
+export function retireRefreshToken(token) {
+  const db = getDb();
+  const hash = crypto.createHash('sha256').update(token).digest('hex');
+  const graceUntil = new Date(Date.now() + ROTATION_GRACE_SECONDS * 1000).toISOString();
+  db.prepare(
+    'UPDATE refresh_tokens SET expires_at = ? WHERE token_hash = ? AND expires_at > ?'
+  ).run(graceUntil, hash, graceUntil);
 }
 
 export function revokeAllUserTokens(userId) {

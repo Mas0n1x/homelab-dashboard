@@ -12,7 +12,8 @@ import { createServer } from 'http';
 
 import { initDatabase, migrateFromConfigJson, cleanupOldUptimeData } from './services/database.js';
 import serverManager from './services/serverManager.js';
-import { discoverServices, hasDiscoveryChanged } from './services/discovery.js';
+import { discoverServices, hasDiscoveryChanged, getDiscoverySnapshot } from './services/discovery.js';
+import { recordSeenServices, migrateLegacyServiceIds, purgeVanishedServices } from './services/serviceRegistry.js';
 import { checkAllServices } from './services/uptime.js';
 import * as portfolio from './services/portfolio.js';
 import { ensureDefaultUser, cleanupExpiredTokens } from './services/auth.js';
@@ -43,9 +44,14 @@ import trafficRoutes from './routes/traffic.js';
 import salenetRoutes from './routes/salenet.js';
 import businessRoutes from './routes/business.js';
 import auroraRoutes from './routes/aurora.js';
+import statusRoutes from './routes/status.js';
+import timeRoutes from './routes/time.js';
+import etsyRoutes, { createEtsyCallback } from './routes/etsy.js';
 import { checkAlerts, sendStatusReport } from './services/alerting.js';
-import { runDueBackups } from './services/backup.js';
+import { runDueBackups, enforceBackupRetention } from './services/backup.js';
 import { recordMetric, pruneMetrics } from './services/metrics.js';
+import { recordDiskDaily, pruneDiskDaily } from './services/diskForecast.js';
+import { checkFleetImageUpdates } from './services/imageUpdates.js';
 import metricsRoutes from './routes/metrics.js';
 import tunnelsRoutes from './routes/tunnels.js';
 import botsRoutes, { createBotWebhookPassthrough, createBotEventsIngest } from './routes/bots.js';
@@ -92,6 +98,11 @@ app.get('/api/health', (req, res) => {
 import { handleInboundMail } from './routes/mailInbound.js';
 app.post('/api/mail/inbound', express.json({ limit: '25mb' }), handleInboundMail);
 
+// Etsy-Rückruf: Etsy schickt den Browser hierher, ohne Bearer-Token. Muss
+// deshalb VOR der Anmelde-Middleware stehen; abgesichert über den
+// Zustandswert aus dem Anmeldevorgang.
+app.get('/api/etsy/callback', createEtsyCallback());
+
 // Auth middleware for all other /api routes
 app.use('/api', authenticateToken);
 
@@ -105,6 +116,9 @@ app.use('/api/traffic', trafficRoutes);
 app.use('/api/salenet', salenetRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/aurora', auroraRoutes);
+app.use('/api/status', statusRoutes);
+app.use('/api/time', timeRoutes);
+app.use('/api/etsy', etsyRoutes);
 app.use('/api/uptime', uptimeRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/favorites', favoritesRoutes);
@@ -602,6 +616,12 @@ function forEachServer(fn) {
 // Background: Service discovery (every 30 seconds)
 setInterval(makeJob('discovery', () => forEachServer(async (server) => {
   const discovered = await withTimeout(discoverServices(server.id), 20000, 'discovery');
+  // Kein Ergebnis (SSH-Aussetzer) darf das Register nicht anfassen — sonst
+  // gälten alle Dienste des Servers als verschwunden.
+  if (discovered.length > 0) {
+    migrateLegacyServiceIds(server.id, discovered);
+    recordSeenServices(server.id, discovered);
+  }
   if (hasDiscoveryChanged(server.id, discovered)) {
     broadcast({ type: 'discovery-update', serverId: server.id, data: discovered });
   }
@@ -609,7 +629,11 @@ setInterval(makeJob('discovery', () => forEachServer(async (server) => {
 
 // Background: Uptime checks (every 60 seconds)
 setInterval(makeJob('uptime', () => forEachServer(async (server) => {
-  const discovered = await withTimeout(discoverServices(server.id), 20000, 'discovery');
+  // Snapshot des Discovery-Jobs (läuft alle 30 s) statt eines zweiten
+  // Docker-über-SSH-Aufrufs — halbiert die SSH-Last auf der Flotte.
+  const snapshot = getDiscoverySnapshot(server.id);
+  const discovered = snapshot?.services
+    ?? await withTimeout(discoverServices(server.id), 20000, 'discovery');
   const manual = db.prepare('SELECT id, url, server_id as serverId FROM manual_services WHERE server_id = ?').all(server.id);
   const allServices = [
     ...discovered.map(s => ({ id: s.id, url: s.url, serverId: s.serverId })),
@@ -696,6 +720,10 @@ setInterval(makeJob('alerting', () => forEachServer(async (server) => {
             rx: net.reduce((s, n) => s + (n.rxRate || 0), 0),
             tx: net.reduce((s, n) => s + (n.txRate || 0), 0),
           });
+          // Zusätzlich ein Tageswert in absoluten Bytes — Grundlage der
+          // Füllstand-Prognose. metrics_history wird nach 48 Stunden geleert
+          // und taugt dafür nicht.
+          recordDiskDaily(server.id, dused, dcap);
         } catch { /* Sampling darf das Alerting nie stoppen */ }
       }
 
@@ -770,6 +798,24 @@ setInterval(makeJob('status-report', async () => {
   await sendStatusReport({ servers: summaries });
 }), STATUS_REPORT_MS);
 
+// Background: Image-Updates (alle 6 Stunden).
+// Bewusst selten: jede Manifest-Abfrage zählt gegen das Abruf-Limit von Docker
+// Hub, und ein Image-Tag bewegt sich ohnehin selten öfter als einmal am Tag.
+// Der erste Lauf startet 2 Minuten nach dem Start, damit die SSH-Verbindungen
+// zur Flotte vorher stehen.
+const IMAGE_UPDATE_MS = 6 * 60 * 60 * 1000;
+const pruefeImageUpdates = makeJob('image-updates', async () => {
+  const ergebnis = await checkFleetImageUpdates();
+  if (ergebnis.counts.outdated > 0) {
+    console.log(`Image-Updates: ${ergebnis.counts.outdated} von ${ergebnis.counts.checked} Containern veraltet`);
+  }
+  if (ergebnis.rateLimited) {
+    console.warn('Image-Updates: Abruf-Limit der Registry erreicht — Ergebnis unvollständig.');
+  }
+});
+setTimeout(pruefeImageUpdates, 2 * 60 * 1000);
+setInterval(pruefeImageUpdates, IMAGE_UPDATE_MS);
+
 // Background: Geplante Backups prüfen (alle 5 Minuten; Fälligkeit anhand Intervall)
 setInterval(() => {
   runDueBackups().catch(error => console.error('Scheduled backup error:', error.message));
@@ -782,6 +828,17 @@ function runDataCleanup() {
   try {
     cleanupOldUptimeData();
     pruneMetrics(48); // Metrik-Verlauf: 48h behalten
+    pruneDiskDaily(); // Tageswerte der Platte: gut ein Jahr behalten
+    // Dienste, die seit Tagen nicht mehr auf ihrem Server auftauchen, samt
+    // Historie entfernen — die Statusseite bildet damit den Ist-Zustand ab.
+    const removedBackups = enforceBackupRetention();
+    if (removedBackups > 0) {
+      console.log(`Abgelaufene Backups gelöscht: ${removedBackups}`);
+    }
+    const { purged, names } = purgeVanishedServices();
+    if (purged > 0) {
+      console.log(`Entfernte Dienste aufgeräumt (${purged}): ${names.join(', ')}`);
+    }
   } catch (error) {
     console.error('Cleanup error:', error.message);
   }

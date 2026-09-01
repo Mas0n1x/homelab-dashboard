@@ -24,7 +24,7 @@ interface TaskModalProps {
   onDeleteSubtask: (subId: string) => void;
 }
 
-const EMPTY = { title: '', notes: '', status: 'open' as TaskStatus, priority: 'medium' as TaskPriority, project: '', dueDate: '' };
+const EMPTY = { title: '', notes: '', status: 'open' as TaskStatus, priority: 'medium' as TaskPriority, project: '', dueDate: '', estimateMinutes: '' };
 
 export function TaskModal({
   isOpen,
@@ -54,6 +54,7 @@ export function TaskModal({
           priority: task.priority,
           project: task.project || '',
           dueDate: task.due_date || '',
+          estimateMinutes: task.estimate_minutes ? String(task.estimate_minutes) : '',
         }
       : EMPTY);
   }, [isOpen, task]);
@@ -68,6 +69,7 @@ export function TaskModal({
         priority: form.priority,
         project: form.project.trim(),
         dueDate: form.dueDate || null,
+        estimateMinutes: form.estimateMinutes ? Number(form.estimateMinutes) : null,
       },
       pendingSubtasks,
     );
@@ -145,6 +147,54 @@ export function TaskModal({
             <datalist id="task-projects">
               {projects.map(p => <option key={p} value={p} />)}
             </datalist>
+          </div>
+        </div>
+
+        {/* Geschätzter Aufwand — Bezugsgröße für die Kaffeetasse auf der Karte
+            und der Soll/Ist-Vergleich der Zeiterfassung. */}
+        <div>
+          <label className="block text-[11px] uppercase tracking-widest text-white/30 mb-1.5">
+            Geschätzter Aufwand
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <input
+                type="number"
+                min={0}
+                step={15}
+                className="glass-input w-32 pr-12"
+                placeholder="—"
+                value={form.estimateMinutes}
+                onChange={e => setForm(f => ({ ...f, estimateMinutes: e.target.value }))}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-white/25 pointer-events-none">
+                Min.
+              </span>
+            </div>
+            {[30, 60, 120, 240, 480].map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setForm(f => ({ ...f, estimateMinutes: String(m) }))}
+                className={clsx(
+                  'px-2.5 py-1.5 rounded-lg border text-[12px] transition-colors',
+                  form.estimateMinutes === String(m)
+                    ? 'bg-accent/15 border-accent/30 text-accent-light'
+                    : 'bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/70',
+                )}
+              >
+                {m >= 60 ? `${m / 60} Std.` : `${m} Min.`}
+              </button>
+            ))}
+            {form.estimateMinutes && (
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ ...f, estimateMinutes: '' }))}
+                className="px-2.5 py-1.5 rounded-lg text-[12px] text-white/30 hover:text-white/60 transition-colors"
+              >
+                Leeren
+              </button>
+            )}
           </div>
         </div>
 

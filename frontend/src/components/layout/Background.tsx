@@ -39,15 +39,19 @@ export function Background() {
         }}
       />
 
-      {/* Primary orb - accent color */}
+      {/* Lichtfleck oben links.
+          Mobil deutlich kleiner und schwächer weichgezeichnet: die Fläche eines
+          Weichzeichners wächst quadratisch, ein 700er mit blur(140px) ist auf
+          dem Handy der teuerste Einzelposten der ganzen Seite. Der Farbeindruck
+          bleibt, weil beides nur als Schimmer im Hintergrund wirkt. */}
       <div
-        className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] rounded-full blur-[140px] animate-glow-pulse"
+        className="absolute top-[-20%] left-[-10%] w-[360px] h-[360px] blur-[70px] md:w-[700px] md:h-[700px] md:blur-[140px] rounded-full animate-glow-pulse"
         style={{ background: 'rgba(var(--accent-rgb), calc(0.07 * var(--orb-opacity)))' }}
       />
 
-      {/* Secondary orb */}
+      {/* Lichtfleck unten rechts */}
       <div
-        className="absolute bottom-[-15%] right-[-5%] w-[550px] h-[550px] rounded-full blur-[120px] animate-glow-pulse"
+        className="absolute bottom-[-15%] right-[-5%] w-[300px] h-[300px] blur-[60px] md:w-[550px] md:h-[550px] md:blur-[120px] rounded-full animate-glow-pulse"
         style={{ background: 'rgba(var(--accent-rgb), calc(0.05 * var(--orb-opacity)))', animationDelay: '2s' }}
       />
 

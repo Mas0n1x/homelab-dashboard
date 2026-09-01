@@ -5,22 +5,22 @@
  */
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Mail as MailIcon } from 'lucide-react';
 import { useMailStore } from '@/stores/mailStore';
 import { PageTransition } from '@/components/ui/PageTransition';
-import { getUserMailAccounts, jmapCall } from '@/lib/api';
+import * as api from '@/lib/api';
 import { Tabs } from '@/components/ui/Tabs';
 import { MailSetup } from '@/components/mail/MailSetup';
-import { AccountSwitcher } from '@/components/mail/AccountSwitcher';
-import { FolderSidebar } from '@/components/mail/FolderSidebar';
+import { MailboxSidebar } from '@/components/mail/MailboxSidebar';
+import { UnifiedInbox } from '@/components/mail/UnifiedInbox';
 import { EmailList } from '@/components/mail/EmailList';
 import { EmailReader } from '@/components/mail/EmailReader';
 import { ComposeModal } from '@/components/mail/ComposeModal';
 import { MailSearch } from '@/components/mail/MailSearch';
 import { MailAdmin } from '@/components/mail/MailAdmin';
-import type { MailFolder } from '@/lib/types';
-import type { MailAccount } from '@/lib/api';
+import type { MailFolder, MailOverview } from '@/lib/types';
 
 const TABS = [
   { id: 'posteingang', label: 'Posteingang' },
@@ -29,66 +29,86 @@ const TABS = [
 
 export default function MailPage() {
   const {
-    email, accountId,
-    setAccounts, activeTab, setActiveTab,
-    activeFolderId, setActiveFolderId, selectedEmailId,
+    accounts, activeAccountEmail, viewMode, selectedEmailId,
+    setAccounts, activeTab, setActiveTab, selectFolder, searchActive,
   } = useMailStore();
-  const queryClient = useQueryClient();
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
 
-  // Load user's mail accounts
-  const { data: accounts = [] } = useQuery<MailAccount[]>({
-    queryKey: ['mail-accounts'],
-    queryFn: getUserMailAccounts,
+  // EIN Aufruf liefert alle Konten samt Ordnern und Ungelesen-Zählern.
+  // Vorher lud die Seite die Kontoliste und danach die Ordner nur des einen
+  // „aktiven" Kontos — der Rest war unsichtbar.
+  const { data: overview, isLoading } = useQuery<MailOverview>({
+    queryKey: ['mail-overview'],
+    queryFn: api.getMailOverview,
+    refetchInterval: 60000,
+    staleTime: 30000,
   });
 
+  // Store mit der Kontoliste versorgen (Compose und Reader lesen daraus).
   useEffect(() => {
-    if (accounts.length > 0) {
-      setAccounts(accounts);
-    }
-  }, [accounts, setAccounts]);
+    if (!overview?.accounts?.length) return;
+    setAccounts(overview.accounts.map((a, i) => ({
+      id: a.id,
+      email: a.email,
+      accountId: a.accountId,
+      displayName: a.displayName,
+      sortOrder: a.sortOrder,
+      isActive: i === 0,
+    })));
+  }, [overview, setAccounts]);
 
-  // Fetch folders
-  const { data: foldersResponse } = useQuery({
-    queryKey: ['mail-folders', accountId],
-    queryFn: async () => {
-      if (!email || !accountId) return null;
-      return jmapCall(email, [
-        ['Mailbox/get', { accountId, ids: null }, '0'],
-      ]);
-    },
-    enabled: !!email && !!accountId,
-    refetchInterval: 30000,
-  });
+  // Ordner des gerade gewählten Kontos — die Unterkomponenten erwarten die
+  // JMAP-Form, die Übersicht liefert eine schlankere.
+  const folders: MailFolder[] = useMemo(() => {
+    const acc = overview?.accounts.find(a => a.email === activeAccountEmail);
+    return (acc?.folders ?? []).map(f => ({
+      id: f.id,
+      name: f.name,
+      role: f.role,
+      parentId: null,
+      totalEmails: f.total,
+      unreadEmails: f.unread,
+      sortOrder: 0,
+    }));
+  }, [overview, activeAccountEmail]);
 
-  const folders: MailFolder[] = (foldersResponse?.methodResponses?.[0]?.[1] as { list?: MailFolder[] })?.list || [];
-
-  // Auto-select inbox on first load
+  // Die Suche greift immer auf ein konkretes Postfach zu — ohne gewähltes
+  // Konto liefe sie ins Leere.
   useEffect(() => {
-    if (folders.length > 0 && !activeFolderId) {
-      const inbox = folders.find(f => f.role === 'inbox');
-      if (inbox) setActiveFolderId(inbox.id);
-    }
-  }, [folders, activeFolderId, setActiveFolderId]);
+    if (!searchActive || activeAccountEmail || !overview?.accounts?.length) return;
+    const erstes = overview.accounts[0];
+    const inbox = erstes.folders.find(f => f.role === 'inbox');
+    if (inbox) selectFolder(erstes.email, inbox.id);
+  }, [searchActive, activeAccountEmail, overview, selectFolder]);
 
-  // Show setup if no accounts
-  if (accounts.length === 0) {
+  if (!isLoading && (overview?.accounts.length ?? 0) === 0 && accounts.length === 0) {
     return <MailSetup />;
   }
 
-  const totalUnread = folders.reduce((sum, f) => sum + (f.unreadEmails || 0), 0);
+  const totalUnread = overview?.totalUnread ?? 0;
+  const einzelAnsicht = viewMode === 'folder' || searchActive;
 
   return (
     <div className="max-w-7xl mx-auto">
       <PageTransition>
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl sm:text-2xl font-bold">Mail</h1>
-          <AccountSwitcher onAddAccount={() => setShowAddAccountModal(true)} />
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/20 flex items-center justify-center flex-shrink-0">
+              <MailIcon className="w-4.5 h-4.5 text-accent-light" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold leading-none">Mail</h1>
+              <p className="text-xs text-white/40 mt-1 truncate">
+                {overview?.accounts.length ?? 0} Postfächer
+                {totalUnread > 0 && ` · ${totalUnread} ungelesen`}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-5">
           <Tabs
-            tabs={TABS.map(t => t.id === 'posteingang' && totalUnread > 0 ? { ...t, count: totalUnread } : t)}
+            tabs={TABS.map(t => (t.id === 'posteingang' && totalUnread > 0 ? { ...t, count: totalUnread } : t))}
             activeTab={activeTab}
             onChange={setActiveTab}
           />
@@ -97,19 +117,23 @@ export default function MailPage() {
         {activeTab === 'posteingang' && (
           <>
             <MailSearch />
-            {/* Ordner mobil: waagerechte Chip-Leiste statt einer vollen Spalte */}
+
+            {/* Schmale Bildschirme: Konten und Ordner als Chip-Leisten */}
             <div className="md:hidden mt-4">
-              <FolderSidebar folders={folders} layout="bar" />
+              <MailboxSidebar overview={overview} onAddAccount={() => setShowAddAccountModal(true)} layout="bar" />
             </div>
+
             <div className="flex gap-4 items-start mt-4">
-              <div className="w-56 shrink-0 hidden md:block">
-                <FolderSidebar folders={folders} />
+              <div className="w-64 shrink-0 hidden md:block">
+                <MailboxSidebar overview={overview} onAddAccount={() => setShowAddAccountModal(true)} />
               </div>
               <div className="flex-1 min-w-0">
                 {selectedEmailId ? (
                   <EmailReader folders={folders} />
-                ) : (
+                ) : einzelAnsicht ? (
                   <EmailList folders={folders} />
+                ) : (
+                  <UnifiedInbox overview={overview} />
                 )}
               </div>
             </div>
@@ -120,9 +144,7 @@ export default function MailPage() {
       </PageTransition>
 
       <ComposeModal />
-      {showAddAccountModal && (
-        <MailSetup isModal onClose={() => setShowAddAccountModal(false)} />
-      )}
+      {showAddAccountModal && <MailSetup isModal onClose={() => setShowAddAccountModal(false)} />}
     </div>
   );
 }

@@ -136,15 +136,47 @@ function cleanupOldBackups(type) {
     "SELECT * FROM backups WHERE type = ? AND status = 'completed' ORDER BY completed_at DESC"
   ).all(type);
 
-  if (oldBackups.length > MAX_BACKUPS) {
-    const toDelete = oldBackups.slice(MAX_BACKUPS);
-    for (const backup of toDelete) {
-      if (backup.path && existsSync(backup.path)) {
-        try { unlinkSync(backup.path); } catch {}
-      }
-      db.prepare('DELETE FROM backups WHERE id = ?').run(backup.id);
+  const toDelete = new Map();
+
+  // Grenze 1: Stückzahl — höchstens MAX_BACKUPS je Art.
+  for (const backup of oldBackups.slice(MAX_BACKUPS)) {
+    toDelete.set(backup.id, backup);
+  }
+
+  // Grenze 2: Alter. Das JÜNGSTE Backup bleibt immer stehen, auch wenn es die
+  // Frist reißt — sonst stünde man nach einer längeren Pause ganz ohne Sicherung
+  // da, und genau dafür ist sie ja gedacht.
+  const { retentionDays } = getBackupSchedule();
+  if (retentionDays > 0 && oldBackups.length > 1) {
+    const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+    for (const backup of oldBackups.slice(1)) {
+      const ts = Date.parse(String(backup.completed_at || backup.started_at || '').replace(' ', 'T') + 'Z');
+      if (!Number.isNaN(ts) && ts < cutoff) toDelete.set(backup.id, backup);
     }
   }
+
+  for (const backup of toDelete.values()) {
+    if (backup.path && existsSync(backup.path)) {
+      try { unlinkSync(backup.path); } catch {}
+    }
+    db.prepare('DELETE FROM backups WHERE id = ?').run(backup.id);
+  }
+
+  return toDelete.size;
+}
+
+/**
+ * Aufbewahrungsfrist über ALLE Backup-Arten durchsetzen — auch dann, wenn
+ * gerade kein neues Backup läuft. Ohne das würden alte Dateien bei
+ * abgeschaltetem Zeitplan ewig liegen bleiben, weil das Aufräumen bisher nur
+ * am Ende eines Backup-Laufs hing.
+ */
+export function enforceBackupRetention() {
+  const db = getDb();
+  const types = db.prepare("SELECT DISTINCT type FROM backups WHERE status = 'completed'").all();
+  let removed = 0;
+  for (const t of types) removed += cleanupOldBackups(t.type);
+  return removed;
 }
 
 // Einzelnes Backup samt Datei löschen.
@@ -174,7 +206,9 @@ export function getBackupFile(id) {
 
 // ==================== AUTOMATISCHE BACKUPS (ZEITPLAN) ====================
 
-const DEFAULT_SCHEDULE = { enabled: false, type: 'database', intervalHours: 24 };
+// retentionDays: Backups, die älter sind, werden automatisch gelöscht.
+// 0 = nur die Stückzahl-Grenze (MAX_BACKUPS) greift.
+const DEFAULT_SCHEDULE = { enabled: false, type: 'database', intervalHours: 24, retentionDays: 7 };
 
 // Backup wiederherstellen. Legt vorher eine Sicherheitskopie an und startet
 // das Backend neu, damit die DB frisch geöffnet wird.
@@ -282,6 +316,7 @@ export function setBackupSchedule(cfg = {}) {
   merged.enabled = !!merged.enabled;
   if (!['database', 'full'].includes(merged.type)) merged.type = 'database';
   merged.intervalHours = Math.max(1, Math.min(720, Number(merged.intervalHours) || 24));
+  merged.retentionDays = Math.max(0, Math.min(365, Number(merged.retentionDays) || 0));
   db.prepare(
     "INSERT INTO settings (key, value) VALUES ('backup_schedule', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
   ).run(JSON.stringify(merged));

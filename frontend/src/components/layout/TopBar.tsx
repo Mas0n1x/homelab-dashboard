@@ -20,13 +20,37 @@ export function TopBar({ connected }: TopBarProps) {
   const { logout, refreshToken } = useAuthStore();
   const [time, setTime] = useState('');
 
+  // Die Uhr tickt nur, solange die Seite im Vordergrund ist UND sie überhaupt
+  // sichtbar ist (ab lg). Vorher lief sie sekündlich auch auf dem Handy weiter,
+  // wo sie gar nicht angezeigt wird.
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | undefined;
+
     const update = () => {
       setTime(new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     };
-    update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
+
+    const mq = window.matchMedia('(min-width: 1024px)');
+
+    const steuern = () => {
+      const laufen = mq.matches && document.visibilityState === 'visible';
+      if (laufen && !interval) {
+        update();
+        interval = setInterval(update, 1000);
+      } else if (!laufen && interval) {
+        clearInterval(interval);
+        interval = undefined;
+      }
+    };
+
+    steuern();
+    mq.addEventListener('change', steuern);
+    document.addEventListener('visibilitychange', steuern);
+    return () => {
+      if (interval) clearInterval(interval);
+      mq.removeEventListener('change', steuern);
+      document.removeEventListener('visibilitychange', steuern);
+    };
   }, []);
 
   const handleLogout = async () => {

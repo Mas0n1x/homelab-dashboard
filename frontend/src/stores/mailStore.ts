@@ -38,8 +38,21 @@ interface MailStore {
   setActiveTab: (tab: string) => void;
   activeFolderId: string | null;
   setActiveFolderId: (id: string | null) => void;
+
+  /**
+   * `unified` = Sammel-Eingang über alle Konten, `folder` = ein einzelner Ordner
+   * eines Kontos. Ersetzt das frühere serverseitige Umschalten des „aktiven"
+   * Kontos: der Wechsel ist damit sofort und ohne Netzrunde.
+   */
+  viewMode: 'unified' | 'folder';
+  showUnified: () => void;
+  selectFolder: (accountEmail: string, folderId: string) => void;
+
   selectedEmailId: string | null;
   setSelectedEmailId: (id: string | null) => void;
+  /** Konto der geöffneten Mail — im Sammel-Eingang nicht zwingend das aktive. */
+  selectedEmailAccount: string | null;
+  openEmail: (id: string, accountEmail: string) => void;
   composeOpen: boolean;
   setComposeOpen: (open: boolean) => void;
   composeMode: 'new' | 'reply' | 'replyAll' | 'forward';
@@ -119,9 +132,34 @@ export const useMailStore = create<MailStore>((set, get) => ({
   activeTab: 'posteingang',
   setActiveTab: (tab) => set({ activeTab: tab }),
   activeFolderId: null,
-  setActiveFolderId: (id) => set({ activeFolderId: id, selectedEmailId: null }),
+  setActiveFolderId: (id) => set({ activeFolderId: id, selectedEmailId: null, selectedEmailAccount: null }),
+
+  viewMode: 'unified',
+  showUnified: () => set({ viewMode: 'unified', selectedEmailId: null, selectedEmailAccount: null }),
+  selectFolder: (accountEmail, folderId) => {
+    const { accounts } = get();
+    set({
+      viewMode: 'folder',
+      activeFolderId: folderId,
+      selectedEmailId: null,
+      selectedEmailAccount: null,
+      activeAccountEmail: accountEmail,
+      ...deriveFields(accounts, accountEmail),
+    });
+  },
+
   selectedEmailId: null,
-  setSelectedEmailId: (id) => set({ selectedEmailId: id }),
+  setSelectedEmailId: (id) => set({ selectedEmailId: id, ...(id ? {} : { selectedEmailAccount: null }) }),
+  selectedEmailAccount: null,
+  openEmail: (id, accountEmail) => {
+    const { accounts, activeAccountEmail } = get();
+    // Eine Mail aus dem Sammel-Eingang gehört zu ihrem eigenen Konto — ohne
+    // Umschalten würde sie mit den Zugangsdaten des falschen Postfachs geladen.
+    if (accountEmail !== activeAccountEmail) {
+      set({ activeAccountEmail: accountEmail, ...deriveFields(accounts, accountEmail) });
+    }
+    set({ selectedEmailId: id, selectedEmailAccount: accountEmail });
+  },
   composeOpen: false,
   setComposeOpen: (open) => set({ composeOpen: open }),
   composeMode: 'new',

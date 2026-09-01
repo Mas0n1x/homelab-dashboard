@@ -11,7 +11,7 @@ import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ListChecks, Plus, Search, LayoutList, Columns3, Trash2, ChevronDown,
-  Inbox, SlidersHorizontal, RotateCcw, X,
+  Inbox, SlidersHorizontal, RotateCcw, X, Timer,
 } from 'lucide-react';
 import { PageTransition } from '@/components/ui/PageTransition';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -25,6 +25,8 @@ import {
   type GroupMode, type QuickFilter, type SortMode,
 } from '@/components/tasks/taskUtils';
 import * as api from '@/lib/api';
+import { useTimer } from '@/hooks/useTimer';
+import { TimeTracking } from '@/components/time/TimeTracking';
 import type { Task, TaskInput, TaskPriority, TaskStatus } from '@/lib/types';
 
 type ViewMode = 'list' | 'board';
@@ -57,7 +59,9 @@ const CHIP_STYLES: Record<QuickFilter, string> = {
 
 export default function TasksPage() {
   const queryClient = useQueryClient();
+  const { running, elapsed, start, stop } = useTimer();
 
+  const [section, setSection] = useState<'aufgaben' | 'zeiten'>('aufgaben');
   const [view, setView] = useState<ViewMode>('list');
   const [sort, setSort] = useState<SortMode>('manual');
   const [group, setGroup] = useState<GroupMode>('status');
@@ -400,6 +404,8 @@ export default function TasksPage() {
                 onEdit={() => { setEditing(task); setModalOpen(true); }}
                 onDelete={() => confirmDelete(task)}
                 onToggleSubtask={toggleSubtask}
+                onToggleTimer={() => (task.timer_running ? stop() : start({ taskId: task.id }))}
+                runningSeconds={task.timer_running ? elapsed : undefined}
                 onMove={manualOrder ? dir => moveWithin(list, i, dir) : undefined}
                 canMoveUp={i > 0}
                 canMoveDown={i < list.length - 1}
@@ -478,7 +484,33 @@ export default function TasksPage() {
         }
       />
 
-      <div className="space-y-4">
+      {/* Aufgaben und Zeiten sind zwei Sichten auf dieselbe Arbeit — deshalb eine
+          Seite mit Umschalter statt einer zweiten im Menü. */}
+      <div className="flex gap-1 p-1 rounded-xl bg-white/[0.02] border border-white/[0.05] w-fit mb-4">
+        {([
+          { id: 'aufgaben' as const, label: 'Aufgaben', icon: <ListChecks className="w-4 h-4" /> },
+          { id: 'zeiten' as const, label: 'Zeiten', icon: <Timer className="w-4 h-4" /> },
+        ]).map(b => (
+          <button
+            key={b.id}
+            onClick={() => setSection(b.id)}
+            className={clsx(
+              'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] transition-colors',
+              section === b.id ? 'bg-white/[0.08] text-white' : 'text-white/40 hover:text-white/75',
+            )}
+          >
+            {b.icon}
+            {b.label}
+            {b.id === 'zeiten' && running && (
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-light animate-pulse" title="Uhr läuft" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {section === 'zeiten' && <TimeTracking />}
+
+      <div className={clsx('space-y-4', section !== 'aufgaben' && 'hidden')}>
         {/* Kommandozentrale: erfassen, Fortschritt, Schnellfilter — eine Karte statt drei Blöcke */}
         <GlassCard>
           <div className="flex items-center gap-2">

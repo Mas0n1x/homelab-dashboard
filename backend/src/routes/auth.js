@@ -97,8 +97,8 @@ router.post('/refresh', (req, res) => {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // Rotate: revoke old, issue new
-    authService.revokeRefreshToken(refreshToken);
+    // Rotieren: altes Token in die Schonfrist schieben, neues ausgeben.
+    authService.retireRefreshToken(refreshToken);
     const newAccessToken = authService.generateAccessToken(user);
     const newRefreshToken = authService.generateRefreshToken();
     authService.storeRefreshToken(user.id, newRefreshToken);

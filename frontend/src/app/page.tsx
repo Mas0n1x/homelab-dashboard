@@ -12,6 +12,11 @@ import { FleetTopology } from '@/components/fleet/FleetTopology';
 import { FleetSummaryBar } from '@/components/fleet/FleetSummaryBar';
 import { FleetBentoGrid } from '@/components/fleet/FleetBentoGrid';
 import { RequestsWidget } from '@/components/dashboard/RequestsWidget';
+import { TodayWidget } from '@/components/dashboard/TodayWidget';
+import { ChangesWidget } from '@/components/dashboard/ChangesWidget';
+import { ImageUpdatesWidget } from '@/components/dashboard/ImageUpdatesWidget';
+import { DiskForecastWidget } from '@/components/dashboard/DiskForecastWidget';
+import { ShopWidget } from '@/components/dashboard/ShopWidget';
 import { WeatherWidget, type WeatherLocation } from '@/components/dashboard/WeatherWidget';
 import { FleetActions } from '@/components/fleet/FleetActions';
 import { useFleetWebSocket } from '@/hooks/useFleetWebSocket';
@@ -60,6 +65,10 @@ export default function FleetOverviewPage() {
           {WEATHER_LOCATIONS.map(loc => <WeatherWidget key={loc.city} location={loc} />)}
         </div>
 
+        {/* Tagesblock: was HEUTE ansteht. Steht bewusst über der Flotte —
+            die meldet sich von selbst, wenn etwas nicht läuft. */}
+        <TodayWidget />
+
         {/* Summary Stats Bar */}
         <FleetSummaryBar />
 
@@ -82,10 +91,28 @@ export default function FleetOverviewPage() {
           <FleetTopology />
         </div>
 
-        {/* Business — Neue Anfragen (SaleNet + Portfolio) */}
+        {/* Business — Neue Anfragen (SaleNet + Portfolio) und der Etsy-Shop */}
         <div>
           <h2 className="text-xs uppercase tracking-widest text-white/25 font-medium mb-3">Business</h2>
-          <RequestsWidget />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 [&>*]:h-full">
+            <div className="lg:col-span-2">
+              <RequestsWidget />
+            </div>
+            <ShopWidget />
+          </div>
+        </div>
+
+        {/* Betrieb — Änderungen, veraltete Images, Platten-Prognose.
+            Alle drei melden sich sonst nicht von selbst: ein abgeräumter Dienst,
+            ein seit Monaten nicht aktualisiertes Image und eine volllaufende
+            Platte fallen erst auf, wenn es weh tut. */}
+        <div>
+          <h2 className="text-xs uppercase tracking-widest text-white/25 font-medium mb-3">Betrieb</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 [&>*]:h-full">
+            <ChangesWidget />
+            <ImageUpdatesWidget />
+            <DiskForecastWidget />
+          </div>
         </div>
 
         {/* Bento Grid Widgets */}

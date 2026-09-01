@@ -7,6 +7,7 @@ import { Router } from 'express';
 import * as dockerService from '../services/docker.js';
 import serverManager from '../services/serverManager.js';
 import { logAudit } from '../services/audit.js';
+import { checkFleetImageUpdates, getLastImageUpdateRun } from '../services/imageUpdates.js';
 
 const router = Router();
 
@@ -280,6 +281,31 @@ router.put('/compose/:project/file', async (req, res) => {
 });
 
 // ==================== IMAGE UPDATES ====================
+
+// Flotten-Übersicht: welche Container laufen auf einem veralteten Image?
+// Liest NUR das Ergebnis des Hintergrundlaufs — die Prüfung selbst gehört nicht
+// in den Anfrageweg, sie spricht mit fremden Registries.
+router.get('/updates/summary', (req, res) => {
+  const letzter = getLastImageUpdateRun();
+  if (!letzter) {
+    return res.json({
+      servers: [], outdated: [],
+      counts: { outdated: 0, checked: 0, failed: 0 },
+      rateLimited: false, checkedAt: null,
+      pending: true,
+    });
+  }
+  res.json({ ...letzter, pending: false });
+});
+
+// Prüfung von Hand anstoßen (der Hintergrundjob läuft alle 6 Stunden).
+router.post('/updates/refresh', async (req, res) => {
+  try {
+    res.json(await checkFleetImageUpdates());
+  } catch (error) {
+    fail(res, error, 'Update-Prüfung fehlgeschlagen');
+  }
+});
 
 router.get('/updates/check', async (req, res) => {
   try {

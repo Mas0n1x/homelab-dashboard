@@ -18,18 +18,22 @@ interface AppShellProps {
 export function AppShell({ children, connected }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Sync with sidebar collapsed state via localStorage
+  // Breite der Seitenleiste übernehmen.
+  //
+  // Vorher lief dafür alle 300 ms ein Intervall, das localStorage las — rund
+  // 200 Aufweckvorgänge pro Minute, dauerhaft, auf jedem Gerät. Die Leiste
+  // meldet ihren Zustand jetzt selbst per Ereignis; `storage` bleibt für
+  // Änderungen aus einem zweiten Tab.
   useEffect(() => {
     const checkCollapsed = () => {
       setSidebarCollapsed(localStorage.getItem('sidebar-collapsed') === 'true');
     };
     checkCollapsed();
     window.addEventListener('storage', checkCollapsed);
-    // Also poll for changes from same-tab updates
-    const interval = setInterval(checkCollapsed, 300);
+    window.addEventListener('sidebar-collapsed-changed', checkCollapsed);
     return () => {
       window.removeEventListener('storage', checkCollapsed);
-      clearInterval(interval);
+      window.removeEventListener('sidebar-collapsed-changed', checkCollapsed);
     };
   }, []);
 

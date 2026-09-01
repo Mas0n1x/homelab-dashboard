@@ -563,3 +563,58 @@
   .btn-danger:hover { transform: none; }
   .shimmer { animation: none; }
 }
+
+/* ── Kaffeetassen-Timer ──
+   Der Dampf steigt auf und verblasst. Rein per CSS, damit die Animation auf
+   dem Compositor läuft und das Handy nicht bei jeder Sekunde neu zeichnet. */
+@keyframes coffee-steam-rise {
+  0%   { opacity: 0; transform: translateY(3px) scaleY(0.7); }
+  35%  { opacity: 0.45; }
+  100% { opacity: 0; transform: translateY(-6px) scaleY(1.25); }
+}
+
+.coffee-steam path {
+  transform-origin: bottom center;
+  animation: coffee-steam-rise 2.6s ease-in-out infinite;
+}
+
+/* Wer reduzierte Bewegung eingestellt hat, bekommt einen ruhigen Dampf. */
+@media (prefers-reduced-motion: reduce) {
+  .coffee-steam path { animation: none; opacity: 0.3; }
+}
+
+/* ── Mobil: weitere Ebenen sparen ──
+   Ergänzt den Block oben. Zwei Dinge kosten auf dem Handy weiterhin spürbar:
+   der maskierte Verlaufsrahmen jeder Karte (::before mit mask-composite ist
+   eine eigene Compositor-Ebene) und die großflächigen Lichtflecken im
+   Hintergrund — ein 700 px breites Element mit blur(140px) muss der Browser
+   in voller Größe zeichnen und weichzeichnen, auch wenn es kaum zu sehen ist. */
+@media (max-width: 767px) {
+  .glass-card::before {
+    display: none;
+  }
+
+  .glass-card,
+  .glass-card-elevated {
+    /* Statt des maskierten Verlaufs ein schlichter Rahmen — aus einem Meter
+       Abstand nicht zu unterscheiden, aber eine Ebene weniger pro Karte. */
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+}
+
+/* ── Mobil: kein Hineinzoomen beim Antippen von Eingabefeldern ──
+   Safari auf dem iPhone vergrößert die Seite automatisch, sobald ein Feld mit
+   einer Schrift KLEINER als 16 px den Fokus bekommt — und zoomt danach nicht
+   wieder heraus. Weil das Anmeldeformular 14 px hatte, stand das Dashboard nach
+   jedem Start dauerhaft vergrößert da. 16 px am Feld ist die einzige Lösung,
+   die ohne Nebenwirkung auskommt: `maximum-scale=1` im Viewport verhindert es
+   zwar auch, nimmt aber jedem die Möglichkeit, überhaupt zu zoomen.
+   Nur unter 768 px, damit die Oberfläche am Rechner unverändert bleibt. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea,
+  .glass-input {
+    font-size: 16px;
+  }
+}

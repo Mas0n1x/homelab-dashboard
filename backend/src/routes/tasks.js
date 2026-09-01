@@ -13,7 +13,8 @@ const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 
 const isDate = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
-// Aufgaben inkl. Unteraufgaben laden; Reihenfolge = manuelle Sortierung je Spalte.
+// Aufgaben inkl. Unteraufgaben und erfasster Zeit laden; Reihenfolge =
+// manuelle Sortierung je Spalte.
 function loadTasks(db) {
   const tasks = db.prepare('SELECT * FROM tasks ORDER BY sort_order ASC, created_at DESC').all();
   const subtasks = db.prepare('SELECT * FROM task_subtasks ORDER BY sort_order ASC, created_at ASC').all();
@@ -22,7 +23,26 @@ function loadTasks(db) {
     if (!byTask.has(s.task_id)) byTask.set(s.task_id, []);
     byTask.get(s.task_id).push(s);
   }
-  return tasks.map(t => ({ ...t, subtasks: byTask.get(t.id) || [] }));
+
+  // Erfasste Zeit je Aufgabe in EINER Abfrage — die Karten zeigen damit direkt,
+  // wie viel schon auf der Aufgabe steht, ohne pro Karte nachzuladen.
+  const timeRows = db.prepare(`
+    SELECT task_id, SUM(seconds) AS secs FROM time_entries
+    WHERE task_id IS NOT NULL AND ended_at IS NOT NULL GROUP BY task_id
+  `).all();
+  const timeByTask = new Map(timeRows.map(r => [r.task_id, r.secs || 0]));
+
+  // `tracked_seconds` enthält bewusst NUR abgeschlossene Abschnitte. Die
+  // laufende Uhr zählt der Browser sekundengenau dazu — würde sie hier
+  // eingerechnet, stünde zwischen zwei Abrufen eine eingefrorene Zahl.
+  const running = db.prepare('SELECT id, task_id, started_at FROM time_entries WHERE ended_at IS NULL').get();
+
+  return tasks.map(t => ({
+    ...t,
+    subtasks: byTask.get(t.id) || [],
+    tracked_seconds: timeByTask.get(t.id) || 0,
+    timer_running: running?.task_id === t.id,
+  }));
 }
 
 router.get('/', (req, res) => {
@@ -37,7 +57,7 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
   const db = getDb();
-  const { title, notes, status, priority, project, dueDate } = req.body || {};
+  const { title, notes, status, priority, project, dueDate, estimateMinutes } = req.body || {};
   if (!title || !String(title).trim()) return res.status(400).json({ error: 'Titel erforderlich' });
   if (status && !STATUSES.includes(status)) return res.status(400).json({ error: 'Ungültiger Status' });
   if (priority && !PRIORITIES.includes(priority)) return res.status(400).json({ error: 'Ungültige Priorität' });
@@ -50,8 +70,8 @@ router.post('/', (req, res) => {
   const sortOrder = (min ?? 0) - 1;
 
   db.prepare(`
-    INSERT INTO tasks (id, title, notes, status, priority, project, due_date, sort_order, completed_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tasks (id, title, notes, status, priority, project, due_date, sort_order, completed_at, estimate_minutes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     String(title).trim(),
@@ -62,10 +82,11 @@ router.post('/', (req, res) => {
     dueDate || null,
     sortOrder,
     finalStatus === 'done' ? new Date().toISOString() : null,
+    estimateMinutes ? Math.max(0, Math.round(Number(estimateMinutes))) : null,
   );
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
-  res.json({ ...task, subtasks: [] });
+  res.json({ ...task, subtasks: [], tracked_seconds: 0, timer_running: false });
 });
 
 router.put('/:id', (req, res) => {
@@ -73,7 +94,7 @@ router.put('/:id', (req, res) => {
   const existing = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Aufgabe nicht gefunden' });
 
-  const { title, notes, status, priority, project, dueDate, sortOrder } = req.body || {};
+  const { title, notes, status, priority, project, dueDate, sortOrder, estimateMinutes } = req.body || {};
   if (status !== undefined && !STATUSES.includes(status)) return res.status(400).json({ error: 'Ungültiger Status' });
   if (priority !== undefined && !PRIORITIES.includes(priority)) return res.status(400).json({ error: 'Ungültige Priorität' });
   if (dueDate !== undefined && dueDate !== null && dueDate !== '' && !isDate(dueDate)) {
@@ -91,6 +112,10 @@ router.put('/:id', (req, res) => {
   if (project !== undefined) { sets.push('project = ?'); vals.push((project || '').trim()); }
   if (dueDate !== undefined) { sets.push('due_date = ?'); vals.push(dueDate || null); }
   if (sortOrder !== undefined) { sets.push('sort_order = ?'); vals.push(Number(sortOrder) || 0); }
+  if (estimateMinutes !== undefined) {
+    sets.push('estimate_minutes = ?');
+    vals.push(estimateMinutes === null || estimateMinutes === '' ? null : Math.max(0, Math.round(Number(estimateMinutes))));
+  }
   if (status !== undefined) {
     sets.push('status = ?'); vals.push(status);
     // Abschlusszeitpunkt mitpflegen — Basis für die "erledigt (7 Tage)"-Kennzahl.

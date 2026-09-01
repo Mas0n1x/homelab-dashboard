@@ -8,13 +8,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, Plus, Trash2, TestTube, Loader2, Settings, Shield, AlertTriangle, Lock, ScrollText, Database, Archive, Server, Download, Clock, Pencil, ChevronRight, LucideIcon, Boxes, Eye, EyeOff, ExternalLink, Palette, RotateCcw } from 'lucide-react';
+import { Bell, Plus, Trash2, TestTube, Loader2, Settings, Shield, AlertTriangle, Lock, ScrollText, Database, Archive, Server, Download, Clock, Pencil, ChevronRight, LucideIcon, Boxes, Eye, EyeOff, ExternalLink, Palette, RotateCcw, PlugZap } from 'lucide-react';
 import { ThemeSettings, ACCENT_PRESETS, DEFAULT_THEME, getStoredTheme, applyTheme, saveTheme, resetTheme } from '@/lib/theme';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { PageTransition } from '@/components/ui/PageTransition';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Modal } from '@/components/ui/Modal';
+import { EtsyConnection } from '@/components/settings/EtsyConnection';
 import { useAuthStore } from '@/stores/authStore';
 import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
@@ -43,6 +44,7 @@ const SETTINGS_TABS = [
   { id: 'appearance', label: 'Darstellung', desc: 'Aussehen & Effekte', icon: Palette },
   { id: 'alerts', label: 'Alerts', desc: 'Benachrichtigungen', icon: Bell },
   { id: 'backup', label: 'Backup', desc: 'Sicherung & Wiederherstellung', icon: Archive },
+  { id: 'anbindungen', label: 'Anbindungen', desc: 'Externe Dienste', icon: PlugZap },
   { id: 'account', label: 'Account', desc: 'Sicherheit & Zugang', icon: Shield },
 ] as const;
 
@@ -749,12 +751,25 @@ export default function SettingsPage() {
                       ))}
                     </div>
                   </SettingRow>
-                  <SettingRow title="Intervall" desc="Wie oft ein Backup erstellt wird" last>
+                  <SettingRow title="Intervall" desc="Wie oft ein Backup erstellt wird">
                     <div className="flex gap-2 flex-wrap">
                       {[6, 12, 24, 168].map(h => (
                         <button key={h} onClick={() => scheduleMutation.mutate({ intervalHours: h })} disabled={!schedule}
                           className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium transition-all', schedule?.intervalHours === h ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/40')}>
                           {h === 168 ? '7 Tage' : `${h} h`}
+                        </button>
+                      ))}
+                    </div>
+                  </SettingRow>
+                  {/* Aufbewahrung: ältere Sicherungen werden täglich gelöscht.
+                      Das jüngste Backup bleibt immer stehen — sonst stünde man
+                      nach einer längeren Pause ganz ohne Sicherung da. */}
+                  <SettingRow title="Aufbewahrung" desc="Ältere Backups werden automatisch gelöscht (das jüngste bleibt immer)" last>
+                    <div className="flex gap-2 flex-wrap">
+                      {[0, 7, 14, 30, 90].map(d => (
+                        <button key={d} onClick={() => scheduleMutation.mutate({ retentionDays: d })} disabled={!schedule}
+                          className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium transition-all', (schedule?.retentionDays ?? 0) === d ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/40')}>
+                          {d === 0 ? 'unbegrenzt' : `${d} Tage`}
                         </button>
                       ))}
                     </div>
@@ -900,6 +915,12 @@ export default function SettingsPage() {
           )}
 
           {/* Account Tab */}
+          {activeTab === 'anbindungen' && (
+            <GlassCard>
+              <EtsyConnection />
+            </GlassCard>
+          )}
+
           {activeTab === 'account' && (
             <GlassCard>
               <div className="relative z-10">

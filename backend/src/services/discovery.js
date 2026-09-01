@@ -7,6 +7,19 @@ import serverManager from './serverManager.js';
 
 let previousDiscovered = new Map();
 
+// Letzter erfolgreicher Discovery-Lauf je Server, gefüllt vom 30-s-Hintergrundjob.
+// Die Statusseite liest NUR hier — sonst löste jeder Seitenaufruf pro Server
+// einen frischen Docker-Aufruf über SSH aus, und genau das ließ sie ewig laden.
+const discoverySnapshots = new Map();
+
+export function setDiscoverySnapshot(serverId, services) {
+  discoverySnapshots.set(serverId, { services, at: Date.now() });
+}
+
+export function getDiscoverySnapshot(serverId) {
+  return discoverySnapshots.get(serverId) || null;
+}
+
 // Ports that indicate a database or non-web service
 const DB_PORTS = new Set([5432, 3306, 27017, 6379, 11211, 9200, 5672, 4369, 15672, 2181, 9092]);
 // Ports that are typically web-accessible
@@ -30,6 +43,25 @@ const IMAGE_NAMES = {
   'mongo': 'MongoDB',
 };
 
+// Stabile Dienst-Kennung. FRÜHER hing sie an der Container-ID — die ändert sich
+// bei JEDEM Deploy (`compose up --build` legt einen neuen Container an), also
+// galt der Dienst danach als brandneu und die komplette Uptime-Historie war weg.
+// Jetzt zählt die Identität aus Sicht des Betriebs: Compose-Projekt + Dienstname,
+// ersatzweise der Container-Name. Ein Redeploy behält damit seine Historie, ein
+// wirklich entferntes Compose-Projekt verschwindet dagegen sauber.
+export function stableServiceId(serverId, composeProject, composeService, containerName) {
+  const slug = (v) => String(v || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  const key = composeProject && composeService
+    ? `${slug(composeProject)}/${slug(composeService)}`
+    : slug(composeService || composeProject || containerName);
+
+  return `svc:${serverId}:${key}`;
+}
+
 export async function discoverServices(serverId = 'local') {
   const docker = serverManager.getDocker(serverId);
   if (!docker) return [];
@@ -41,7 +73,7 @@ export async function discoverServices(serverId = 'local') {
   try {
     const containers = await docker.listContainers({ all: true });
 
-    return containers
+    const services = containers
       .filter(c => {
         const name = c.Names[0]?.replace(/^\//, '') || '';
         const project = c.Labels?.['com.docker.compose.project'] || '';
@@ -68,9 +100,13 @@ export async function discoverServices(serverId = 'local') {
         const composeProject = c.Labels?.['com.docker.compose.project'] || '';
 
         return {
-          id: `docker-${c.Id.substring(0, 12)}`,
+          id: stableServiceId(serverId, composeProject, composeService, name),
+          // Alte, container-gebundene Kennung — nur noch für die einmalige
+          // Migration der Uptime-Historie auf die stabile Kennung.
+          legacyId: `docker-${c.Id.substring(0, 12)}`,
           source: 'docker',
           containerId: c.Id,
+          containerName: name,
           serverId,
           name: c.Labels?.['dashboard.name'] || formatContainerName(composeService || name),
           icon: c.Labels?.['dashboard.icon'] || guessIcon(composeService || name, c.Image),
@@ -84,8 +120,13 @@ export async function discoverServices(serverId = 'local') {
           project: composeProject || name
         };
       });
+
+    setDiscoverySnapshot(serverId, services);
+    return services;
   } catch (error) {
     console.error(`Discovery error for server ${serverId}:`, error.message);
+    // Snapshot NICHT leeren: ein einzelner SSH-Aussetzer darf nicht dazu führen,
+    // dass die Statusseite alle Dienste eines Servers als verschwunden meldet.
     return [];
   }
 }

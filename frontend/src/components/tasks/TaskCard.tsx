@@ -10,10 +10,12 @@ import { clsx } from 'clsx';
 import {
   Check, CalendarDays, Folder, Pencil, Trash2, GripVertical,
   ChevronDown, ListChecks, Play, RotateCcw, MoreHorizontal,
-  ArrowUp, ArrowDown, CheckCircle2,
+  ArrowUp, ArrowDown, CheckCircle2, Square, Timer,
 } from 'lucide-react';
 import type { Task, TaskStatus } from '@/lib/types';
 import { PRIORITY_META, dueMeta, subtaskProgress } from './taskUtils';
+import { formatHours, formatDuration } from '@/hooks/useTimer';
+import { CoffeeCup } from '@/components/time/CoffeeCup';
 
 interface TaskCardProps {
   task: Task;
@@ -21,6 +23,10 @@ interface TaskCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onToggleSubtask: (subId: string, done: boolean) => void;
+  /** Uhr auf dieser Aufgabe starten bzw. stoppen. */
+  onToggleTimer?: () => void;
+  /** Sekunden der laufenden Uhr — nur gesetzt, wenn sie auf DIESER Aufgabe läuft. */
+  runningSeconds?: number;
   /** Nur gesetzt, wenn manuelle Reihenfolge aktiv ist — Touch-Ersatz für Drag & Drop. */
   onMove?: (direction: -1 | 1) => void;
   canMoveUp?: boolean;
@@ -46,6 +52,8 @@ export function TaskCard({
   onEdit,
   onDelete,
   onToggleSubtask,
+  onToggleTimer,
+  runningSeconds,
   onMove,
   canMoveUp = false,
   canMoveDown = false,
@@ -66,7 +74,21 @@ export function TaskCard({
 
   // Ein Menü für alles — am Telefon der einzige sinnvolle Weg, sechs Aktionen
   // unterzubringen, ohne den Titel auf zwei Zeichen zusammenzuquetschen.
+  const laeuft = !!task.timer_running;
+  // Ist-Zeit = abgeschlossene Abschnitte plus die Sekunden der laufenden Uhr.
+  const erfasst = (task.tracked_seconds ?? 0) + (laeuft ? (runningSeconds ?? 0) : 0);
+  const soll = task.estimate_minutes ? task.estimate_minutes * 60 : null;
+  // Tassenfüllung: voll bei Start, leer wenn die Schätzung aufgebraucht ist.
+  const fuellung = soll ? Math.max(0, 1 - erfasst / soll) : 1;
+
   const menuItems: MenuItem[] = [
+    ...(onToggleTimer && !done
+      ? [{
+          label: laeuft ? 'Uhr stoppen' : 'Uhr starten',
+          icon: laeuft ? <Square className="w-4 h-4" /> : <Timer className="w-4 h-4" />,
+          onClick: onToggleTimer,
+        }]
+      : []),
     ...(task.status === 'open'
       ? [{ label: 'In Arbeit nehmen', icon: <Play className="w-4 h-4" />, onClick: () => onStatusChange('doing') }]
       : []),
@@ -171,6 +193,26 @@ export function TaskCard({
                 <ChevronDown className={clsx('w-2.5 h-2.5 transition-transform', showSubtasks && 'rotate-180')} />
               </button>
             )}
+
+            {/* Erfasste Zeit — bei laufender Uhr sekundengenau, sonst gerundet.
+                Steht die Schaetzung dabei, sieht man sofort, ob es knapp wird. */}
+            {(erfasst > 0 || soll !== null) && (
+              <span
+                className={clsx(
+                  'text-[10px] px-1.5 py-0.5 rounded-md border flex items-center gap-1 tabular-nums',
+                  laeuft
+                    ? 'bg-accent/15 border-accent/30 text-accent-light'
+                    : soll !== null && erfasst > soll
+                      ? 'bg-amber-500/12 border-amber-400/25 text-amber-300'
+                      : 'bg-white/[0.04] border-white/[0.08] text-white/50',
+                )}
+                title={soll !== null ? `Erfasst gegen Schätzung (${Math.round(soll / 60)} Min.)` : 'Erfasste Zeit'}
+              >
+                <Timer className="w-2.5 h-2.5 flex-shrink-0" />
+                {laeuft ? formatDuration(erfasst) : formatHours(erfasst)}
+                {soll !== null && <span className="opacity-60">/ {formatHours(soll)}</span>}
+              </span>
+            )}
           </div>
 
           {/* Fortschritt der Checkliste */}
@@ -210,6 +252,27 @@ export function TaskCard({
         </div>
 
         {/* Aktionen — Desktop: Symbolleiste beim Überfahren. Mobil: ein Menü. */}
+        {/* Uhr: als einzige Aktion IMMER sichtbar (auch am Telefon). Sie muss
+            mit einem Tipp erreichbar sein, sonst nutzt man sie im Alltag nicht.
+            Die Tasse leert sich entlang der Schätzung. */}
+        {onToggleTimer && !done && (
+          <button
+            onClick={onToggleTimer}
+            title={laeuft ? 'Uhr stoppen' : 'Uhr auf dieser Aufgabe starten'}
+            aria-label={laeuft ? 'Uhr stoppen' : 'Uhr starten'}
+            className={clsx(
+              'flex-shrink-0 -m-1 p-1 rounded-lg transition-colors',
+              laeuft
+                ? 'text-red-300 hover:bg-red-500/12'
+                : 'text-white/25 hover:text-accent-light hover:bg-accent/10',
+            )}
+          >
+            {laeuft
+              ? <Square className="w-4 h-4 fill-current" />
+              : <CoffeeCup fill={fuellung} size={22} className="text-current" />}
+          </button>
+        )}
+
         <div className="hidden md:flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           {task.status === 'open' && (
             <button

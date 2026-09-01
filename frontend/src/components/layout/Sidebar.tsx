@@ -22,6 +22,7 @@ import {
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useServerStore } from '@/stores/serverStore';
+import { useMailUnread } from '@/hooks/useMailUnread';
 
 interface NavItem {
   href: string;
@@ -61,6 +62,7 @@ const SYSTEM_NAV: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { servers } = useServerStore();
+  const { total: unreadMail } = useMailUnread();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedServers, setExpandedServers] = useState<Record<string, boolean>>({});
 
@@ -74,6 +76,8 @@ export function Sidebar() {
     const next = !collapsed;
     setCollapsed(next);
     localStorage.setItem('sidebar-collapsed', String(next));
+    // Der AppShell hört darauf, statt localStorage im Takt abzufragen.
+    window.dispatchEvent(new Event('sidebar-collapsed-changed'));
   };
 
   const toggleServer = (id: string) => {
@@ -235,6 +239,7 @@ export function Sidebar() {
                 label={item.label}
                 active={pathname === item.href || pathname.startsWith(item.href + '/')}
                 collapsed={collapsed}
+                badge={item.href === '/mail' ? unreadMail : undefined}
               />
             ))}
 
@@ -292,12 +297,14 @@ function SidebarLink({
   label,
   active,
   collapsed,
+  badge,
 }: {
   href: string;
   icon: React.ReactNode;
   label: string;
   active: boolean;
   collapsed: boolean;
+  badge?: number;
 }) {
   return (
     <Link
@@ -317,7 +324,16 @@ function SidebarLink({
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         />
       )}
-      <span className="flex-shrink-0">{icon}</span>
+      <span className="flex-shrink-0 relative">
+        {icon}
+        {/* Eingeklappt hat die Beschriftung keinen Platz — dann klebt der
+            Zähler am Symbol, sonst steht er rechts in der Zeile. */}
+        {collapsed && !!badge && badge > 0 && (
+          <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-accent text-[9px] font-bold text-white flex items-center justify-center tabular-nums">
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
+      </span>
       <AnimatePresence>
         {!collapsed && (
           <motion.span
@@ -331,12 +347,18 @@ function SidebarLink({
           </motion.span>
         )}
       </AnimatePresence>
+      {!collapsed && !!badge && badge > 0 && (
+        <span className="ml-auto flex-shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-accent/20 border border-accent/30 text-[10px] font-semibold text-accent-light flex items-center justify-center tabular-nums">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
     </Link>
   );
 }
 
 function MobileBottomNav({ pathname }: { pathname: string }) {
   const { servers } = useServerStore();
+  const { total: unread } = useMailUnread();
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandedServers, setExpandedServers] = useState<Record<string, boolean>>({});
   const toggleServer = (id: string) => setExpandedServers(prev => ({ ...prev, [id]: !prev[id] }));
@@ -352,11 +374,13 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
     }
   }, [menuOpen]);
 
-  const MOBILE_NAV = [
+  // Die vier Ziele, die im Alltag am häufigsten gebraucht werden. Status und
+  // Terminal sind über das Menü einen Tipp entfernt.
+  const MOBILE_NAV: { href: string; label: string; icon: React.ReactNode; badge?: number }[] = [
     { href: '/', label: 'Fleet', icon: <LayoutDashboard className="w-5 h-5" /> },
-    { href: '/status', label: 'Status', icon: <Activity className="w-5 h-5" /> },
-    { href: '/terminal', label: 'Terminal', icon: <Terminal className="w-5 h-5" /> },
-    { href: '/mail', label: 'Mail', icon: <Mail className="w-5 h-5" /> },
+    { href: '/tasks', label: 'Aufgaben', icon: <ListChecks className="w-5 h-5" /> },
+    { href: '/mail', label: 'Mail', icon: <Mail className="w-5 h-5" />, badge: unread },
+    { href: '/aurora', label: 'Aurora', icon: <Cloud className="w-5 h-5" /> },
   ];
 
   const linkCls = (active: boolean) => clsx(
@@ -380,7 +404,14 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
                   active ? 'text-accent-light' : 'text-white/35 active:text-white/60'
                 )}
               >
-                {item.icon}
+                <span className="relative">
+                  {item.icon}
+                  {!!item.badge && item.badge > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-accent text-[9px] font-bold text-white flex items-center justify-center tabular-nums shadow-[0_0_8px_rgba(var(--accent-rgb),0.5)]">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
+                </span>
                 <span className="text-[10px] font-medium">{item.label}</span>
                 {active && (
                   <motion.div
@@ -438,7 +469,13 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
                     <div className="grid grid-cols-2 gap-1">
                       {TOOL_NAV.map(item => (
                         <Link key={item.href} href={item.href} className={linkCls(pathname === item.href || pathname.startsWith(item.href + '/'))}>
-                          {item.icon}<span>{item.label}</span>
+                          {item.icon}
+                          <span>{item.label}</span>
+                          {item.href === '/mail' && unread > 0 && (
+                            <span className="ml-auto min-w-[18px] h-[18px] px-1.5 rounded-full bg-accent/20 border border-accent/30 text-[10px] font-semibold text-accent-light flex items-center justify-center tabular-nums">
+                              {unread > 99 ? '99+' : unread}
+                            </span>
+                          )}
                         </Link>
                       ))}
                       {SYSTEM_NAV.map(item => (

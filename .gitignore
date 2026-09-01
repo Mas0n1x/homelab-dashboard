@@ -63,3 +63,7 @@ cf-backups/
 # »git add -A« von GitHub entfernt.
 .env.bak*
 *.bak.[0-9]*
+
+# TypeScript-Build-Zwischenstand. Ändert sich bei JEDEM Build und war
+# versehentlich eingecheckt — sorgte für Rauschen in jedem Diff.
+*.tsbuildinfo
