@@ -57,3 +57,9 @@ id_rsa
 
 # Sicherungen der Cloudflare-Tunnel-Konfiguration (lokal, von scripts/cf-tunnel.mjs)
 cf-backups/
+
+# Sicherungskopien der .env. Ohne diese Zeile fängt kein Muster sie ab
+# (».env« passt nur exakt) — fünf Dateien mit Zugangsdaten wären einen
+# »git add -A« von GitHub entfernt.
+.env.bak*
+*.bak.[0-9]*
