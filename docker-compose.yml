@@ -139,7 +139,13 @@ services:
       - backend
 
   stalwart:
-    image: stalwartlabs/stalwart:latest
+    # Festgenagelt auf 0.15.5. `:latest` ist inzwischen 0.16.20, und die
+    # startet mit diesem Datenstand im Bootstrap-Modus ("No configuration file
+    # was found") — der Mailserver wäre also nach einem beliebigen `pull`
+    # stillschweigend leer und offline. Der Sprung auf 0.16 braucht eine
+    # eigene Migration der Konfiguration, nicht nur ein neues Image.
+    # Achtung: Docker Hub führt keine 0.15-Tags mehr, nur noch diesen Digest.
+    image: stalwartlabs/stalwart@sha256:dcf575db2d53d9ef86d6ced8abe4ba491984659a0f8862cc6079ee7b41c3c568
     container_name: homelab-stalwart
     restart: unless-stopped
     logging: *default-logging
