@@ -508,8 +508,9 @@ wss.on('connection', (ws, req) => {
         // Send immediately
         sendUpdates();
 
-        // Then every 2 seconds
-        const interval = setInterval(sendUpdates, 2000);
+        // Danach alle 10 Sekunden. Bewusst nicht schneller: jeder Lauf fragt
+        // die ganze Flotte ab, das war bei 2 Sekunden unnoetige Dauerlast.
+        const interval = setInterval(sendUpdates, 10000);
         clientState.intervals.push(interval);
       }
 
