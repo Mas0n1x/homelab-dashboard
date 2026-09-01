@@ -716,7 +716,9 @@ setInterval(makeJob('alerting', () => forEachServer(async (server) => {
           recordMetric(server.id, {
             cpu: systemStats.cpu?.total || 0,
             mem: systemStats.memory?.percent || 0,
-            disk: dcap ? (dused / dcap) * 100 : 0,
+            // null statt 0, wenn die Platten-Abfrage ausfiel: eine Lücke im
+            // Verlauf ist ehrlich, ein Ausschlag auf 0 % wäre erfunden.
+            disk: dcap ? (dused / dcap) * 100 : null,
             rx: net.reduce((s, n) => s + (n.rxRate || 0), 0),
             tx: net.reduce((s, n) => s + (n.txRate || 0), 0),
           });

@@ -20,6 +20,9 @@ export interface SystemStats {
   network: NetworkInterface[]
   temperature: TempSensor[]
   uptime: string
+  /** Teilabfragen, die diesmal ausfielen (z. B. ['fs']). Ein leeres Feld
+   *  darunter bedeutet dann „nicht gemessen", nicht „null". */
+  fehlend?: string[]
 }
 
 export interface DiskInfo {

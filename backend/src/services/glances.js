@@ -5,6 +5,40 @@
  */
 const DEFAULT_URL = process.env.GLANCES_URL || 'http://localhost:61208';
 
+// Zeitbudget je Einzelabruf. Zwei Versuche plus Pause bleiben zusammen unter
+// den 8 s, die der Alerting-Job als Gesamtlimit setzt — sonst käme die
+// Wiederholung nie zum Zug.
+const ANFRAGE_TIMEOUT_MS = 3000;
+const VERSUCHE = 2;
+const WIEDERHOLPAUSE_MS = 200;
+
+// Die sechs Teilabfragen einer Systemmessung. Bewusst einzeln statt über
+// /api/4/all: das liefert denselben Inhalt in 260 KB statt in 2,5 KB.
+const TEILE = ['cpu', 'mem', 'fs', 'network', 'sensors', 'uptime'];
+
+/**
+ * Netzwerkaussetzer, die beim zweiten Versuch meist durchgehen — über den
+ * Cloudflare-Tunnel zu den Fernhosts kommen sie regelmäßig vor.
+ * HTTP-Fehler (404, 500) und ECONNREFUSED gehören NICHT dazu: die bedeuten
+ * „Dienst antwortet, aber nicht so" bzw. „niemand da" und wiederholen sich.
+ */
+function istVoruebergehend(fehler) {
+  if (fehler?.name === 'AbortError' || fehler?.name === 'TimeoutError') return true;
+  const code = fehler?.cause?.code || fehler?.code;
+  return ['ETIMEDOUT', 'ECONNRESET', 'EAI_AGAIN', 'EPIPE', 'ENETUNREACH',
+    'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_SOCKET', 'UND_ERR_HEADERS_TIMEOUT'].includes(code);
+}
+
+// „fetch failed" allein ist nicht diagnostizierbar — die eigentliche Ursache
+// steckt in error.cause.
+function beschreibe(fehler) {
+  if (fehler?.name === 'AbortError' || fehler?.name === 'TimeoutError') {
+    return `Zeitlimit von ${ANFRAGE_TIMEOUT_MS} ms überschritten`;
+  }
+  const code = fehler?.cause?.code || fehler?.code;
+  return `${fehler?.message || fehler}${code ? ` (${code})` : ''}`;
+}
+
 export function createGlancesClient(baseUrl) {
   const rawUrl = baseUrl || DEFAULT_URL;
   let url = rawUrl;
@@ -17,11 +51,14 @@ export function createGlancesClient(baseUrl) {
     }
   } catch (e) {}
 
-  async function fetchGlances(endpoint) {
+  // Anzeigename ohne Zugangsdaten — Fehlermeldungen dürfen kein Passwort tragen.
+  const anzeigeUrl = url.replace(/\/\/[^@/]*@/, '//');
+
+  async function einVersuch(endpoint) {
     // Hartes Timeout: ein hängender/toter Glances-Host darf den aufrufenden
     // Hintergrundjob nicht unbegrenzt blockieren.
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
+    const timer = setTimeout(() => controller.abort(), ANFRAGE_TIMEOUT_MS);
     try {
       const response = await fetch(`${url}${endpoint}`, {
         signal: controller.signal,
@@ -30,25 +67,62 @@ export function createGlancesClient(baseUrl) {
       if (!response.ok) {
         throw new Error(`Glances API error: ${response.status}`);
       }
-      return response.json();
+      // Bewusst `await`: mit `return response.json()` läuft das finally schon
+      // vor dem Lesen des Rumpfes und räumt das Zeitlimit ab. Ein im Tunnel
+      // hängender Rumpf lief dann nicht nach Sekunden aus, sondern erst in den
+      // TCP-Timeout des Systems — genau die ETIMEDOUT-Meldungen der Fernhosts.
+      return await response.json();
     } finally {
       clearTimeout(timer);
     }
   }
 
+  async function fetchGlances(endpoint) {
+    let letzterFehler;
+    for (let versuch = 1; versuch <= VERSUCHE; versuch++) {
+      try {
+        return await einVersuch(endpoint);
+      } catch (fehler) {
+        letzterFehler = fehler;
+        if (versuch === VERSUCHE || !istVoruebergehend(fehler)) break;
+        await new Promise(r => setTimeout(r, WIEDERHOLPAUSE_MS));
+      }
+    }
+    throw letzterFehler;
+  }
+
   return {
     async getSystemStats() {
-      try {
-        const [cpu, mem, disk, network, sensors, uptime] = await Promise.all([
-          fetchGlances('/api/4/cpu'),
-          fetchGlances('/api/4/mem'),
-          fetchGlances('/api/4/fs'),
-          fetchGlances('/api/4/network'),
-          fetchGlances('/api/4/sensors'),
-          fetchGlances('/api/4/uptime')
-        ]);
+      // allSettled statt all: fällt eine der sechs Teilabfragen aus, wären mit
+      // Promise.all auch die fünf gelungenen verloren. Über einen Tunnel mit
+      // gelegentlichen Aussetzern verliert man so ein Vielfaches an Messwerten.
+      const ergebnisse = await Promise.allSettled(TEILE.map(t => fetchGlances(`/api/4/${t}`)));
+
+      const werte = {};
+      const fehlend = [];
+      let letzterFehler;
+      ergebnisse.forEach((r, i) => {
+        if (r.status === 'fulfilled') werte[TEILE[i]] = r.value;
+        else { fehlend.push(TEILE[i]); letzterFehler = r.reason; }
+      });
+
+      // Ohne CPU oder Speicher ist die Messung wertlos — dann gilt der Server
+      // als nicht erreichbar, wie bisher.
+      if (fehlend.includes('cpu') || fehlend.includes('mem')) {
+        console.error(`[glances] ${anzeigeUrl} nicht erreichbar: ${beschreibe(letzterFehler)}`);
+        throw letzterFehler;
+      }
+      if (fehlend.length) {
+        console.warn(`[glances] ${anzeigeUrl}: ${fehlend.join(', ')} fehlt (${beschreibe(letzterFehler)})`);
+      }
+
+      {
+        const { cpu, mem, fs: disk, network, sensors, uptime } = werte;
 
         return {
+          // Welche Teile fehlen — Aufrufer dürfen daraus keine Nullwerte
+          // ableiten. Ein „0 % belegt" wäre eine Falschaussage, keine Lücke.
+          fehlend,
           cpu: {
             total: cpu.total || 0,
             user: cpu.user || 0,
@@ -96,9 +170,6 @@ export function createGlancesClient(baseUrl) {
           })) : [],
           uptime: uptime || 'N/A'
         };
-      } catch (error) {
-        console.error('Error fetching Glances stats:', error.message);
-        throw error;
       }
     },
 
