@@ -41,7 +41,12 @@ services:
       # Alter Weg über das Admin-Passwort — nur noch Fallback, darf leer bleiben.
       - PORTFOLIO_PASSWORD=${PORTFOLIO_PASSWORD:-}
       - MAIL_ACCOUNT_PASSWORD=${MAIL_ACCOUNT_PASSWORD:?MAIL_ACCOUNT_PASSWORD muss in der .env gesetzt sein}
-      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET muss in der .env gesetzt sein (stabiler Wert — verschluesselt gespeicherte Mail-Zugangsdaten)}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET muss in der .env gesetzt sein}
+      # Eigener Schluessel fuer gespeicherte Mail-Zugangsdaten. Frueher hing das
+      # am JWT_SECRET — eine Rotation machte damit alle Zugaenge unlesbar.
+      - MAIL_CRYPT_KEY=${MAIL_CRYPT_KEY:-}
+      # Nur waehrend einer Rotation gesetzt (siehe scripts/mail-crypt-rotate.mjs).
+      - MAIL_CRYPT_KEY_LEGACY=${MAIL_CRYPT_KEY_LEGACY:-}
       - MC_AGENT_URL=${MC_AGENT_URL:-}
       - MC_AGENT_TOKEN=${MC_AGENT_TOKEN:-}
       # Mehrere Minecraft-Server (JSON-Array, hat Vorrang vor MC_AGENT_URL/TOKEN)

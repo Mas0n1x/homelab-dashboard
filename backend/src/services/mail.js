@@ -12,17 +12,45 @@ const STALWART_ADMIN_PASSWORD = process.env.STALWART_ADMIN_PASSWORD || '';
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 
 // ─── Credential Encryption ───
+//
+// Der Schlüssel hängt bewusst NICHT mehr am JWT_SECRET. Am 01.09.2026 wurde das
+// JWT_SECRET rotiert — vollkommen richtig, es war der öffentlich bekannte
+// Default `homelab-dashboard-change-me` — und damit waren in derselben Sekunde
+// **alle fünf gespeicherten Mail-Zugänge unlesbar**. Ein Auth-Geheimnis muss man
+// jederzeit rotieren können, ohne Daten zu verlieren; zwei Aufgaben an einem
+// Wert sind die eigentliche Ursache. Deshalb ein eigener `MAIL_CRYPT_KEY`.
+//
+// `MAIL_CRYPT_KEY_LEGACY` (komma-getrennt) nimmt alte Schlüssel auf: nach einer
+// Rotation bleiben bestehende Datensätze damit lesbar, bis das
+// Wartungsskript `scripts/mail-crypt-rotate.mjs` sie neu verschlüsselt hat.
 
-function getEncryptionKey() {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('JWT_SECRET ist nicht gesetzt — erforderlich zur Ver-/Entschlüsselung gespeicherter Mail-Zugangsdaten.');
+function schluesselKandidaten() {
+  // Ohne MAIL_CRYPT_KEY bleibt JWT_SECRET der Schlüssel — damit bestehende
+  // Installationen nach einem Update nicht plötzlich nichts mehr entschlüsseln.
+  const primaer = process.env.MAIL_CRYPT_KEY || process.env.JWT_SECRET;
+  if (!primaer) {
+    throw new Error('Weder MAIL_CRYPT_KEY noch JWT_SECRET gesetzt — beides fehlt zur Ver-/Entschlüsselung gespeicherter Mail-Zugangsdaten.');
   }
+  const alt = (process.env.MAIL_CRYPT_KEY_LEGACY || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // Duplikate raus, damit ein versehentlich doppelt eingetragener Schlüssel
+  // nicht zweimal probiert wird.
+  return [primaer, ...alt].filter((v, i, a) => a.indexOf(v) === i);
+}
+
+function abgeleiteterSchluessel(secret) {
   return crypto.createHash('sha256').update(secret).digest();
 }
 
+if (!process.env.MAIL_CRYPT_KEY && process.env.JWT_SECRET) {
+  console.warn('[mail] MAIL_CRYPT_KEY ist nicht gesetzt — es wird auf JWT_SECRET zurückgefallen. Eine Rotation des JWT_SECRET macht dann alle gespeicherten Mail-Zugangsdaten unlesbar.');
+}
+
 export function encryptPassword(password) {
-  const key = getEncryptionKey();
+  // Verschlüsselt wird immer mit dem AKTUELLEN Schlüssel, nie mit einem Legacy.
+  const key = abgeleiteterSchluessel(schluesselKandidaten()[0]);
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
   let encrypted = cipher.update(password, 'utf8', 'hex');
@@ -32,15 +60,25 @@ export function encryptPassword(password) {
 }
 
 export function decryptPassword(encrypted) {
-  const key = getEncryptionKey();
   const [ivHex, tagHex, data] = encrypted.split(':');
   const iv = Buffer.from(ivHex, 'hex');
   const tag = Buffer.from(tagHex, 'hex');
-  const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
-  decipher.setAuthTag(tag);
-  let decrypted = decipher.update(data, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
+  let letzterFehler = null;
+  for (const kandidat of schluesselKandidaten()) {
+    try {
+      const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, abgeleiteterSchluessel(kandidat), iv);
+      decipher.setAuthTag(tag);
+      let decrypted = decipher.update(data, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+      return decrypted;
+    } catch (err) {
+      letzterFehler = err;
+    }
+  }
+  // GCM erkennt den falschen Schlüssel an der Prüfsumme — die Meldung lautet
+  // dann „unable to authenticate data" und klingt nach kaputten Daten. Deshalb
+  // hier klarstellen, dass es fast immer der Schlüssel ist.
+  throw new Error(`Mail-Zugangsdaten nicht entschlüsselbar (${schluesselKandidaten().length} Schlüssel probiert) — meist wurde MAIL_CRYPT_KEY bzw. JWT_SECRET rotiert. Alten Wert in MAIL_CRYPT_KEY_LEGACY eintragen und scripts/mail-crypt-rotate.mjs laufen lassen. Ursprung: ${letzterFehler?.message}`);
 }
 
 // Hash password for Stalwart using SHA-512 crypt.

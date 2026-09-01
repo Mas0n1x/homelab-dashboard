@@ -310,6 +310,15 @@ export function initDatabase() {
     }
   }
 
+  // Migration: Stichzeit, ab der Access-Token eines Benutzers gültig sind.
+  // Ein Passwortwechsel widerrief bisher nur die Refresh-Token — ein bereits
+  // gestohlenes Access-Token blieb volle 24 Stunden gültig. Beim Wechsel wird
+  // dieser Wert hochgesetzt, die Middleware verwirft dann alles Ältere.
+  const userCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
+  if (!userCols.includes('tokens_valid_after')) {
+    db.exec('ALTER TABLE users ADD COLUMN tokens_valid_after TEXT');
+  }
+
   // Ensure local server exists
   const localServer = db.prepare('SELECT id FROM servers WHERE id = ?').get('local');
   if (!localServer) {

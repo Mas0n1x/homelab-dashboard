@@ -143,7 +143,11 @@ router.put('/password', authenticateToken, async (req, res) => {
     }
 
     const newHash = await authService.hashPassword(newPassword);
-    db.prepare("UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?").run(newHash, user.id);
+    // tokens_valid_after mitsetzen: sonst bleibt ein bereits ausgestelltes
+    // Access-Token noch bis zu 24 Stunden gültig. Ein Passwortwechsel ist die
+    // erste Reaktion auf einen Verdacht — er muss auch laufende Sitzungen
+    // beenden, nicht nur die Refresh-Token.
+    db.prepare("UPDATE users SET password_hash = ?, tokens_valid_after = datetime('now'), updated_at = datetime('now') WHERE id = ?").run(newHash, user.id);
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('setup_completed', 'true')").run();
 
     // Revoke all refresh tokens - force re-login
