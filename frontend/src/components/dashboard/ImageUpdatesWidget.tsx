@@ -128,6 +128,9 @@ export function ImageUpdatesWidget() {
 
       <p className="text-[10px] text-white/20 mt-2">
         Geprüft {vorZeit(data?.checkedAt ?? null)}
+        {/* Selbst gebaute Images sind kein Fehler — sie liegen in keiner
+            Registry, also gibt es nichts zu vergleichen. */}
+        {(data?.counts.localBuilds ?? 0) > 0 && ` · ${data?.counts.localBuilds} selbst gebaut`}
         {(data?.counts.failed ?? 0) > 0 && ` · ${data?.counts.failed} nicht erreichbar`}
       </p>
     </GlassCard>

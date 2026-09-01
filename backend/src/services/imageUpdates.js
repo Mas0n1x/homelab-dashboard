@@ -138,7 +138,16 @@ async function holeRegistryDigest(registry, repository, tag) {
     });
 
     if (antwort.status === 429) return merken({ digest: null, fehler: 'Abruf-Limit der Registry erreicht' });
-    if (antwort.status === 404) return merken({ digest: null, fehler: 'Tag existiert nicht mehr' });
+
+    // 401 und 404 heißen beide: diese Registry kennt das Repository nicht.
+    // Docker Hub antwortet auf unbekannte Repositories mit 401 statt 404, um
+    // nicht zu verraten, was es gibt. Das trifft JEDES selbst gebaute Image —
+    // und davon laufen hier die meisten. Kein Fehler, sondern schlicht nichts
+    // zu vergleichen.
+    if (antwort.status === 401 || antwort.status === 403 || antwort.status === 404) {
+      return merken({ digest: null, fehler: null, nichtVeroeffentlicht: true });
+    }
+
     if (!antwort.ok) return merken({ digest: null, fehler: `Registry antwortete mit ${antwort.status}` });
 
     const digest = antwort.headers.get('docker-content-digest');
@@ -156,7 +165,7 @@ async function holeRegistryDigest(registry, repository, tag) {
  */
 async function pruefeServer(server) {
   const docker = serverManager.getDocker(server.id);
-  if (!docker) return { serverId: server.id, serverName: server.name, containers: [], skipped: 'Kein Docker-Zugriff' };
+  if (!docker) return { serverId: server.id, serverName: server.name, containers: [], localBuilds: [], skipped: 'Kein Docker-Zugriff' };
 
   const [container, images] = await Promise.all([
     docker.listContainers({ all: true }),
@@ -165,6 +174,7 @@ async function pruefeServer(server) {
 
   const imageNachId = new Map(images.map(i => [i.Id, i]));
   const ergebnis = [];
+  const lokalGebaut = [];
 
   for (const c of container) {
     const ref = parseImageRef(c.Image);
@@ -173,15 +183,27 @@ async function pruefeServer(server) {
     const lokal = imageNachId.get(c.ImageID);
     const repoDigests = lokal?.RepoDigests || [];
 
-    // Selbst gebaute Images (unser eigenes Frontend/Backend, die Bot-Runtime)
-    // haben keinen Registry-Digest — für die gibt es nichts zu vergleichen.
+    // Ganz ohne Digest gibt es nichts zu vergleichen. Achtung: das erwischt
+    // NICHT die selbst gebauten Images — BuildKit trägt auch denen einen Digest
+    // ein. Die werden erst weiter unten an der Registry-Antwort erkannt.
     if (repoDigests.length === 0) continue;
 
     const passend = repoDigests.find(d => d.startsWith(ref.repository + '@') || d.includes(`/${ref.repository.split('/').pop()}@`));
     const lokalerDigest = (passend || repoDigests[0]).split('@')[1];
     if (!lokalerDigest) continue;
 
-    const { digest, fehler } = await holeRegistryDigest(ref.registry, ref.repository, ref.tag);
+    const { digest, fehler, nichtVeroeffentlicht } = await holeRegistryDigest(ref.registry, ref.repository, ref.tag);
+
+    // Selbst gebaute Images fallen hier raus.
+    //
+    // Die frühere Prüfung „hat keinen RepoDigest" reicht NICHT: BuildKit trägt
+    // auch lokalen Builds einen Digest ein (`homelab-dashboard-frontend@sha256:…`),
+    // sie sehen also aus wie gezogene Images. Erst die Antwort der Registry
+    // verrät den Unterschied.
+    if (nichtVeroeffentlicht) {
+      lokalGebaut.push(c.Names[0]?.replace(/^\//, '') || 'unbekannt');
+      continue;
+    }
 
     ergebnis.push({
       containerId: c.Id,
@@ -198,7 +220,7 @@ async function pruefeServer(server) {
     });
   }
 
-  return { serverId: server.id, serverName: server.name, containers: ergebnis, skipped: null };
+  return { serverId: server.id, serverName: server.name, containers: ergebnis, localBuilds: lokalGebaut, skipped: null };
 }
 
 /**
@@ -215,6 +237,7 @@ export async function checkFleetImageUpdates() {
       serverId: s.id,
       serverName: s.name,
       containers: [],
+      localBuilds: [],
       skipped: error.message,
     })),
   ));
@@ -222,6 +245,7 @@ export async function checkFleetImageUpdates() {
   const veraltet = ergebnisse.flatMap(r => r.containers.filter(c => c.hasUpdate));
   const fehler = ergebnisse.flatMap(r => r.containers.filter(c => c.error));
   const geprueft = ergebnisse.reduce((s, r) => s + r.containers.length, 0);
+  const lokal = ergebnisse.reduce((s, r) => s + (r.localBuilds?.length || 0), 0);
 
   letzterLauf = {
     servers: ergebnisse,
@@ -230,6 +254,8 @@ export async function checkFleetImageUpdates() {
       outdated: veraltet.length,
       checked: geprueft,
       failed: fehler.length,
+      // Selbst gebaute Images: nichts zu vergleichen, kein Fehler.
+      localBuilds: lokal,
     },
     // Ein erreichtes Abruf-Limit muss sichtbar sein — sonst hält man ein
     // unvollständiges Ergebnis für ein sauberes.

@@ -609,9 +609,10 @@ export interface ImageUpdateEntry {
 }
 
 export interface ImageUpdateSummary {
-  servers: { serverId: string; serverName: string; containers: ImageUpdateEntry[]; skipped: string | null }[]
+  servers: { serverId: string; serverName: string; containers: ImageUpdateEntry[]; localBuilds: string[]; skipped: string | null }[]
   outdated: ImageUpdateEntry[]
-  counts: { outdated: number; checked: number; failed: number }
+  /** `localBuilds` = selbst gebaute Images, für die es nichts zu vergleichen gibt. */
+  counts: { outdated: number; checked: number; failed: number; localBuilds: number }
   /** Registry-Limit erreicht — das Ergebnis ist dann unvollständig. */
   rateLimited: boolean
   checkedAt: string | null
