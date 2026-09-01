@@ -54,3 +54,6 @@ ssh/
 *.pem
 id_ed25519
 id_rsa
+
+# Sicherungen der Cloudflare-Tunnel-Konfiguration (lokal, von scripts/cf-tunnel.mjs)
+cf-backups/

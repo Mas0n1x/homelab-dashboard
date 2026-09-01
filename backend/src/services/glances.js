@@ -68,7 +68,11 @@ export function createGlancesClient(baseUrl) {
             const byDev = new Map();
             for (const d of disk) {
               const device = d.device_name || '';
-              if (!device.startsWith('/dev/')) continue;
+              // ZFS meldet als Gerät den Datensatznamen (`rpool/subvol-20005-disk-0`),
+              // keinen /dev-Pfad — auf dem AMO-VPS (LXC auf ZFS) fiel dadurch die
+              // gesamte Platte aus der Anzeige und die Karte zeigte 0 %.
+              // Die Entrümpelung übernimmt ohnehin die Dedupe-Regel darunter.
+              if (!device.startsWith('/dev/') && d.fs_type !== 'zfs') continue;
               let mnt = d.mnt_point || '';
               for (const pre of ['/hostfs/root', '/hostfs']) {
                 if (mnt.startsWith(pre)) mnt = mnt.slice(pre.length) || '/';

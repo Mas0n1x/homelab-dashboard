@@ -15,6 +15,8 @@
 // Der Token braucht die Rechte "Cloudflare Tunnel: Edit" und "DNS: Edit".
 //
 // Aufrufe:
+//   node cf-tunnel.mjs tunnels                   alle Tunnel des Accounts
+//   node cf-tunnel.mjs create <name>             neuen Tunnel + Connector-Token
 //   node cf-tunnel.mjs list                      Tunnel + Hostnames anzeigen
 //   node cf-tunnel.mjs backup                    Config als JSON sichern
 //   node cf-tunnel.mjs set-ip <alt> <neu>        LAN-IP in allen Regeln tauschen
@@ -97,6 +99,11 @@ async function findTunnel() {
 
 const getConfig = (id) => cf(`/accounts/${ACCOUNT_ID}/cfd_tunnel/${id}/configurations`);
 
+// „tunnels" und „create" arbeiten ohne ausgewählten Tunnel: der eine listet
+// alle, der andere legt einen an, der noch keine Konfiguration hat —
+// getConfig() würde davor scheitern.
+const OHNE_TUNNEL = ['tunnels', 'create'];
+
 function showIngress(ingress) {
   for (const r of ingress) {
     const host = r.hostname || '(Auffangregel)';
@@ -136,11 +143,64 @@ function assertCatchAllLast(ingress) {
   if (idx !== ingress.length - 1) throw new Error('Auffangregel steht nicht am Ende – Abbruch.');
 }
 
-const tunnel = await findTunnel();
-const config = await getConfig(tunnel.id);
-const ingress = structuredClone(config.config?.ingress || []);
+const braucheTunnel = !OHNE_TUNNEL.includes(cmd);
+const tunnel = braucheTunnel ? await findTunnel() : null;
+const config = braucheTunnel ? await getConfig(tunnel.id) : null;
+const ingress = braucheTunnel ? structuredClone(config.config?.ingress || []) : [];
 
 switch (cmd) {
+  // Reine Übersicht über alle Tunnel des Accounts — nötig, seit es mehr als
+  // einen gibt und „list" nur den ausgewählten zeigt.
+  case 'tunnels': {
+    const alle = await cf(`/accounts/${ACCOUNT_ID}/cfd_tunnel?is_deleted=false`);
+    for (const t of alle) {
+      const conns = t.connections?.length || 0;
+      console.log(`  ${t.name.padEnd(20)} ${t.id}  Status ${String(t.status).padEnd(10)} ${conns} Connector`);
+    }
+    break;
+  }
+
+  // Jeder Server braucht seinen EIGENEN Tunnel: Connector-Token sind
+  // tunnel-gebunden. Ein kopierter Token hängt einen zweiten Connector an den
+  // fremden Tunnel und verteilt dessen Domains zufällig auf beide Maschinen.
+  case 'create': {
+    const name = positional[1];
+    if (!name) throw new Error('Aufruf: create <tunnel-name>');
+    const vorhanden = await cf(`/accounts/${ACCOUNT_ID}/cfd_tunnel?is_deleted=false`);
+    let neu = vorhanden.find((t) => t.name === name);
+
+    if (neu) {
+      console.log(`Tunnel "${name}" existiert schon (${neu.id}) – lege keinen zweiten an.`);
+    } else {
+      console.log(`Geplant: neuer Tunnel "${name}" (fernverwaltet, config_src = cloudflare)`);
+      if (!APPLY) {
+        console.log('DRY-RUN – nichts geschrieben. Mit --apply ausführen.');
+        break;
+      }
+      neu = await cf(`/accounts/${ACCOUNT_ID}/cfd_tunnel`, {
+        method: 'POST',
+        body: JSON.stringify({ name, config_src: 'cloudflare' }),
+      });
+      console.log(`Angelegt: ${neu.name} (${neu.id})`);
+
+      // Auffangregel gleich mitgeben. Ohne sie hat der Tunnel eine leere
+      // Ingress-Liste, und „add" bricht an assertCatchAllLast() ab.
+      await cf(`/accounts/${ACCOUNT_ID}/cfd_tunnel/${neu.id}/configurations`, {
+        method: 'PUT',
+        body: JSON.stringify({ config: { ingress: [{ service: 'http_status:404' }] } }),
+      });
+      console.log('Auffangregel gesetzt (http_status:404).');
+    }
+
+    const antwort = await cf(`/accounts/${ACCOUNT_ID}/cfd_tunnel/${neu.id}/token`);
+    const token = typeof antwort === 'string' ? antwort : antwort?.token;
+    console.log('\nConnector-Token für /opt/infra/.env auf dem Zielserver:');
+    console.log(`TUNNEL_TOKEN=${token}`);
+    console.log(`\nWeiter: node cf-tunnel.mjs add <hostname> <service> --tunnel=${name} --apply`);
+    console.log(`        node cf-tunnel.mjs dns <hostname> --tunnel=${name} --apply`);
+    break;
+  }
+
   case 'list': {
     console.log(`Tunnel: ${tunnel.name} (${tunnel.id}), Status ${tunnel.status}`);
     console.log(`Regeln: ${ingress.length}`);
@@ -245,7 +305,7 @@ switch (cmd) {
   }
 
   default:
-    console.log('Befehle: list | backup | set-ip <alt> <neu> | add <hostname> <service> | remove <hostname> | dns <hostname>');
+    console.log('Befehle: tunnels | create <name> | list | backup | set-ip <alt> <neu> | add <hostname> <service> | remove <hostname> | dns <hostname>');
     console.log('Optionen: --apply (schreibt wirklich), --tunnel=<name>, --token=<wert>');
     console.log('\nAktueller Tunnel:', tunnel.name, `(${ingress.length} Regeln)`);
 }
