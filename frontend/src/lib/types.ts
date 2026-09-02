@@ -577,7 +577,10 @@ export interface InvoiceDraft {
 export interface StatusService extends ServiceStatusEntry {
   id: string
   name: string
+  /** Prüfziel des Uptime-Checks (i. d. R. LAN-IP:Port). */
   url: string | null
+  /** Adresse zum Anklicken — öffentlicher Hostname, sonst = url. */
+  publicUrl?: string | null
   category: string
   project?: string
   source: 'docker' | 'manual'

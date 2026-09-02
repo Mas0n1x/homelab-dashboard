@@ -128,6 +128,8 @@ export function buildStatusBoard(days = 30) {
         id: s.id,
         name: o?.name || s.name,
         url: o?.url || s.url,
+        // Zum Anklicken: manueller Override > öffentlicher Tunnel-Hostname > Prüfziel.
+        publicUrl: o?.url || s.publicUrl || s.url,
         category: o?.category || s.category,
         project: s.project,
         source: 'docker',
@@ -150,6 +152,7 @@ export function buildStatusBoard(days = 30) {
         id: m.id,
         name: m.name,
         url: m.url,
+        publicUrl: m.url,
         category: m.category || 'Extern',
         source: 'manual',
         isNew: false,

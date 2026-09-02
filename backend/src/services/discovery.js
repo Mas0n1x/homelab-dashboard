@@ -4,6 +4,7 @@
  * Licensed under the MIT License.
  */
 import serverManager from './serverManager.js';
+import { getIngressHostMap, publicUrlFromPorts } from './tunnelIngress.js';
 
 let previousDiscovered = new Map();
 
@@ -70,6 +71,11 @@ export async function discoverServices(serverId = 'local') {
   // (lokal = Pi-LAN-IP, remote = dessen öffentliche IP) statt hardcoded.
   const host = serverManager.getConnection(serverId)?.config?.host || '192.168.2.103';
 
+  // Öffentliche Hostnamen aus dem Cloudflare-Tunnel — nur für den Pi (der
+  // einzige Server hinter diesem Tunnel). Bei Ausfall: leere Tabelle, dann
+  // bleibt es bei den IP-URLs.
+  const ingressMap = serverId === 'local' ? await getIngressHostMap() : null;
+
   try {
     const containers = await docker.listContainers({ all: true });
 
@@ -110,7 +116,12 @@ export async function discoverServices(serverId = 'local') {
           serverId,
           name: c.Labels?.['dashboard.name'] || formatContainerName(composeService || name),
           icon: c.Labels?.['dashboard.icon'] || guessIcon(composeService || name, c.Image),
+          // `url` bleibt das Prüfziel für den Uptime-Check (LAN-IP:Port, im
+          // Container auf host.docker.internal umgebogen).
           url: c.Labels?.['dashboard.url'] || detectUrlFromPorts(c.Ports, host),
+          // `publicUrl` ist die Adresse zum Anklicken: erst ein ausdrückliches
+          // Label, sonst der öffentliche Cloudflare-Hostname zum passenden Port.
+          publicUrl: c.Labels?.['dashboard.url'] || publicUrlFromPorts(c.Ports, ingressMap) || null,
           description: c.Labels?.['dashboard.description'] || formatDescription(composeProject, composeService, c.Image),
           category: c.Labels?.['dashboard.category'] || guessCategory(composeProject, composeService, name),
           order: parseInt(c.Labels?.['dashboard.order'] || '999'),

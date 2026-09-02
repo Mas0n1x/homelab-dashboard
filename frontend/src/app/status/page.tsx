@@ -92,9 +92,9 @@ function ServiceRow({ svc }: { svc: StatusService }) {
           </div>
           {svc.category && <p className="text-[10px] text-white/30 truncate">{svc.category}</p>}
         </div>
-        {svc.url && !svc.vanished && (
+        {(svc.publicUrl || svc.url) && !svc.vanished && (
           <a
-            href={svc.url}
+            href={svc.publicUrl || svc.url || undefined}
             target="_blank"
             rel="noreferrer"
             className="text-white/20 hover:text-white/60 transition-colors flex-shrink-0 p-1 -m-1"
