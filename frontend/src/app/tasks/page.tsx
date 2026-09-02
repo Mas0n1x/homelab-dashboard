@@ -391,18 +391,32 @@ export default function TasksPage() {
 
   // ─── Darstellung ───
 
-  const renderList = (list: Task[], emptyText: string, status?: TaskStatus) => {
+  const renderList = (list: Task[], emptyText: string, status?: TaskStatus, fill = false) => {
     const dropActive = !!status && dragEnabled && !!dragId && dropTarget?.status === status;
+    // Die ganze Fläche muss Drop-Ziel sein, nicht nur die Karten darin — sonst
+    // landet ein Spaltenwechsel in eine (fast) leere Spalte auf dem Rand und die
+    // Karte springt zurück.
+    const dropZone = !!status && dragEnabled;
     return (
       <div
+        onDragEnter={e => { if (dropZone && dragId) e.preventDefault(); }}
         onDragOver={e => {
-          if (status && dragEnabled && dragId) { e.preventDefault(); setDropTarget({ status, beforeId: null }); }
+          if (dropZone && dragId) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            setDropTarget({ status: status!, beforeId: null });
+          }
         }}
         onDrop={e => { if (status) { e.preventDefault(); handleDrop(status); } }}
-        className={clsx('space-y-2 rounded-xl transition-colors', dropActive && 'bg-accent/[0.04]')}
+        className={clsx(
+          'space-y-2 rounded-xl transition-colors',
+          fill && 'h-full',
+          dropZone && 'min-h-[64px]',
+          dropActive && 'bg-accent/[0.06] ring-1 ring-inset ring-accent/25',
+        )}
       >
         {list.length === 0 ? (
-          <div className="py-8 text-center">
+          <div className={clsx('text-center', dropZone ? 'py-10' : 'py-8')}>
             <Inbox className="w-6 h-6 mx-auto mb-2 text-white/10" />
             <p className="text-xs text-white/25">{emptyText}</p>
           </div>
@@ -428,7 +442,12 @@ export default function TasksPage() {
                 canMoveDown={i < list.length - 1}
                 draggable={dragEnabled && !!status}
                 dragging={dragId === task.id}
-                onDragStart={e => { setDragId(task.id); e.dataTransfer.effectAllowed = 'move'; }}
+                onDragStart={e => {
+                  setDragId(task.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                  // Firefox startet den Zug nur, wenn Daten gesetzt sind.
+                  e.dataTransfer.setData('text/plain', task.id);
+                }}
                 onDragEnd={() => { setDragId(null); setDropTarget(null); }}
                 onDragOver={e => {
                   if (!status || !dragEnabled || !dragId || dragId === task.id) return;
@@ -809,11 +828,12 @@ export default function TasksPage() {
                       )}
                     </div>
                     {/* Mindesthöhe nur am Desktop — mobil erzeugt sie leere Flächen */}
-                    <div className="flex-1 md:min-h-[240px]">
+                    <div className="flex-1 md:min-h-[240px] flex flex-col">
                       {renderList(
                         list,
                         status === 'done' ? 'Noch nichts erledigt' : dragEnabled ? 'Leer — Karten hierher ziehen' : 'Leer',
                         status,
+                        true,
                       )}
                     </div>
                   </GlassCard>
