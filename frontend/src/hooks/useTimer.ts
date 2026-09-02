@@ -10,19 +10,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from '@/lib/api';
 import type { TimeEntry } from '@/lib/types';
 
-/**
- * Die laufende Uhr, sekundengenau.
- *
- * Wichtig: gezählt wird aus dem Startzeitpunkt vom Server, nicht durch
- * Hochzählen im Browser. Ein zwischendurch gesperrtes Handy drosselt die Timer
- * des Tabs — mitgezählte Sekunden wären danach zu wenig. So stimmt die Zeit
- * auch nach Stunden im Hintergrund, und sie stimmt auf allen Geräten überein.
- */
-export function useTimer() {
-  const queryClient = useQueryClient();
-  const [jetzt, setJetzt] = useState(() => Date.now());
-
-  const { data: running } = useQuery<TimeEntry | null>({
+/** Die laufende Uhr als geteilte Query — react-query dedupliziert über alle Aufrufer. */
+function useRunningEntry() {
+  return useQuery<TimeEntry | null>({
     queryKey: ['time-running'],
     queryFn: api.getRunningTimer,
     // Regelmäßig gegenprüfen: gestoppt wird die Uhr eventuell auf einem
@@ -30,6 +20,61 @@ export function useTimer() {
     refetchInterval: 30000,
     staleTime: 10000,
   });
+}
+
+/**
+ * Steuerung der Zeiterfassung — OHNE Sekundentakt.
+ *
+ * Bewusst ohne den tickenden `elapsed`-Wert: sonst rendert jede Seite, die nur
+ * starten/stoppen können will, im Sekundentakt neu. Auf der Aufgaben-Seite
+ * bricht genau das das native Drag & Drop, weil der Browser das Neu-Rendern
+ * mitten im Ziehen als Abbruch wertet. Wer die laufende Zeit anzeigen muss,
+ * nimmt zusätzlich `useElapsed()` in einer möglichst kleinen Blatt-Komponente.
+ */
+export function useTimer() {
+  const queryClient = useQueryClient();
+  const { data: running } = useRunningEntry();
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['time-running'] });
+    queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+    queryClient.invalidateQueries({ queryKey: ['time-summary'] });
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+  };
+
+  const start = useMutation({
+    mutationFn: (data: { taskId?: string; project?: string; description?: string }) => api.startTimer(data),
+    onSuccess: invalidate,
+  });
+
+  const stop = useMutation({
+    mutationFn: () => api.stopTimer(),
+    onSuccess: invalidate,
+  });
+
+  return {
+    running: running ?? null,
+    start: start.mutate,
+    stop: stop.mutate,
+    isBusy: start.isPending || stop.isPending,
+  };
+}
+
+/**
+ * Sekundengenaue Laufzeit der aktuellen Uhr.
+ *
+ * Gezählt wird aus dem Startzeitpunkt vom Server, nicht durch Hochzählen im
+ * Browser. Ein zwischendurch gesperrtes Handy drosselt die Timer des Tabs —
+ * mitgezählte Sekunden wären danach zu wenig. So stimmt die Zeit auch nach
+ * Stunden im Hintergrund und auf allen Geräten überein.
+ *
+ * Dieser Hook löst jede Sekunde ein Neu-Rendern aus — nur dort einsetzen, wo
+ * die Zahl wirklich sichtbar ist, und möglichst weit unten im Baum.
+ */
+export function useElapsed() {
+  const queryClient = useQueryClient();
+  const { data: running } = useRunningEntry();
+  const [jetzt, setJetzt] = useState(() => Date.now());
 
   // Der Sekundentakt läuft nur, solange wirklich eine Uhr läuft.
   useEffect(() => {
@@ -56,30 +101,7 @@ export function useTimer() {
     ? Math.max(0, Math.round((jetzt - Date.parse(running.startedAt)) / 1000))
     : 0;
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['time-running'] });
-    queryClient.invalidateQueries({ queryKey: ['time-entries'] });
-    queryClient.invalidateQueries({ queryKey: ['time-summary'] });
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
-  };
-
-  const start = useMutation({
-    mutationFn: (data: { taskId?: string; project?: string; description?: string }) => api.startTimer(data),
-    onSuccess: invalidate,
-  });
-
-  const stop = useMutation({
-    mutationFn: () => api.stopTimer(),
-    onSuccess: invalidate,
-  });
-
-  return {
-    running: running ?? null,
-    elapsed,
-    start: start.mutate,
-    stop: stop.mutate,
-    isBusy: start.isPending || stop.isPending,
-  };
+  return { running: running ?? null, elapsed };
 }
 
 /** 4275 -> „1:11:15", 315 -> „5:15". */

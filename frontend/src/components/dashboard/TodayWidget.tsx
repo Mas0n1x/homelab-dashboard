@@ -12,7 +12,7 @@ import { clsx } from 'clsx';
 import { CalendarDays, Mail, Timer, Euro, AlertTriangle, ArrowRight } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { CoffeeCup } from '@/components/time/CoffeeCup';
-import { useTimer, formatDuration, formatHours, formatMoney } from '@/hooks/useTimer';
+import { useElapsed, formatDuration, formatHours, formatMoney } from '@/hooks/useTimer';
 import { useMailUnread } from '@/hooks/useMailUnread';
 import { isOverdue, isDueToday } from '@/components/tasks/taskUtils';
 import * as api from '@/lib/api';
@@ -34,7 +34,7 @@ function heuteStart() {
  * interessant, wenn etwas kaputt ist.
  */
 export function TodayWidget() {
-  const { running, elapsed } = useTimer();
+  const { running, elapsed } = useElapsed();
   const { total: unread } = useMailUnread();
 
   const { data: taskData } = useQuery({

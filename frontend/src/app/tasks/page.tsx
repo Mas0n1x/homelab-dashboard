@@ -60,7 +60,10 @@ const CHIP_STYLES: Record<QuickFilter, string> = {
 
 export default function TasksPage() {
   const queryClient = useQueryClient();
-  const { running, elapsed, start, stop, isBusy } = useTimer();
+  // Bewusst OHNE useElapsed(): der Sekundentakt hier oben würde die ganze Liste
+  // jede Sekunde neu rendern und damit das Drag & Drop abbrechen. Die laufende
+  // Zeit zeigen die Blatt-Komponenten (Tasse, Karten-Badge) selbst an.
+  const { running, start, stop, isBusy } = useTimer();
 
   const [section, setSection] = useState<'aufgaben' | 'zeiten'>('aufgaben');
   const [view, setView] = useState<ViewMode>('list');
@@ -420,7 +423,6 @@ export default function TasksPage() {
                 onDelete={() => confirmDelete(task)}
                 onToggleSubtask={toggleSubtask}
                 onToggleTimer={() => (task.timer_running ? stop() : start({ taskId: task.id }))}
-                runningSeconds={task.timer_running ? elapsed : undefined}
                 onMove={manualOrder ? dir => moveWithin(list, i, dir) : undefined}
                 canMoveUp={i > 0}
                 canMoveDown={i < list.length - 1}
@@ -598,7 +600,6 @@ export default function TasksPage() {
         {showFocusCup && (
           <FocusCup
             tasks={doingTasks}
-            runningSeconds={elapsed}
             onStart={focusStart}
             onPause={focusPause}
             onStop={focusStop}

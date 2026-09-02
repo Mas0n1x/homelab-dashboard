@@ -9,13 +9,11 @@ import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import { Play, Pause, CheckCircle2, Folder } from 'lucide-react';
 import type { Task } from '@/lib/types';
-import { formatDuration, formatHours } from '@/hooks/useTimer';
+import { formatDuration, formatHours, useElapsed } from '@/hooks/useTimer';
 
 interface FocusCupProps {
   /** Aufgaben der Spalte „In Arbeit". */
   tasks: Task[];
-  /** Sekunden der laufenden Uhr — nur wenn sie auf einer dieser Aufgaben läuft. */
-  runningSeconds: number;
   onStart: (task: Task) => void;
   onPause: () => void;
   /** Uhr aus und Aufgabe als erledigt markieren. */
@@ -30,8 +28,9 @@ interface FocusCupProps {
  *
  * Reines SVG plus CSS-Dampf — keine JS-Animation, läuft auch am Handy flüssig.
  */
-export function FocusCup({ tasks, runningSeconds, onStart, onPause, onStop, busy = false }: FocusCupProps) {
+export function FocusCup({ tasks, onStart, onPause, onStop, busy = false }: FocusCupProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { elapsed } = useElapsed();
 
   const runningTask = tasks.find(t => t.timer_running) ?? null;
 
@@ -52,7 +51,7 @@ export function FocusCup({ tasks, runningSeconds, onStart, onPause, onStop, busy
 
   const laeuft = !!active.timer_running;
   const soll = active.estimate_minutes ? active.estimate_minutes * 60 : null;
-  const erfasst = (active.tracked_seconds ?? 0) + (laeuft ? runningSeconds : 0);
+  const erfasst = (active.tracked_seconds ?? 0) + (laeuft ? elapsed : 0);
   const uebrig = soll !== null ? soll - erfasst : null;
   const ueberzogen = uebrig !== null && uebrig < 0;
 

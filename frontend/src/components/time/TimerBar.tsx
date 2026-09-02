@@ -8,7 +8,7 @@
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Square, Folder } from 'lucide-react';
-import { useTimer, formatDuration } from '@/hooks/useTimer';
+import { useTimer, useElapsed, formatDuration } from '@/hooks/useTimer';
 import { CoffeeCup } from './CoffeeCup';
 
 /**
@@ -19,7 +19,8 @@ import { CoffeeCup } from './CoffeeCup';
  * zwanzig Minuten. Sie sitzt über der mobilen Bottom-Bar, nicht darauf.
  */
 export function TimerBar() {
-  const { running, elapsed, stop, isBusy } = useTimer();
+  const { running, elapsed } = useElapsed();
+  const { stop, isBusy } = useTimer();
 
   return (
     <AnimatePresence>

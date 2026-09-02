@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import type { Task, TaskStatus } from '@/lib/types';
 import { PRIORITY_META, dueMeta, subtaskProgress } from './taskUtils';
-import { formatHours, formatDuration } from '@/hooks/useTimer';
+import { formatHours, formatDuration, useElapsed } from '@/hooks/useTimer';
 import { CoffeeCup } from '@/components/time/CoffeeCup';
 
 interface TaskCardProps {
@@ -25,8 +25,6 @@ interface TaskCardProps {
   onToggleSubtask: (subId: string, done: boolean) => void;
   /** Uhr auf dieser Aufgabe starten bzw. stoppen. */
   onToggleTimer?: () => void;
-  /** Sekunden der laufenden Uhr — nur gesetzt, wenn sie auf DIESER Aufgabe läuft. */
-  runningSeconds?: number;
   /** Nur gesetzt, wenn manuelle Reihenfolge aktiv ist — Touch-Ersatz für Drag & Drop. */
   onMove?: (direction: -1 | 1) => void;
   canMoveUp?: boolean;
@@ -53,7 +51,6 @@ export function TaskCard({
   onDelete,
   onToggleSubtask,
   onToggleTimer,
-  runningSeconds,
   onMove,
   canMoveUp = false,
   canMoveDown = false,
@@ -75,11 +72,14 @@ export function TaskCard({
   // Ein Menü für alles — am Telefon der einzige sinnvolle Weg, sechs Aktionen
   // unterzubringen, ohne den Titel auf zwei Zeichen zusammenzuquetschen.
   const laeuft = !!task.timer_running;
-  // Ist-Zeit = abgeschlossene Abschnitte plus die Sekunden der laufenden Uhr.
-  const erfasst = (task.tracked_seconds ?? 0) + (laeuft ? (runningSeconds ?? 0) : 0);
   const soll = task.estimate_minutes ? task.estimate_minutes * 60 : null;
+  // Nur abgeschlossene Abschnitte. Die laufende Sekunde zeigt <ZeitChip> selbst
+  // an — sonst müsste die ganze Karte im Sekundentakt neu rendern.
+  const erfasstBasis = task.tracked_seconds ?? 0;
   // Tassenfüllung: voll bei Start, leer wenn die Schätzung aufgebraucht ist.
-  const fuellung = soll ? Math.max(0, 1 - erfasst / soll) : 1;
+  // Wird nur bei stehender Uhr gezeigt, `erfasstBasis` ist dann exakt.
+  const fuellung = soll ? Math.max(0, 1 - erfasstBasis / soll) : 1;
+  const zeitSichtbar = laeuft || erfasstBasis > 0 || soll !== null;
 
   const menuItems: MenuItem[] = [
     ...(onToggleTimer && !done
@@ -196,22 +196,8 @@ export function TaskCard({
 
             {/* Erfasste Zeit — bei laufender Uhr sekundengenau, sonst gerundet.
                 Steht die Schaetzung dabei, sieht man sofort, ob es knapp wird. */}
-            {(erfasst > 0 || soll !== null) && (
-              <span
-                className={clsx(
-                  'text-[10px] px-1.5 py-0.5 rounded-md border flex items-center gap-1 tabular-nums',
-                  laeuft
-                    ? 'bg-accent/15 border-accent/30 text-accent-light'
-                    : soll !== null && erfasst > soll
-                      ? 'bg-amber-500/12 border-amber-400/25 text-amber-300'
-                      : 'bg-white/[0.04] border-white/[0.08] text-white/50',
-                )}
-                title={soll !== null ? `Erfasst gegen Schätzung (${Math.round(soll / 60)} Min.)` : 'Erfasste Zeit'}
-              >
-                <Timer className="w-2.5 h-2.5 flex-shrink-0" />
-                {laeuft ? formatDuration(erfasst) : formatHours(erfasst)}
-                {soll !== null && <span className="opacity-60">/ {formatHours(soll)}</span>}
-              </span>
+            {zeitSichtbar && (
+              <ZeitChip running={laeuft} baseSeconds={erfasstBasis} estimateSeconds={soll} />
             )}
           </div>
 
@@ -345,5 +331,58 @@ export function TaskCard({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Zeit-Badge der Karte. Bei laufender Uhr tickt es sekündlich — deshalb als
+ * eigene Blatt-Komponente, damit nur diese eine Karte neu rendert und nicht
+ * die ganze Liste (was das Drag & Drop abbräche).
+ */
+function ZeitChip({
+  running,
+  baseSeconds,
+  estimateSeconds,
+}: {
+  running: boolean;
+  baseSeconds: number;
+  estimateSeconds: number | null;
+}) {
+  return running
+    ? <ZeitChipLive baseSeconds={baseSeconds} estimateSeconds={estimateSeconds} />
+    : <ZeitChipAnzeige seconds={baseSeconds} estimateSeconds={estimateSeconds} running={false} />;
+}
+
+function ZeitChipLive({ baseSeconds, estimateSeconds }: { baseSeconds: number; estimateSeconds: number | null }) {
+  const { elapsed } = useElapsed();
+  return <ZeitChipAnzeige seconds={baseSeconds + elapsed} estimateSeconds={estimateSeconds} running />;
+}
+
+function ZeitChipAnzeige({
+  seconds,
+  estimateSeconds,
+  running,
+}: {
+  seconds: number;
+  estimateSeconds: number | null;
+  running: boolean;
+}) {
+  const ueberzogen = estimateSeconds !== null && seconds > estimateSeconds;
+  return (
+    <span
+      className={clsx(
+        'text-[10px] px-1.5 py-0.5 rounded-md border flex items-center gap-1 tabular-nums',
+        running
+          ? 'bg-accent/15 border-accent/30 text-accent-light'
+          : ueberzogen
+            ? 'bg-amber-500/12 border-amber-400/25 text-amber-300'
+            : 'bg-white/[0.04] border-white/[0.08] text-white/50',
+      )}
+      title={estimateSeconds !== null ? `Erfasst gegen Schätzung (${Math.round(estimateSeconds / 60)} Min.)` : 'Erfasste Zeit'}
+    >
+      <Timer className="w-2.5 h-2.5 flex-shrink-0" />
+      {running ? formatDuration(seconds) : formatHours(seconds)}
+      {estimateSeconds !== null && <span className="opacity-60">/ {formatHours(estimateSeconds)}</span>}
+    </span>
   );
 }
