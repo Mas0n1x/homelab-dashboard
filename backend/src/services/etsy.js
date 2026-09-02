@@ -111,16 +111,21 @@ export function starteAnmeldung() {
 
   schreibe('etsy_flow', JSON.stringify({ verifier, state, at: Date.now() }));
 
-  const url = new URL(CONNECT_URL);
-  url.searchParams.set('response_type', 'code');
-  url.searchParams.set('client_id', KEYSTRING);
-  url.searchParams.set('redirect_uri', REDIRECT_URI);
-  url.searchParams.set('scope', SCOPES.join(' '));
-  url.searchParams.set('state', state);
-  url.searchParams.set('code_challenge', challenge);
-  url.searchParams.set('code_challenge_method', 'S256');
+  // Wichtig: `URLSearchParams` kodiert das Leerzeichen zwischen den Scopes als
+  // `+`, und Etsys OAuth-Server liest `+` NICHT als Leerzeichen zurück — die
+  // Folge ist eine Fehlerseite auf etsy.com („invalid scope"). Deshalb den
+  // Query-String selbst bauen und Leerzeichen als %20 kodieren.
+  const query = new URLSearchParams({
+    response_type: 'code',
+    client_id: KEYSTRING,
+    redirect_uri: REDIRECT_URI,
+    scope: SCOPES.join(' '),
+    state,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+  }).toString().replace(/\+/g, '%20');
 
-  return { url: url.toString() };
+  return { url: `${CONNECT_URL}?${query}` };
 }
 
 /** Rückruf von Etsy: Code gegen Tokens tauschen. */
