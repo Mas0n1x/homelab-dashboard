@@ -27,6 +27,7 @@ import {
 import * as api from '@/lib/api';
 import { useTimer } from '@/hooks/useTimer';
 import { TimeTracking } from '@/components/time/TimeTracking';
+import { FocusCup } from '@/components/time/FocusCup';
 import type { Task, TaskInput, TaskPriority, TaskStatus } from '@/lib/types';
 
 type ViewMode = 'list' | 'board';
@@ -59,7 +60,7 @@ const CHIP_STYLES: Record<QuickFilter, string> = {
 
 export default function TasksPage() {
   const queryClient = useQueryClient();
-  const { running, elapsed, start, stop } = useTimer();
+  const { running, elapsed, start, stop, isBusy } = useTimer();
 
   const [section, setSection] = useState<'aufgaben' | 'zeiten'>('aufgaben');
   const [view, setView] = useState<ViewMode>('list');
@@ -266,6 +267,20 @@ export default function TasksPage() {
 
   const activeTasks = useMemo(() => filtered.filter(t => t.status !== 'done'), [filtered]);
   const doneTasks = useMemo(() => sortTasks(filtered.filter(t => t.status === 'done'), sort), [filtered, sort]);
+
+  // Große Kaffeetasse: alle „In Arbeit"-Aufgaben, unabhängig vom Schnellfilter.
+  const doingTasks = useMemo(
+    () => sortTasks(tasks.filter(t => t.status === 'doing'), sort),
+    [tasks, sort],
+  );
+  const showFocusCup = doingTasks.length > 0 && (quickFilter === 'all' || quickFilter === 'doing');
+
+  const focusStart = (task: Task) => start({ taskId: task.id });
+  const focusPause = () => stop();
+  const focusStop = (task: Task) => {
+    if (task.timer_running) stop();
+    changeStatus(task, 'done');
+  };
 
   const groups: TaskGroup[] = useMemo(() => {
     if (group === 'status') {
@@ -579,6 +594,17 @@ export default function TasksPage() {
             </>
           )}
         </GlassCard>
+
+        {showFocusCup && (
+          <FocusCup
+            tasks={doingTasks}
+            runningSeconds={elapsed}
+            onStart={focusStart}
+            onPause={focusPause}
+            onStop={focusStop}
+            busy={isBusy}
+          />
+        )}
 
         {/* Werkzeugleiste: Suche, Filter-Ausklapper, Ansicht */}
         <div className="space-y-2">
