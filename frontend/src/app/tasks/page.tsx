@@ -83,6 +83,10 @@ export default function TasksPage() {
 
   // Drag & Drop gibt es nur mit Maus — HTML5-DnD löst auf Touch nichts aus.
   // Dort übernehmen „Nach oben/unten" im Karten-Menü.
+  //
+  // `any-pointer: fine` statt `pointer: fine`: an einem Desktop mit Touch-Monitor
+  // (oder Grafiktablett) meldet Windows den PRIMÄR-Zeiger oft als `coarse`,
+  // obwohl eine Maus dranhängt — dann war Drag & Drop fälschlich komplett aus.
   const [isDesktop, setIsDesktop] = useState(false);
 
   // Ansicht, Sortierung und Gruppierung pro Browser merken
@@ -94,7 +98,7 @@ export default function TasksPage() {
     const savedGroup = localStorage.getItem('tasks-group');
     if (savedGroup && savedGroup in GROUP_LABELS) setGroup(savedGroup as GroupMode);
 
-    const mq = window.matchMedia('(min-width: 768px) and (pointer: fine)');
+    const mq = window.matchMedia('(min-width: 768px) and (any-pointer: fine)');
     const apply = () => setIsDesktop(mq.matches);
     apply();
     mq.addEventListener('change', apply);
@@ -843,9 +847,13 @@ export default function TasksPage() {
           </div>
         )}
 
-        {isDesktop && !dragEnabled && view === 'board' && (
+        {/* Warum lässt sich nichts ziehen? In beiden Ansichten sagen, statt den
+            Nutzer raten zu lassen. */}
+        {isDesktop && !dragEnabled && filtered.length > 0 && (
           <p className="text-[11px] text-white/25 text-center">
-            Zum Sortieren per Drag &amp; Drop die Sortierung auf „{SORT_LABELS.manual}" stellen.
+            {sort !== 'manual'
+              ? <>Zum Umsortieren per Drag &amp; Drop die Sortierung auf „{SORT_LABELS.manual}" stellen.</>
+              : <>Drag &amp; Drop gibt es in der Board-Ansicht oder bei Gruppierung nach Status.</>}
           </p>
         )}
       </div>
