@@ -47,52 +47,16 @@ export function recordSeenServices(serverId, discovered) {
   })();
 }
 
-/**
- * Einmalige Umschlüsselung der Uptime-Historie von der alten, container-
- * gebundenen Kennung (`docker-<12 Zeichen>`) auf die stabile Kennung.
- *
- * Läuft bei jedem Discovery-Durchlauf, kostet aber nach dem ersten Mal nichts:
- * Sobald keine Zeile mehr unter der alten Kennung liegt, tut das UPDATE nichts.
- * Ohne das wären mit der Umstellung sämtliche 30-Tage-Balken leer.
+/*
+ * FRÜHER stand hier migrateLegacyServiceIds() — eine „einmalige" Umschlüsselung
+ * der Uptime-Historie von `docker-<id>` auf die stabile Kennung, die aber bei
+ * JEDEM Discovery-Durchlauf (alle 30 s) lief. Sie suchte nach der *aktuellen*
+ * Container-ID, während die Alt-Historie unter der *alten* lag — migrierte also
+ * nie etwas, scannte aber pro Dienst die komplette Server-Partition von
+ * uptime_checks (Query-Planer nahm den server_id-Index). Das waren die
+ * CPU-Spitzen. Die verwaisten `docker-*`-Zeilen räumt jetzt die einmalige
+ * purgeLegacyUptimeHistory() in database.js weg.
  */
-export function migrateLegacyServiceIds(serverId, discovered) {
-  if (!Array.isArray(discovered) || discovered.length === 0) return 0;
-  const db = getDb();
-
-  const moveChecks = db.prepare(
-    'UPDATE uptime_checks SET service_id = ? WHERE service_id = ? AND server_id = ?'
-  );
-  // OR IGNORE: liegt schon ein Eintrag unter der neuen Kennung, bleibt der
-  // stehen und die alte Zeile wird anschließend verworfen.
-  const moveOverride = db.prepare(
-    'UPDATE OR IGNORE service_overrides SET service_id = ? WHERE service_id = ? AND server_id = ?'
-  );
-  const dropOverride = db.prepare(
-    'DELETE FROM service_overrides WHERE service_id = ? AND server_id = ?'
-  );
-  // Favoriten hängen ebenfalls an der Dienst-Kennung — ohne Umschlüsselung
-  // wäre die Schnellzugriff-Leiste nach dem Update leer.
-  const moveFavorite = db.prepare(
-    'UPDATE OR IGNORE favorites SET service_id = ? WHERE service_id = ? AND server_id = ?'
-  );
-  const dropFavorite = db.prepare(
-    'DELETE FROM favorites WHERE service_id = ? AND server_id = ?'
-  );
-
-  let moved = 0;
-  db.transaction(() => {
-    for (const s of discovered) {
-      if (!s.legacyId || s.legacyId === s.id) continue;
-      moved += moveChecks.run(s.id, s.legacyId, serverId).changes;
-      moveOverride.run(s.id, s.legacyId, serverId);
-      dropOverride.run(s.legacyId, serverId);
-      moveFavorite.run(s.id, s.legacyId, serverId);
-      dropFavorite.run(s.legacyId, serverId);
-    }
-  })();
-
-  return moved;
-}
 
 /**
  * Räumt Dienste weg, die seit PURGE_DAYS nicht mehr auf ihrem Server auftauchen:

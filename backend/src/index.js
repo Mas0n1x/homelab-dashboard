@@ -13,7 +13,7 @@ import { createServer } from 'http';
 import { initDatabase, migrateFromConfigJson, cleanupOldUptimeData } from './services/database.js';
 import serverManager from './services/serverManager.js';
 import { discoverServices, hasDiscoveryChanged, getDiscoverySnapshot } from './services/discovery.js';
-import { recordSeenServices, migrateLegacyServiceIds, purgeVanishedServices } from './services/serviceRegistry.js';
+import { recordSeenServices, purgeVanishedServices } from './services/serviceRegistry.js';
 import { checkAllServices } from './services/uptime.js';
 import * as portfolio from './services/portfolio.js';
 import { ensureDefaultUser, cleanupExpiredTokens } from './services/auth.js';
@@ -619,7 +619,6 @@ setInterval(makeJob('discovery', () => forEachServer(async (server) => {
   // Kein Ergebnis (SSH-Aussetzer) darf das Register nicht anfassen — sonst
   // gälten alle Dienste des Servers als verschwunden.
   if (discovered.length > 0) {
-    migrateLegacyServiceIds(server.id, discovered);
     recordSeenServices(server.id, discovered);
   }
   if (hasDiscoveryChanged(server.id, discovered)) {
@@ -730,7 +729,12 @@ setInterval(makeJob('alerting', () => forEachServer(async (server) => {
       }
 
       const dockerMod = await import('./services/docker.js');
-      const containers = dockerInst ? await dockerMod.getContainers(dockerInst).catch(() => []) : [];
+      // Hartes Zeitlimit: haengt die SSH-Verbindung zu einem toten Flotten-Server,
+      // duerfte dieser Aufruf sonst ewig warten — der makeJob-Guard bliebe auf
+      // `running` stehen und Alerting samt Metrik-Aufzeichnung stuenden still.
+      const containers = dockerInst
+        ? await withTimeout(dockerMod.getContainers(dockerInst), 12000, 'docker').catch(() => [])
+        : [];
 
       // Detect crashed + restarted containers
       const crashedContainers = [];

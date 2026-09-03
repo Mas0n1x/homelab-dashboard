@@ -23,6 +23,11 @@ export function initDatabase() {
   db = new Database(DB_PATH);
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
+  // Standard sind magere 2 MB Seiten-Cache — fuer eine DB mit Verlaufstabellen
+  // (uptime_checks, metrics_history) zu wenig, dann liest SQLite dieselben
+  // Index-Seiten bei jeder Aggregat-Abfrage neu von der Platte. 32 MB kostet
+  // auf dem Pi nichts und haelt die Statusseiten-Queries im RAM.
+  db.pragma('cache_size = -32000');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS servers (
@@ -413,7 +418,47 @@ export function initDatabase() {
   // Migrate mail credentials to multi-account table
   migrateMailCredentials();
 
+  purgeLegacyUptimeHistory();
+
   return db;
+}
+
+/**
+ * Einmalige Bereinigung verwaister Uptime-Historie.
+ *
+ * Bis zur Umstellung auf die stabile Dienst-Kennung (`svc:<server>:<projekt>/<dienst>`)
+ * lief die Historie unter der container-gebundenen Kennung `docker-<id>`. Diese
+ * Zeilen gehoeren zu laengst geloeschten Containern, tauchen in keiner Ansicht
+ * mehr auf und machten ~56 % der Tabelle aus (DB ~190 MB). Die frueher im
+ * 30-s-Discovery-Job laufende Live-Migration suchte nach der *aktuellen*
+ * Container-ID, lief damit ins Leere und scannte trotzdem bei jedem Durchlauf
+ * die komplette Server-Partition — genau das waren die CPU-Spitzen.
+ *
+ * Ebenfalls weg: Historie von Servern, die es nicht mehr gibt (z. B. `masons-vps`).
+ */
+function purgeLegacyUptimeHistory() {
+  const done = db.prepare("SELECT value FROM settings WHERE key = 'legacy_uptime_purge_v1'").get();
+  if (done) return;
+
+  try {
+    const orphanChecks = db.prepare(
+      'DELETE FROM uptime_checks WHERE service_id LIKE ? OR server_id NOT IN (SELECT id FROM servers)'
+    ).run('docker-%');
+    const orphanOverrides = db.prepare(
+      'DELETE FROM service_overrides WHERE service_id LIKE ?'
+    ).run('docker-%');
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('legacy_uptime_purge_v1', 'true')").run();
+
+    console.log(`✓ Verwaiste Uptime-Historie entfernt: ${orphanChecks.changes} Pruefzeilen, ${orphanOverrides.changes} Overrides`);
+
+    // Platz zurueckgeben und dem Query-Planer frische Statistiken geben — ohne
+    // sqlite_stat1 waehlte er fuer die Aggregat-Abfragen den falschen Index.
+    db.exec('VACUUM');
+    db.exec('ANALYZE');
+    console.log('✓ VACUUM + ANALYZE nach Bereinigung abgeschlossen');
+  } catch (error) {
+    console.error('Legacy-Uptime-Bereinigung fehlgeschlagen:', error.message);
+  }
 }
 
 export async function migrateFromConfigJson() {
@@ -493,4 +538,7 @@ export function cleanupOldUptimeData() {
   if (result.changes > 0) {
     console.log(`Cleaned up ${result.changes} old uptime records`);
   }
+  // Query-Planer-Statistiken frisch halten, damit die Aggregat-Abfragen der
+  // Statusseite den richtigen Index waehlen (Kosten: vernachlaessigbar).
+  try { db.pragma('optimize'); } catch { /* nicht kritisch */ }
 }
