@@ -118,10 +118,27 @@ async function sendWebhook(channel, payload) {
 // (z. B. "cpu_high::pi-5" bzw. "disk_high::pi-5::/mnt" + "…::ok").
 // WICHTIG: Der Zustand muss pro Server (scope) getrennt sein, sonst
 // „entwarnt" ein ruhiger Server den Alarm eines anderen (Server-Verwechslung).
+//
+// Streak-Gate: der Alerting-Zyklus läuft alle 30s und liest jeweils eine
+// einzelne Momentaufnahme (glances). Kurze Bursts (SSH-Discovery, Docker-
+// Stats-Sammlung, … überlappen gelegentlich im selben Zyklus) reißen die
+// CPU/RAM kurz über die Schwelle, ohne dass der Server wirklich unter Last
+// steht — das erzeugte Alarm+Entwarnung im Minutentakt. Erst ein Ausschlag
+// über mehrere aufeinanderfolgende Zyklen hinweg gilt als echt.
+const REQUIRED_HIGH_STREAK = 3; // ~90s anhaltend über der Schwelle
+const REQUIRED_OK_STREAK = 2;   // ~60s anhaltend wieder normal
+const streaks = new Map(); // key: `${channel.id}:${stateEvent}` -> { high, ok }
+
 async function handleThreshold(db, channel, opts) {
   const { event, scope = '', subject = '', isHigh, alert, recovery } = opts;
   const stateEvent = [event, scope, subject].filter(Boolean).join('::');
   const okEvent = `${stateEvent}::ok`;
+
+  const streakKey = `${channel.id}:${stateEvent}`;
+  const streak = streaks.get(streakKey) || { high: 0, ok: 0 };
+  if (isHigh) { streak.high += 1; streak.ok = 0; }
+  else { streak.ok += 1; streak.high = 0; }
+  streaks.set(streakKey, streak);
 
   const lastAlert = db.prepare(
     "SELECT sent_at FROM alert_history WHERE channel_id = ? AND event_type = ? AND sent_at > datetime('now','-1 day') ORDER BY sent_at DESC LIMIT 1"
@@ -132,9 +149,9 @@ async function handleThreshold(db, channel, opts) {
 
   const alerting = !!lastAlert && (!lastOk || lastAlert.sent_at > lastOk.sent_at);
 
-  if (isHigh && !alerting) {
+  if (isHigh && !alerting && streak.high >= REQUIRED_HIGH_STREAK) {
     await sendWebhook(channel, { event: stateEvent, ...alert(subject) });
-  } else if (!isHigh && alerting && recovery) {
+  } else if (!isHigh && alerting && recovery && streak.ok >= REQUIRED_OK_STREAK) {
     await sendWebhook(channel, { event: okEvent, ...recovery(subject) });
   }
 }
