@@ -46,6 +46,17 @@ const MAX_KANAELE = 8;
 // wird beim nächsten Aufruf sauber neu verbunden.
 const LEERLAUF_MS = 10 * 60 * 1000;
 const KEEPALIVE_MS = 30 * 1000;
+// Kommt der SSH-Client nach dieser Frist weder mit 'ready' noch mit 'error'
+// zurück, gilt die Verbindung als tot. ssh2s `readyTimeout` deckt nur den
+// SSH-Handshake ab — ein im TCP-Connect steckender Socket läuft daran vorbei
+// und würde jeden Aufruf endlos hängen lassen.
+const CONNECT_ZEITLIMIT_MS = 20 * 1000;
+// `c.exec('docker system dial-stdio')` öffnet nur den Kanal (schnell). Feuert
+// der Callback trotzdem nicht — halboffene Verbindung: TCP lebt, Gegenpart tot,
+// Keepalive noch nicht ausgelöst —, dann hängt der Aufruf ohne dieses Limit
+// für immer. Beim Auslösen wird die Verbindung verworfen, der nächste Aufruf
+// baut sauber neu auf.
+const EXEC_ZEITLIMIT_MS = 20 * 1000;
 
 /**
  * Erzeugt einen http.Agent, der jede HTTP-Verbindung über einen Exec-Kanal
@@ -62,6 +73,8 @@ export function createSshDockerAgent(connectConfig, label = 'ssh') {
 
   let client = null;
   let bereit = null;        // Promise auf den verbundenen Client
+  let bereitAblehnen = null; // reject() von `bereit` — damit `zuruecksetzen`
+                             // wartende Aufrufer nicht endlos hängen lässt
   let offeneKanaele = 0;
   let warteschlange = [];
   let leerlaufTimer = null;
@@ -85,10 +98,16 @@ export function createSshDockerAgent(connectConfig, label = 'ssh') {
     clearTimeout(leerlaufTimer);
     if (client) letzterAbbruch = { grund, fehler: fehler?.message || null, zeit: new Date().toISOString() };
     const alt = client;
+    const altAblehnen = bereitAblehnen;
     client = null;
     bereit = null;
+    bereitAblehnen = null;
     offeneKanaele = 0;
     if (alt) { try { alt.end(); } catch { /* schon tot */ } }
+    // Wer noch auf die (jetzt tote) Verbindung wartet, bekommt einen Fehler,
+    // statt für immer im `verbindung()`-Promise zu hängen — ein stilles
+    // 'close' ohne Fehler löste sonst weder resolve noch reject aus.
+    altAblehnen?.(fehler || new Error(`SSH-Verbindung zu ${label} wurde geschlossen`));
     // Wartende nicht hängen lassen: sie bekommen den Fehler und dürfen es
     // beim nächsten Aufruf mit einer neuen Verbindung versuchen.
     const wartend = warteschlange;
@@ -103,15 +122,24 @@ export function createSshDockerAgent(connectConfig, label = 'ssh') {
     client = new Client();
     verbindungen++;
     bereit = new Promise((erfuellen, ablehnen) => {
+      bereitAblehnen = ablehnen;
       const c = client;
-      c.once('ready', () => erfuellen(c));
+      // Wachhund: meldet der Client nach der Frist gar nichts, gilt er als tot.
+      const wachhund = setTimeout(() => {
+        if (client === c) {
+          zuruecksetzen(new Error(`Verbindungsaufbau zu ${label} nach ${CONNECT_ZEITLIMIT_MS} ms ohne Antwort`), 'connect-zeitlimit');
+        }
+      }, CONNECT_ZEITLIMIT_MS);
+      wachhund.unref?.();
+      c.once('ready', () => { clearTimeout(wachhund); erfuellen(c); });
       c.once('error', (err) => {
+        clearTimeout(wachhund);
         // Nur zurücksetzen, wenn dieser Client noch der aktuelle ist —
         // sonst räumt ein spätes Fehler-Ereignis eine frische Verbindung ab.
         if (client === c) zuruecksetzen(err, 'fehler');
         ablehnen(err);
       });
-      c.once('close', () => { if (client === c) zuruecksetzen(null, 'vom Gegenpart geschlossen'); });
+      c.once('close', () => { clearTimeout(wachhund); if (client === c) zuruecksetzen(null, 'vom Gegenpart geschlossen'); });
       c.connect({
         ...connectConfig,
         // Hält die Verbindung durch NAT/Firewalls offen und erkennt einen
@@ -156,7 +184,17 @@ export function createSshDockerAgent(connectConfig, label = 'ssh') {
     platzFrei()
       .then(() => verbindung())
       .then((c) => new Promise((erfuellen, ablehnen) => {
+        // Kanal-Zeitlimit: feuert der exec-Callback nicht, ist die Verbindung
+        // halbtot — dann verwerfen, damit der nächste Aufruf neu aufbaut.
+        const zeit = setTimeout(() => {
+          if (client === c) {
+            zuruecksetzen(new Error(`Exec-Kanal zu ${label} nach ${EXEC_ZEITLIMIT_MS} ms ohne Antwort`), 'exec-zeitlimit');
+          }
+          ablehnen(new Error(`Exec-Kanal zu ${label} nach ${EXEC_ZEITLIMIT_MS} ms ohne Antwort`));
+        }, EXEC_ZEITLIMIT_MS);
+        zeit.unref?.();
         c.exec('docker system dial-stdio', (err, stream) => {
+          clearTimeout(zeit);
           if (err) return ablehnen(err);
           erfuellen(stream);
         });
@@ -164,8 +202,9 @@ export function createSshDockerAgent(connectConfig, label = 'ssh') {
       .then((stream) => {
         // Ein Fehler auf EINEM Kanal darf die gemeinsame Verbindung nicht
         // mitnehmen — sonst reißt ein einzelner abgebrochener Docker-Aufruf
-        // alle parallelen Abfragen mit.
-        stream.on('error', () => { /* der HTTP-Client bekommt es über den Stream */ });
+        // alle parallelen Abfragen mit. Den Platz aber freigeben, sonst leckt
+        // ein Kanal, der 'error' ohne folgendes 'close' meldet.
+        stream.on('error', freigeben);
         stream.once('close', freigeben);
         rueckruf(null, stream);
       })

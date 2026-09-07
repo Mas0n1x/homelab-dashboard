@@ -11,6 +11,42 @@ import { checkFleetImageUpdates, getLastImageUpdateRun } from '../services/image
 
 const router = Router();
 
+// Hartes Zeitlimit für einen einzelnen Docker-Aufruf gegen einen Remote-Server.
+// Ohne das hängt ein Request bei toter SSH-Verbindung endlos — und da der
+// Browser pro Domain nur ~6 Verbindungen offen hält, legt ein einziger
+// klemmender Server nach wenigen Polls das GESAMTE Dashboard lahm (keine
+// andere Ansicht lädt mehr). Der SSH-Agent heilt sich inzwischen selbst,
+// aber bis dahin muss der Request sauber mit 504 zurückkommen.
+const DOCKER_ZEITLIMIT_MS = 15000;
+
+function mitZeitlimit(ziel, ms = DOCKER_ZEITLIMIT_MS) {
+  if (ziel == null || (typeof ziel !== 'object' && typeof ziel !== 'function')) return ziel;
+  return new Proxy(ziel, {
+    get(obj, prop, empfaenger) {
+      const wert = Reflect.get(obj, prop, empfaenger);
+      if (typeof wert !== 'function') return wert;
+      return function (...args) {
+        const ergebnis = wert.apply(obj, args);
+        if (ergebnis && typeof ergebnis.then === 'function') {
+          let timer;
+          const limit = new Promise((_, ablehnen) => {
+            timer = setTimeout(() => {
+              const e = new Error(`Docker-Aufruf "${String(prop)}" nach ${ms} ms ohne Antwort — Server nicht erreichbar?`);
+              e.statusCode = 504;
+              ablehnen(e);
+            }, ms);
+            timer.unref?.();
+          });
+          return Promise.race([ergebnis, limit]).finally(() => clearTimeout(timer));
+        }
+        // Kein Promise (z. B. getContainer(id)) — erneut einhüllen, damit
+        // auch .inspect()/.stats() darauf unter dem Zeitlimit stehen.
+        return mitZeitlimit(ergebnis, ms);
+      };
+    },
+  });
+}
+
 // Wählt die Docker-Instanz anhand ?serverId= (Default: lokaler Server).
 // Wirft, wenn der Server existiert, aber keinen Docker-Zugriff hat (nur Monitoring).
 function dockerFor(req) {
@@ -22,7 +58,8 @@ function dockerFor(req) {
     err.statusCode = 409;
     throw err;
   }
-  return docker;
+  // Nur Remote-Server über SSH können hängen — der lokale Socket nicht.
+  return mitZeitlimit(docker);
 }
 
 // Einheitliches Fehler-Mapping: nutzt error.statusCode (z. B. 409) sonst 500.
