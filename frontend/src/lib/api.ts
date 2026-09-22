@@ -600,4 +600,61 @@ export const getUnifiedInbox = (limit = 40) =>
 
 // ─── Aurora: Durchreiche-Anmeldung ───
 
+// ─── Datei-Explorer ───
+
+export interface FileEntry {
+  name: string;
+  type: 'file' | 'dir' | 'link';
+  size: number;
+  mtime: number | null;
+}
+
+export const listFiles = (serverId: string, path: string) =>
+  fetchApi<{ path: string; entries: FileEntry[] }>(`/files/list?serverId=${serverId}&path=${encodeURIComponent(path)}`);
+
+export const readFile = (serverId: string, path: string) =>
+  fetchApi<{ path: string; binary: boolean; content?: string; size: number }>(`/files/read?serverId=${serverId}&path=${encodeURIComponent(path)}`);
+
+export const writeFile = (serverId: string, path: string, content: string) =>
+  fetchApi<{ ok: boolean; path: string }>('/files/write', { method: 'PUT', body: JSON.stringify({ serverId, path, content }) });
+
+export const mkdirFile = (serverId: string, path: string, name: string) =>
+  fetchApi<{ ok: boolean; path: string }>('/files/mkdir', { method: 'POST', body: JSON.stringify({ serverId, path, name }) });
+
+export const deleteFile = (serverId: string, path: string, isDir: boolean) =>
+  fetchApi<{ ok: boolean }>(`/files/delete?serverId=${serverId}&path=${encodeURIComponent(path)}&isDir=${isDir}`, { method: 'DELETE' });
+
+// Download über authedFetch (Blob), damit der Bearer-Token mitgeht — analog downloadBackup.
+export async function downloadFile(serverId: string, path: string): Promise<void> {
+  const res = await authedFetch(`/files/download?serverId=${serverId}&path=${encodeURIComponent(path)}`);
+  if (!res.ok) throw new Error(`Download fehlgeschlagen: ${res.status}`);
+  const blob = await res.blob();
+  const name = path.split('/').pop() || 'download';
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+// Upload als Roh-Body (wie uploadMailAttachment) — Dateiname geht über den Header.
+export async function uploadFile(serverId: string, dirPath: string, file: File): Promise<{ ok: boolean; path: string; size: number }> {
+  const { accessToken } = useAuthStore.getState();
+  const buffer = await file.arrayBuffer();
+  const res = await fetch(`${API_BASE}/files/upload?serverId=${serverId}&path=${encodeURIComponent(dirPath)}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': file.type || 'application/octet-stream',
+      Authorization: `Bearer ${accessToken}`,
+      'X-File-Name': encodeURIComponent(file.name),
+    },
+    body: buffer,
+  });
+  if (!res.ok) throw new Error(`Upload fehlgeschlagen: ${res.status}`);
+  return res.json();
+}
+
 

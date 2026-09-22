@@ -10,7 +10,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import {
   Activity, Box, Mail, Settings, ChevronLeft, ChevronRight,
-  Server, Terminal, FileText, Wrench, LayoutDashboard, ChevronDown,
+  Server, Terminal, FileText, Wrench, LayoutDashboard, ChevronDown, FolderOpen,
   Cpu,
   ListChecks,
   Gamepad2,
@@ -48,6 +48,7 @@ const TOOL_NAV: NavItem[] = [
   { href: '/tasks', label: 'Aufgaben', icon: <ListChecks className="w-4 h-4" /> },
   { href: '/status', label: 'Status', icon: <Activity className="w-4 h-4" /> },
   { href: '/terminal', label: 'Terminal', icon: <Terminal className="w-4 h-4" /> },
+  { href: '/files', label: 'Dateien', icon: <FolderOpen className="w-4 h-4" /> },
   { href: '/mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },
   { href: '/minecraft', label: 'Minecraft', icon: <Gamepad2 className="w-4 h-4" /> },
   { href: '/bots', label: 'Discord-Bots', icon: <Bot className="w-4 h-4" /> },
