@@ -5,7 +5,7 @@
  */
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -557,6 +557,19 @@ function GithubTab({ cfg, set, saveConfig, busy, setBusy, flash }: {
 }) {
   const [repos, setRepos] = useState<any[]>([]);
   const [reposLoading, setReposLoading] = useState(false);
+  const [orgsInput, setOrgsInput] = useState('');
+  const orgsLoaded = useRef(false);
+
+  // cfg.github_orgs kommt als JSON-Array vom Backend (z.B. ["LawNet-Team"]) -
+  // einmalig beim Laden in die Komma-getrennte Eingabe uebernehmen.
+  useEffect(() => {
+    if (orgsLoaded.current || cfg.github_orgs === undefined) return;
+    orgsLoaded.current = true;
+    try {
+      const arr = JSON.parse(cfg.github_orgs || '[]');
+      if (Array.isArray(arr)) setOrgsInput(arr.join(', '));
+    } catch { /* kein gueltiges JSON -> leer lassen */ }
+  }, [cfg.github_orgs]);
 
   const loadRepos = async () => {
     setReposLoading(true);
@@ -573,16 +586,26 @@ function GithubTab({ cfg, set, saveConfig, busy, setBusy, flash }: {
     flash(r.ok, r.ok ? `Webhooks: ${r.data?.added?.length || 0} neu, ${r.data?.skipped?.length || 0} vorhanden.` : r.data?.error || 'Fehler');
   };
 
+  const setupOrgs = async () => {
+    const orgs = orgsInput.split(',').map(o => o.trim()).filter(Boolean);
+    if (orgs.length === 0) { flash(false, 'Keine Organisation eingetragen.'); return; }
+    setBusy('gh-orgs');
+    const r = await botCall('portfolio', '/github-setup-orgs', { method: 'POST', body: JSON.stringify({ token: cfg.github_token || '', orgs }) });
+    setBusy(null);
+    flash(r.ok, r.ok ? `Webhooks: ${r.data?.added?.length || 0} neu, ${r.data?.skipped?.length || 0} vorhanden.` : r.data?.error || 'Fehler');
+  };
+
   return (
     <div className="space-y-4">
       <div className="glass-card rounded-2xl p-5 space-y-4">
         <h2 className="text-sm font-semibold text-white/70">GitHub-Benachrichtigungen</h2>
         <Field label="GitHub-Token (PAT)" value={cfg.github_token || ''} onChange={v => set('github_token', v)} type="password" placeholder="ghp_…" mono />
         <Field label="Webhook-Secret" value={cfg.github_webhook_secret || ''} onChange={v => set('github_webhook_secret', v)} type="password" mono />
-        <Field label="Organisationen (Komma-getrennt)" value={cfg.github_orgs_input || ''} onChange={v => set('github_orgs_input', v)} placeholder="LawNet-Team" />
+        <Field label="Organisationen (Komma-getrennt)" value={orgsInput} onChange={setOrgsInput} placeholder="LawNet-Team" />
         <div className="flex flex-wrap gap-3">
           <SaveBar busy={busy === 'save'} onSave={() => saveConfig()} inline />
           <ActionBtn busy={busy === 'gh-all'} onClick={setupAll} icon={Github} label="Webhooks für alle eigenen Repos einrichten" />
+          <ActionBtn busy={busy === 'gh-orgs'} onClick={setupOrgs} icon={Github} label="Webhooks für Organisationen einrichten" />
           <ActionBtn busy={reposLoading} onClick={loadRepos} icon={RefreshCw} label="Repos laden" />
         </div>
       </div>
