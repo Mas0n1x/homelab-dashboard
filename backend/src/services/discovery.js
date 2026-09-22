@@ -32,6 +32,13 @@ const NON_WEB_PORTS = new Set([22, 25, 110, 143, 465, 587, 993, 995, 21027, 2200
 // Container names to always skip (our own dashboard containers)
 const SKIP_CONTAINERS = new Set(['homelab-frontend', 'homelab-backend', 'homelab-nginx']);
 
+// Docker-Netzwerke, in denen der Backend-Container selbst mithängt (siehe
+// docker-compose.yml). Ein Container auf einem dieser Netze ist per
+// Docker-DNS direkt unter Compose-Service-/Containername erreichbar -
+// zuverlässiger als über die öffentliche Host-IP (Firewall/Hairpin-NAT) oder
+// gar unmöglich, wenn der Port nur auf 127.0.0.1 des Hosts gebunden ist.
+const SAME_NETWORK_NAMES = new Set(['homelab-dashboard_homelab-network', 'minecraft_default']);
+
 // Compose-Projekte, die nicht aufs Dashboard gehören (z. B. abgeschaltete Dienste).
 const SKIP_PROJECTS = new Set([]);
 
@@ -105,6 +112,12 @@ export async function discoverServices(serverId = 'local') {
         const composeService = c.Labels?.['com.docker.compose.service'] || '';
         const composeProject = c.Labels?.['com.docker.compose.project'] || '';
 
+        // Teilt der Container ein Docker-Netz mit dem Backend selbst, per
+        // Compose-Servicename direkt ansprechbar statt über Host-IP/Port.
+        const sharesNetwork = serverId === 'local' && Object.keys(c.NetworkSettings?.Networks || {})
+          .some(n => SAME_NETWORK_NAMES.has(n));
+        const sameNetworkUrl = sharesNetwork ? detectSameNetworkUrl(c.Ports, composeService || name) : null;
+
         return {
           id: stableServiceId(serverId, composeProject, composeService, name),
           // Alte, container-gebundene Kennung — nur noch für die einmalige
@@ -117,8 +130,10 @@ export async function discoverServices(serverId = 'local') {
           name: c.Labels?.['dashboard.name'] || formatContainerName(composeService || name),
           icon: c.Labels?.['dashboard.icon'] || guessIcon(composeService || name, c.Image),
           // `url` bleibt das Prüfziel für den Uptime-Check (LAN-IP:Port, im
-          // Container auf host.docker.internal umgebogen).
-          url: c.Labels?.['dashboard.url'] || detectUrlFromPorts(c.Ports, host),
+          // Container auf host.docker.internal umgebogen) — bei gemeinsamem
+          // Docker-Netz aber bevorzugt der interne Name (zuverlässiger, klappt
+          // auch bei Ports, die auf dem Host nur an 127.0.0.1 gebunden sind).
+          url: c.Labels?.['dashboard.url'] || sameNetworkUrl || detectUrlFromPorts(c.Ports, host),
           // `publicUrl` ist die Adresse zum Anklicken: erst ein ausdrückliches
           // Label, sonst der öffentliche Cloudflare-Hostname zum passenden Port.
           publicUrl: c.Labels?.['dashboard.url'] || publicUrlFromPorts(c.Ports, ingressMap) || null,
@@ -192,6 +207,24 @@ function guessCategory(project, service, name) {
   if (lower.includes('db') || lower.includes('postgres') || lower.includes('mysql') || lower.includes('redis')) return 'Datenbank';
 
   return 'Dienste';
+}
+
+// Prüfziel über den Docker-internen Namen statt Host-IP - funktioniert auch
+// für Ports, die auf dem Host nur an 127.0.0.1 gebunden sind (dann über die
+// öffentliche IP oder host.docker.internal unerreichbar).
+function detectSameNetworkUrl(ports, containerHost) {
+  if (!ports || ports.length === 0 || !containerHost) return null;
+  const privatePorts = ports.filter(p => p.PrivatePort && !DB_PORTS.has(p.PrivatePort));
+  if (privatePorts.length === 0) return null;
+
+  const port =
+    privatePorts.find(p => WEB_PORTS.has(p.PrivatePort)) ||
+    privatePorts.find(p => !NON_WEB_PORTS.has(p.PrivatePort)) ||
+    privatePorts[0];
+
+  if (!port) return null;
+  const protocol = port.PrivatePort === 443 || port.PrivatePort === 8443 ? 'https' : 'http';
+  return `${protocol}://${containerHost}:${port.PrivatePort}`;
 }
 
 function detectUrlFromPorts(ports, host = '192.168.2.103') {

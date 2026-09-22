@@ -82,6 +82,9 @@ services:
       - ${SSH_KEY_HOST_PATH:-./ssh}:/app/ssh:ro
     networks:
       - homelab-network
+      # Zusätzlich am Minecraft-Netz, damit mc-dashboard (Port nur an 127.0.0.1
+      # des Hosts gebunden) per Container-Name statt Host-IP geprüft werden kann.
+      - minecraft_default
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -188,6 +191,9 @@ services:
 networks:
   homelab-network:
     driver: bridge
+  # Vom minecraft-Compose-Stack angelegt, hier nur referenziert (nicht erzeugt).
+  minecraft_default:
+    external: true
 
 volumes:
   homelab-data:
