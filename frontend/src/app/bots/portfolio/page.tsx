@@ -135,6 +135,15 @@ export default function PortfolioBotPage() {
 
   const set = (k: string, v: string) => setCfg(prev => ({ ...prev, [k]: v }));
 
+  const saveToken = async () => {
+    if (!cfg.bot_token?.trim()) return;
+    setBusy('token');
+    const r = await botCall('portfolio', '/config', { method: 'POST', body: JSON.stringify({ bot_token: cfg.bot_token.trim() }) });
+    setBusy(null);
+    if (r.ok) { set('bot_token', ''); loadConfig(); }
+    flash(r.ok, r.ok ? 'Token gespeichert.' : r.data?.error || 'Fehler');
+  };
+
   const saveConfig = async (partial?: Cfg) => {
     setBusy('save');
     const body = partial || cfg;
@@ -236,7 +245,14 @@ export default function PortfolioBotPage() {
               <div className="space-y-4">
                 <div className="glass-card rounded-2xl p-5 space-y-4">
                   <h2 className="text-sm font-semibold text-white/70">Verbindung</h2>
-                  <Field label="Bot-Token (nur schreiben; leer lassen = unverändert)" value={cfg.bot_token || ''} onChange={v => set('bot_token', v)} type="password" placeholder={cfg.has_token ? '•••••••• (gesetzt)' : 'Token einfügen'} />
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <Field label={`Bot-Token ${cfg.has_token ? '(gesetzt — leer lassen = unverändert)' : ''}`} value={cfg.bot_token || ''} onChange={v => set('bot_token', v)} type="password" placeholder={cfg.has_token ? '•••••••• (gesetzt)' : 'Token einfügen'} />
+                    </div>
+                    <button onClick={saveToken} disabled={busy === 'token' || !cfg.bot_token?.trim()} className="px-4 py-2 rounded-xl text-sm bg-accent/20 border border-accent/25 text-accent-light hover:bg-accent/30 disabled:opacity-40">
+                      {busy === 'token' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Setzen'}
+                    </button>
+                  </div>
                   {Array.isArray(status?.availableGuilds) && status.availableGuilds.length > 0 ? (
                     <label className="block">
                       <span className="text-[12px] text-white/45 mb-1.5 block">Server</span>
