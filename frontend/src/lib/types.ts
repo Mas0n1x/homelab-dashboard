@@ -582,6 +582,8 @@ export interface StatusService extends ServiceStatusEntry {
   /** Adresse zum Anklicken — öffentlicher Hostname, sonst = url. */
   publicUrl?: string | null
   category: string
+  icon?: string | null
+  description?: string | null
   project?: string
   source: 'docker' | 'manual'
   state?: string

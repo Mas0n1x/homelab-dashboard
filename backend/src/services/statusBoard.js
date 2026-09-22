@@ -108,7 +108,7 @@ export function buildStatusBoard(days = 30) {
     const overrideMap = new Map(overrides.map(o => [o.service_id, o]));
 
     const manual = db.prepare(
-      'SELECT id, name, url, category FROM manual_services WHERE server_id = ? ORDER BY sort_order ASC'
+      'SELECT id, name, url, category, icon, description FROM manual_services WHERE server_id = ? ORDER BY sort_order ASC'
     ).all(server.id);
 
     const firstSeen = getFirstSeenMap(server.id);
@@ -131,6 +131,8 @@ export function buildStatusBoard(days = 30) {
         // Zum Anklicken: manueller Override > öffentlicher Tunnel-Hostname > Prüfziel.
         publicUrl: o?.url || s.publicUrl || s.url,
         category: o?.category || s.category,
+        icon: o?.icon || s.icon || null,
+        description: o?.description || s.description || null,
         project: s.project,
         source: 'docker',
         state: s.state,
@@ -154,6 +156,8 @@ export function buildStatusBoard(days = 30) {
         url: m.url,
         publicUrl: m.url,
         category: m.category || 'Extern',
+        icon: m.icon || null,
+        description: m.description || null,
         source: 'manual',
         isNew: false,
         vanished: false,
