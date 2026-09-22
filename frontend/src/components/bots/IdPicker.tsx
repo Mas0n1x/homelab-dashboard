@@ -179,7 +179,12 @@ function IdPicker({ label, value, onChange, options, unavailable, unavailableHin
           </button>
 
           {open && (
-            <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-2xl bg-[#0a0a18] border border-white/[0.12] shadow-2xl overflow-hidden">
+            // Bewusst kein `absolute` mehr: ein frei schwebendes Panel legte
+            // sich bei wenig Platz über die Karte darunter, und in der
+            // Überlappung landeten Klicks im toten Winkel dieses Pickers statt
+            // beim eigentlich sichtbaren Feld dahinter. Normale Layout-Position
+            // schiebt nachfolgende Inhalte stattdessen einfach nach unten.
+            <div className="relative z-10 mt-2 rounded-2xl bg-[#0a0a18] border border-white/[0.12] shadow-2xl overflow-hidden">
                 <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.07]">
                   <Search className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
                   <input
