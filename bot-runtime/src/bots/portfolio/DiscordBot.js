@@ -2377,6 +2377,9 @@ class DiscordBot {
   _mcMapUrl() {
     return this.getConfig('mc_map_url') || process.env.MC_MAP_URL || '';
   }
+  _mcInfoUrl() {
+    return this.getConfig('mc_info_url') || process.env.MC_INFO_URL || '';
+  }
 
   // Live-Status über die öffentliche mcstatus.io-API
   async fetchMinecraftStatus() {
@@ -2391,6 +2394,7 @@ class DiscordBot {
   _buildMinecraftComponents(status, updatedUnix) {
     const ip = this._mcServerIp();
     const mapUrl = this._mcMapUrl();
+    const infoUrl = this._mcInfoUrl();
     const online = !!status?.online;
 
     const container = new ContainerBuilder().setAccentColor(online ? 0x00ff88 : 0xff4444);
@@ -2423,11 +2427,11 @@ class DiscordBot {
       );
     }
 
-    if (mapUrl) {
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setLabel('Live-Map öffnen').setEmoji('🗺️').setStyle(ButtonStyle.Link).setURL(mapUrl)
-      );
-      container.addActionRowComponents(row);
+    if (mapUrl || infoUrl) {
+      const buttons = [];
+      if (mapUrl) buttons.push(new ButtonBuilder().setLabel('Live-Map öffnen').setEmoji('🗺️').setStyle(ButtonStyle.Link).setURL(mapUrl));
+      if (infoUrl) buttons.push(new ButtonBuilder().setLabel('Server-Seite').setEmoji('🔗').setStyle(ButtonStyle.Link).setURL(infoUrl));
+      container.addActionRowComponents(new ActionRowBuilder().addComponents(buttons));
     }
 
     container.addSeparatorComponents(new SeparatorBuilder().setDivider(true));

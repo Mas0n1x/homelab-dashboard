@@ -460,6 +460,7 @@ export default function PortfolioBotPage() {
                     <ChannelPicker label="Kanal für den Status" value={cfg.mc_channel || ''} onChange={v => set('mc_channel', v)} dir={dir} />
                   </div>
                   <Field label="Live-Karte (optional, erscheint als Button)" value={cfg.mc_map_url || ''} onChange={v => set('mc_map_url', v)} placeholder="https://map.example.com" mono />
+                  <Field label="Server-Seite (optional, zusätzlicher Button)" value={cfg.mc_info_url || ''} onChange={v => set('mc_info_url', v)} placeholder="https://minecraft.example.com" mono />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="Auto-Refresh (Sekunden, min. 60)" value={cfg.mc_refresh_seconds || ''} onChange={v => set('mc_refresh_seconds', v)} type="number" placeholder="120" />
                     <div className="flex items-center justify-between pt-6">
