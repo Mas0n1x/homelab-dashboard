@@ -89,6 +89,7 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
 export async function authedFetch(endpoint: string, options?: RequestInit): Promise<Response> {
   const { accessToken } = useAuthStore.getState();
   const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     ...(options?.headers as Record<string, string> || {}),
   };
