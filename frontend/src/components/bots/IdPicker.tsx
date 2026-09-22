@@ -11,7 +11,7 @@
  */
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Hash, Folder, Volume2, MessagesSquare, AtSign, ChevronDown, Search,
   Keyboard, X, AlertTriangle, RefreshCw, Loader2,
@@ -97,6 +97,20 @@ function IdPicker({ label, value, onChange, options, unavailable, unavailableHin
   // Manuelle Eingabe: erzwungen, wenn keine Liste da ist, sonst per Knopf.
   const [manual, setManual] = useState(false);
   const byManual = manual || unavailable;
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Klick außerhalb schließt das Dropdown. Bewusst kein vollflächiges
+  // Overlay (das blockierte bislang JEDEN anderen Klick auf der Seite,
+  // solange irgendein Picker offen war - erst recht bei mehreren
+  // Kanal-/Rollen-Feldern nebeneinander in der Bot-Steuerung).
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (!wrapperRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
 
   const selected = options.find(o => o.id === value);
   const filtered = useMemo(() => {
@@ -145,7 +159,7 @@ function IdPicker({ label, value, onChange, options, unavailable, unavailableHin
           )}
         </>
       ) : (
-        <div className="relative">
+        <div className="relative" ref={wrapperRef}>
           <button
             type="button"
             onClick={() => { setOpen(o => !o); setQuery(''); }}
@@ -165,9 +179,7 @@ function IdPicker({ label, value, onChange, options, unavailable, unavailableHin
           </button>
 
           {open && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-              <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-2xl bg-[#0a0a18] border border-white/[0.12] shadow-2xl overflow-hidden">
+            <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-2xl bg-[#0a0a18] border border-white/[0.12] shadow-2xl overflow-hidden">
                 <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.07]">
                   <Search className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
                   <input
@@ -212,7 +224,6 @@ function IdPicker({ label, value, onChange, options, unavailable, unavailableHin
                   )}
                 </div>
               </div>
-            </>
           )}
         </div>
       )}
