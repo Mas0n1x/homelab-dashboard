@@ -76,3 +76,29 @@ export const CONTAINER_STATE_BG: Record<string, string> = {
   paused: 'bg-accent-warning/10 border-accent-warning/20',
   restarting: 'bg-accent-info/10 border-accent-info/20',
 };
+
+export const PROJECT_CATEGORY_ORDER = ['Infra', 'Minecraft', 'LawNet', 'Persönliches', 'Sonstiges'] as const;
+
+export const PROJECT_CATEGORIES: Record<string, (typeof PROJECT_CATEGORY_ORDER)[number]> = {
+  'homelab-dashboard': 'Infra',
+  'homelab-backend': 'Infra',
+  'homelab-frontend': 'Infra',
+  'homelab-nginx': 'Infra',
+  'homelab-stalwart': 'Infra',
+  'cloudflared': 'Infra',
+  'aurora': 'Infra',
+  'glances': 'Infra',
+  'glances-auth': 'Infra',
+  'minecraft': 'Minecraft',
+  'mc-agent': 'Minecraft',
+  'mc-dashboard': 'Minecraft',
+  'salenet': 'LawNet',
+  'mas0n1x-portfolio': 'Persönliches',
+  'mas0n1x-portfolio-backend': 'Persönliches',
+  'mas0n1x-links': 'Persönliches',
+  'profil': 'Persönliches',
+};
+
+export function categoryForProject(project: string): (typeof PROJECT_CATEGORY_ORDER)[number] {
+  return PROJECT_CATEGORIES[project.toLowerCase()] || 'Sonstiges';
+}

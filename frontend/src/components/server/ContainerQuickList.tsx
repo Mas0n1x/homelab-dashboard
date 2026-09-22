@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import * as api from '@/lib/api';
 import type { Container } from '@/lib/types';
-import { CONTAINER_STATE_COLORS } from '@/lib/constants';
+import { CONTAINER_STATE_COLORS, PROJECT_CATEGORY_ORDER, categoryForProject } from '@/lib/constants';
 
 interface ContainerQuickListProps {
   containers: Container[];
@@ -34,13 +34,17 @@ export function ContainerQuickList({ containers, serverId }: ContainerQuickListP
   const running = containers.filter(c => c.state === 'running');
   const stopped = containers.filter(c => c.state !== 'running');
 
-  // Group by compose project
-  const grouped = new Map<string, Container[]>();
+  // Group by category, then by compose project within each category
+  const byCategory = new Map<string, Map<string, Container[]>>();
   containers.forEach(c => {
     const project = c.project || 'Standalone';
-    if (!grouped.has(project)) grouped.set(project, []);
-    grouped.get(project)!.push(c);
+    const category = categoryForProject(project);
+    if (!byCategory.has(category)) byCategory.set(category, new Map());
+    const projects = byCategory.get(category)!;
+    if (!projects.has(project)) projects.set(project, []);
+    projects.get(project)!.push(c);
   });
+  const categories = PROJECT_CATEGORY_ORDER.filter(cat => byCategory.has(cat));
 
   return (
     <div className="glass-card">
@@ -58,52 +62,57 @@ export function ContainerQuickList({ containers, serverId }: ContainerQuickListP
         </div>
 
         <div className="space-y-1 max-h-[400px] overflow-y-auto scrollbar-hide">
-          {Array.from(grouped.entries()).map(([project, ctrs]) => (
-            <div key={project}>
-              {project !== 'Standalone' && (
-                <div className="text-[10px] uppercase tracking-wider text-white/20 mt-2 mb-1 px-1">{project}</div>
-              )}
-              {ctrs.map(container => (
-                <div
-                  key={container.id}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.03] transition-colors group"
-                >
-                  <span className={clsx(
-                    'w-1.5 h-1.5 rounded-full flex-shrink-0',
-                    container.state === 'running' ? 'bg-emerald-400' : container.state === 'paused' ? 'bg-amber-400' : 'bg-white/20'
-                  )} />
-                  <span className="text-xs flex-1 truncate text-white/70">{container.name}</span>
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {container.state === 'running' ? (
-                      <>
-                        <button
-                          onClick={() => handleAction(container.id, 'restart')}
-                          disabled={loading[container.id]}
-                          className="p-1 rounded hover:bg-white/[0.06] text-white/30 hover:text-amber-400 transition-colors"
-                          title="Restart"
-                        >
-                          <RotateCcw className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => handleAction(container.id, 'stop')}
-                          disabled={loading[container.id]}
-                          className="p-1 rounded hover:bg-white/[0.06] text-white/30 hover:text-red-400 transition-colors"
-                          title="Stop"
-                        >
-                          <Square className="w-3 h-3" />
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => handleAction(container.id, 'start')}
-                        disabled={loading[container.id]}
-                        className="p-1 rounded hover:bg-white/[0.06] text-white/30 hover:text-emerald-400 transition-colors"
-                        title="Start"
-                      >
-                        <Play className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
+          {categories.map(category => (
+            <div key={category}>
+              <div className="text-xs font-semibold text-cyan-400/70 mt-3 mb-1 px-1 first:mt-0">{category}</div>
+              {Array.from(byCategory.get(category)!.entries()).map(([project, ctrs]) => (
+                <div key={project}>
+                  {project !== 'Standalone' && (
+                    <div className="text-[10px] uppercase tracking-wider text-white/20 mt-1.5 mb-1 px-2">{project}</div>
+                  )}
+                  {ctrs.map(container => (
+                    <div
+                      key={container.id}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.03] transition-colors group"
+                    >
+                      <span className={clsx(
+                        'w-1.5 h-1.5 rounded-full flex-shrink-0',
+                        container.state === 'running' ? 'bg-emerald-400' : container.state === 'paused' ? 'bg-amber-400' : 'bg-white/20'
+                      )} />
+                      <span className="text-xs flex-1 truncate text-white/70">{container.name}</span>
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {container.state === 'running' ? (
+                          <>
+                            <button
+                              onClick={() => handleAction(container.id, 'restart')}
+                              disabled={loading[container.id]}
+                              className="p-1 rounded hover:bg-white/[0.06] text-white/30 hover:text-amber-400 transition-colors"
+                              title="Restart"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleAction(container.id, 'stop')}
+                              disabled={loading[container.id]}
+                              className="p-1 rounded hover:bg-white/[0.06] text-white/30 hover:text-red-400 transition-colors"
+                              title="Stop"
+                            >
+                              <Square className="w-3 h-3" />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => handleAction(container.id, 'start')}
+                            disabled={loading[container.id]}
+                            className="p-1 rounded hover:bg-white/[0.06] text-white/30 hover:text-emerald-400 transition-colors"
+                            title="Start"
+                          >
+                            <Play className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
