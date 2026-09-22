@@ -126,10 +126,16 @@ services:
     container_name: homelab-nginx
     restart: unless-stopped
     logging: *default-logging
+    environment:
+      - AURORA_PROXY_AUTH=${AURORA_PROXY_AUTH:?AURORA_PROXY_AUTH muss in der .env gesetzt sein (gemeinsames Secret mit Aurora)}
+    # Template statt fertiger Config: envsubst setzt nur die explizit genannte
+    # Variable ein und laesst alle nginx-eigenen $vars (Host, remote_addr, ...)
+    # unangetastet, damit kein Geheimnis mehr im Klartext im Repo liegt.
+    command: /bin/sh -c "envsubst '$$AURORA_PROXY_AUTH' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && exec nginx -g 'daemon off;'"
     ports:
       - "80:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
     networks:
       - homelab-network
     extra_hosts:

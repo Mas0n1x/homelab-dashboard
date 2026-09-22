@@ -53,7 +53,8 @@ http {
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Prefix /aurora-app;
             # Auto-Login: weist Aurora als vertrauenswuerdiger Proxy aus (Dashboard-Login schuetzt bereits).
-            proxy_set_header X-Aurora-Proxy-Auth "28b1a98b6636446f536c5b22aaaf4ca3ca8a42f6b7062811";
+            # Wert kommt aus AURORA_PROXY_AUTH (.env) -> beim Container-Start per envsubst eingesetzt (siehe docker-compose.yml).
+            proxy_set_header X-Aurora-Proxy-Auth "${AURORA_PROXY_AUTH}";
             # Aurora-eigenes X-Frame-Options (DENY) verbergen; die Einbettung
             # erlaubt der Server-Header (SAMEORIGIN), da same-origin.
             proxy_hide_header X-Frame-Options;
