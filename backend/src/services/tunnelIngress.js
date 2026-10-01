@@ -19,8 +19,9 @@
  */
 
 const ACCOUNT_ID = process.env.CF_ACCOUNT_ID || '2916e63238fd7f5347e2b5a250125c9b';
-// Der Tunnel, der den Pi frontet. Bei Bedarf per .env übersteuern.
-const PI_TUNNEL_NAME = process.env.CF_PI_TUNNEL_NAME || 'zuhause.max';
+// Der Tunnel, der den lokalen Server frontet (seit dem Umzug Masons VPS, vorher
+// der Pi-Tunnel „zuhause.max"). Bei Bedarf per .env übersteuern.
+const PI_TUNNEL_NAME = process.env.CF_PI_TUNNEL_NAME || 'masons-vps2';
 const TTL_MS = 10 * 60 * 1000;
 
 let cache = { at: 0, map: new Map() };
@@ -40,7 +41,8 @@ export async function getIngressHostMap() {
     );
     const listJson = await listRes.json();
     const tunnels = listJson?.result || [];
-    const tunnel = tunnels.find(t => t.name === PI_TUNNEL_NAME) || tunnels[0];
+    // Kein Fallback auf irgendeinen Tunnel: ein fremder (z. B. eines Kunden) würde falsche Links erzeugen.
+    const tunnel = tunnels.find(t => t.name === PI_TUNNEL_NAME);
     if (!tunnel) return cache.map;
 
     const cfgRes = await fetch(
