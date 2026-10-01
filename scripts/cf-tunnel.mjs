@@ -44,6 +44,7 @@ const ZONES = {
   'mas0n1x.online': '39c3eed9b086cd9452316d4df82dd0f3',
   'corleone-lspd.de': 'e1f3751e9a41c1c5282c7266b1708ee0',
   'lawnet.sale': 'ab7899425d9319f09c47e6ce0393a9e7',
+  'amo.singles': 'ac014399f51b2b75844e56d801004e06',
 };
 const API = 'https://api.cloudflare.com/client/v4';
 const BACKUP_DIR = process.env.CF_BACKUP_DIR || join(process.cwd(), 'cf-backups');
