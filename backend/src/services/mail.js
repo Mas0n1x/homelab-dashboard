@@ -100,9 +100,19 @@ function hashPassword(password) {
 
 // ─── JMAP API ───
 
+// Stalwart authentifiziert per Principal-Name, nicht per Adresse. Postfächer der
+// Hauptdomain heißen wie der lokale Teil (support), die anderer Domains bekommen
+// die Domain als Suffix (support-lawnet), damit gleiche lokale Teile nicht kollidieren.
+const PRIMARY_DOMAIN = 'mas0n1x.online';
+
+export function stalwartUsername(email) {
+  if (!email.includes('@')) return email;
+  const [local, domain] = email.toLowerCase().split('@');
+  return domain === PRIMARY_DOMAIN ? local : `${local}-${domain.split('.')[0]}`;
+}
+
 export async function getJmapSession(email, password) {
-  // Extract username from email (Stalwart authenticates with username, not full email)
-  const username = email.includes('@') ? email.split('@')[0] : email;
+  const username = stalwartUsername(email);
   const authHeader = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
   const res = await fetch(`${STALWART_URL}/.well-known/jmap`, {
     headers: { Authorization: authHeader },
@@ -206,7 +216,7 @@ export async function ensureDomain(domain) {
   }
 }
 
-export async function createAccount(username, password, displayName, domain = 'mas0n1x.online') {
+export async function createAccount(username, password, displayName, domain = PRIMARY_DOMAIN, address = `${username}@${domain}`) {
   // Ensure domain exists before creating account
   await ensureDomain(domain);
   // Hash password for Stalwart
@@ -216,7 +226,7 @@ export async function createAccount(username, password, displayName, domain = 'm
     name: username,
     secrets: [hashedPassword],
     description: displayName || username,
-    emails: [`${username}@${domain}`],
+    emails: [address],
     roles: ['user'],
   });
 }

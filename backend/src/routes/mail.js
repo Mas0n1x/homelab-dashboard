@@ -26,7 +26,7 @@ function getMailAuth(req) {
 
   const password = mail.decryptPassword(row.password_encrypted);
   // Stalwart authenticates with username, not full email
-  const username = row.email.includes('@') ? row.email.split('@')[0] : row.email;
+  const username = mail.stalwartUsername(row.email);
   return {
     account: row.email,
     password,
@@ -126,7 +126,7 @@ function authFor(userId, email) {
   ).get(userId, email);
   if (!row) throw new Error('Mail-Konto nicht gefunden');
   const password = mail.decryptPassword(row.password_encrypted);
-  const username = row.email.includes('@') ? row.email.split('@')[0] : row.email;
+  const username = mail.stalwartUsername(row.email);
   return {
     account: row.email,
     accountId: row.account_id,
@@ -316,10 +316,10 @@ router.post('/accounts', async (req, res) => {
       session = await mail.getJmapSession(email, password);
     } catch (authError) {
       // Account might not exist on Stalwart yet — auto-create it
-      const username = email.includes('@') ? email.split('@')[0] : email;
+      const username = mail.stalwartUsername(email);
       const domain = email.includes('@') ? email.split('@')[1] : undefined;
       try {
-        await mail.createAccount(username, password, displayName || username, domain);
+        await mail.createAccount(username, password, displayName || username, domain, email.toLowerCase());
       } catch (createError) {
         // Ignore if account already exists (409), re-throw otherwise
         if (!createError.message.includes('409') && !createError.message.includes('already')) {
@@ -340,7 +340,7 @@ router.post('/accounts', async (req, res) => {
 
     // Get max sort_order for user
     const maxSort = db.prepare('SELECT COALESCE(MAX(sort_order), -1) as max FROM mail_accounts WHERE user_id = ?').get(req.user.id);
-    const sortOrder = (maxSort?.max || -1) + 1;
+    const sortOrder = (maxSort?.max ?? -1) + 1;
 
     // Check if this is the first account (set as active)
     const count = db.prepare('SELECT COUNT(*) as cnt FROM mail_accounts WHERE user_id = ?').get(req.user.id);

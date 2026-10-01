@@ -5,6 +5,7 @@
  */
 import { Router } from 'express';
 import { buildStatusBoard } from '../services/statusBoard.js';
+import { getDb } from '../services/database.js';
 
 const router = Router();
 

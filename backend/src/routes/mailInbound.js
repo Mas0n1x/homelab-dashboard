@@ -35,7 +35,7 @@ export async function handleInboundMail(req, res) {
 
     const toAddress = Array.isArray(to) ? to[0] : to;
     const fromAddress = from || 'unknown@unknown';
-    const username = toAddress.split('@')[0];
+    const username = mail.stalwartUsername(toAddress);
 
     // Look up recipient's stored credentials in the dashboard DB
     const db = getDb();
@@ -57,7 +57,7 @@ export async function handleInboundMail(req, res) {
     // Get JMAP session if we don't have accountId
     let accountId = account.account_id;
     if (!accountId) {
-      const session = await mail.getJmapSession(username, password);
+      const session = await mail.getJmapSession(toAddress, password);
       accountId = session.primaryAccounts['urn:ietf:params:jmap:mail'];
     }
 
