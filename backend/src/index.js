@@ -54,6 +54,7 @@ import { recordDiskDaily, pruneDiskDaily } from './services/diskForecast.js';
 import { checkFleetImageUpdates } from './services/imageUpdates.js';
 import metricsRoutes from './routes/metrics.js';
 import tunnelsRoutes from './routes/tunnels.js';
+import ssoRoutes from './routes/sso.js';
 import botsRoutes, { createBotWebhookPassthrough, createBotEventsIngest } from './routes/bots.js';
 import filesRoutes from './routes/files.js';
 
@@ -136,6 +137,7 @@ app.use('/api/backup', backupRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/tunnels', tunnelsRoutes);
+app.use('/api/sso', ssoRoutes);
 app.use('/api/bots', botsRoutes);
 app.use('/api/files', filesRoutes);
 

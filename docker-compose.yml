@@ -40,6 +40,10 @@ services:
       - PORTFOLIO_API_KEY=${PORTFOLIO_API_KEY:?PORTFOLIO_API_KEY muss in der .env gesetzt sein (SERVICE_API_KEY des Portfolios)}
       # Alter Weg über das Admin-Passwort — nur noch Fallback, darf leer bleiben.
       - PORTFOLIO_PASSWORD=${PORTFOLIO_PASSWORD:-}
+      # Ein-Klick-Admin-Zugänge (Seite „Zugänge"). Je Ziel dasselbe Geheimnis
+      # wie dort SSO_SECRET (mind. 32 Zeichen). Leer = Kachel deaktiviert.
+      - PORTFOLIO_SSO_SECRET=${PORTFOLIO_SSO_SECRET:-}
+      - SALENET_SSO_SECRET=${SALENET_SSO_SECRET:-}
       - MAIL_ACCOUNT_PASSWORD=${MAIL_ACCOUNT_PASSWORD:?MAIL_ACCOUNT_PASSWORD muss in der .env gesetzt sein}
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET muss in der .env gesetzt sein}
       # Eigener Schluessel fuer gespeicherte Mail-Zugangsdaten. Frueher hing das

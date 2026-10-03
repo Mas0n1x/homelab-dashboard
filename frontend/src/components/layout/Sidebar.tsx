@@ -17,6 +17,7 @@ import {
   Globe,
   Cloud,
   Bot,
+  KeyRound,
   Menu, X,
 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -54,6 +55,7 @@ const TOOL_NAV: NavItem[] = [
   { href: '/bots', label: 'Discord-Bots', icon: <Bot className="w-4 h-4" /> },
   { href: '/traffic', label: 'Traffic', icon: <Globe className="w-4 h-4" /> },
   { href: '/aurora', label: 'Aurora', icon: <Cloud className="w-4 h-4" /> },
+  { href: '/zugaenge', label: 'Zugänge', icon: <KeyRound className="w-4 h-4" /> },
 ];
 
 const SYSTEM_NAV: NavItem[] = [

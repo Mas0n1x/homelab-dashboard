@@ -658,3 +658,8 @@ export async function uploadFile(serverId: string, dirPath: string, file: File):
 }
 
 
+
+// Ein-Klick-Admin-Zugänge (Portfolio, SaleNet) — siehe backend/src/routes/sso.js
+export interface SsoTarget { id: string; name: string; beschreibung: string; url: string; konfiguriert: boolean }
+export const getSsoTargets = () => fetchApi<SsoTarget[]>('/sso/targets');
+export const createSsoLink = (id: string) => fetchApi<{ url: string }>(`/sso/${id}`, { method: 'POST' });
