@@ -293,6 +293,13 @@ function ContentTab({ flash, post, busy, setBusy, dir }: { flash: (ok: boolean, 
         <ChannelPicker label="Systemstatus — Kanal" value={cfg.content_status_channel_id || ''} onChange={v => set('content_status_channel_id', v)} dir={dir} />
       </div>
       <div className="glass-card rounded-2xl p-5 space-y-3">
+        <label className="block text-[12px] text-white/50">Regeln — Titel</label>
+        <input value={cfg.content_rules_title || ''} onChange={e => set('content_rules_title', e.target.value)} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none focus:border-accent/40" />
+        <label className="block text-[12px] text-white/50">Regeln — Text (Markdown)</label>
+        <textarea value={cfg.content_rules_text || ''} onChange={e => set('content_rules_text', e.target.value)} rows={10} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none focus:border-accent/40 resize-y" />
+        <p className="text-[11px] text-white/35">Erst speichern, dann „Regeln“ posten.</p>
+      </div>
+      <div className="glass-card rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-[13px] text-white/70">Systemstatus automatisch aktualisieren (Sticky)</span>
           <Toggle checked={cfg.content_status_auto === '1'} onChange={v => set('content_status_auto', v ? '1' : '0')} />
