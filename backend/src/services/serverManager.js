@@ -93,8 +93,19 @@ class ServerManager {
       glances: glancesClient,
       // 'connected' = Docker-Zugriff, 'monitoring' = nur Glances, sonst 'disconnected'
       status: dockerInstance ? 'connected' : (glancesClient ? 'monitoring' : 'disconnected'),
-      lastSeen: new Date().toISOString()
+      // Live-Erreichbarkeit: null = noch nicht geprüft, sonst Ergebnis der letzten
+      // Messung (markSeen). Ohne das blieb der Status ewig auf dem Stand vom Start.
+      reachable: null,
+      lastSeen: null
     });
+  }
+
+  // Ergebnis einer echten Messung eintragen (Glances-Abruf im Alerting-Job).
+  markSeen(serverId, ok) {
+    const c = this.connections.get(serverId);
+    if (!c) return;
+    c.reachable = !!ok;
+    if (ok) c.lastSeen = new Date().toISOString();
   }
 
   // Alle dauerhaften SSH-Verbindungen schließen (Graceful Shutdown).
@@ -121,7 +132,9 @@ class ServerManager {
     const servers = db.prepare('SELECT * FROM servers').all();
     return servers.map(s => ({
       ...s,
-      status: this.connections.get(s.id)?.status || 'disconnected',
+      status: this.connections.get(s.id)?.reachable === false
+        ? 'disconnected'
+        : (this.connections.get(s.id)?.status || 'disconnected'),
       lastSeen: this.connections.get(s.id)?.lastSeen || null
     }));
   }

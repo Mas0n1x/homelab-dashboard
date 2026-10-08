@@ -708,6 +708,7 @@ setInterval(makeJob('alerting', () => forEachServer(async (server) => {
       const glances = connection.glances;
       const dockerInst = connection.docker;
       const systemStats = glances ? await withTimeout(glances.getSystemStats(), 8000, 'glances').catch(() => null) : null;
+      if (glances) serverManager.markSeen(server.id, !!systemStats);
 
       // Metrik-Sample für Sparklines/Verlauf persistieren (Fleet-Historie)
       if (systemStats) {
