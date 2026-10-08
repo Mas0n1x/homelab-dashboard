@@ -35,7 +35,9 @@ services:
       - GLANCES_URL=http://host.docker.internal:61208
       - DB_PATH=/app/data/dashboard.db
       - CONFIG_PATH=/app/data/config.json
-      - PORTFOLIO_API_URL=http://host.docker.internal:3000
+      # Das Portfolio liegt seit 2026-10-09 auf der Mason-VM (Heimnetz) und ist vom VPS nur
+      # noch über die öffentliche Adresse erreichbar; Standard bleibt der alte Weg.
+      - PORTFOLIO_API_URL=${PORTFOLIO_API_URL:-http://host.docker.internal:3000}
       # Lesender Dienst-Schlüssel des Portfolios (dort SERVICE_API_KEY).
       - PORTFOLIO_API_KEY=${PORTFOLIO_API_KEY:?PORTFOLIO_API_KEY muss in der .env gesetzt sein (SERVICE_API_KEY des Portfolios)}
       # Alter Weg über das Admin-Passwort — nur noch Fallback, darf leer bleiben.
