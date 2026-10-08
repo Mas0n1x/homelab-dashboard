@@ -39,7 +39,15 @@ router.get('/status-summary', async (req, res) => {
 
       const online = !!systemStats;
       const disks = systemStats?.disk || [];
-      const rootDisk = disks.find(d => d.mountPoint === '/') || disks[0] || null;
+      // Gesamtspeicher aller Platten (bei Cerberus: Root + VM-Pool), sonst zeigte die
+      // Karte nur die 69-GB-Root-Partition der 240-GB-SSD. Bei einer einzelnen
+      // Platte (alle anderen Server) ist das dasselbe wie vorher.
+      const rootDisk = disks.length ? {
+        total: disks.reduce((s, d) => s + (d.total || 0), 0),
+        used: disks.reduce((s, d) => s + (d.used || 0), 0),
+        percent: 0,
+      } : null;
+      if (rootDisk) rootDisk.percent = rootDisk.total ? (rootDisk.used / rootDisk.total) * 100 : 0;
       const temps = systemStats?.temperature || [];
 
       return {

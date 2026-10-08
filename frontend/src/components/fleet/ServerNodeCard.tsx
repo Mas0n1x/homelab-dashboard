@@ -16,6 +16,7 @@ import { Sparkline } from '@/components/ui/Sparkline';
 import type { ServerData } from '@/stores/fleetStore';
 import type { Server as ServerType, MetricSample, TunnelInfo } from '@/lib/types';
 
+import { istErreichbar } from '@/lib/formatters';
 interface ServerNodeCardProps {
   server: ServerType;
   data: ServerData;
@@ -120,7 +121,7 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
   const router = useRouter();
   const { system, containers } = data;
 
-  const isOnline = server.status === 'connected';
+  const isOnline = istErreichbar(server.status);
   const hasData = system !== null;
 
   // Metrik-Verlauf für Sparklines (react-query dedupt je Server)

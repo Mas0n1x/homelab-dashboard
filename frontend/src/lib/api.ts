@@ -196,6 +196,53 @@ export interface AuroraMetrics {
 }
 export const getAuroraMetrics = () => fetchApi<AuroraMetrics>('/aurora/metrics');
 
+// --- Proxmox (Cerberus) ---
+export interface ProxmoxGast {
+  typ: 'qemu' | 'lxc'; vmid: number; name: string; status: string;
+  cpu: number; maxcpu: number; mem: number; maxmem: number; disk: number; maxdisk: number;
+  uptime: number; vorlage: boolean; node: string;
+}
+export interface ProxmoxStatus {
+  konfiguriert: boolean;
+  version?: string;
+  node?: {
+    name: string; status: string; cpu: number; maxcpu: number; cpuModell: string;
+    mem: number; maxmem: number; disk: number; maxdisk: number; swap: number; maxswap: number;
+    uptime: number; last: number[]; kernel: string;
+  };
+  gaeste?: ProxmoxGast[];
+  speicher?: { name: string; art: string; inhalt: string; status: string; disk: number; maxdisk: number }[];
+}
+export interface ProxmoxAufgabe {
+  upid: string; art: string; vmid: string | null; benutzer: string;
+  start: number; ende: number | null; status: string;
+}
+export interface ProxmoxSnapshot { name: string; beschreibung: string; zeit: number | null; eltern: string | null }
+
+export const getProxmoxStatus = () => fetchApi<ProxmoxStatus>('/proxmox/status');
+export const getProxmoxTasks = () => fetchApi<ProxmoxAufgabe[]>('/proxmox/tasks');
+export const getProxmoxSnapshots = (typ: string, vmid: number) =>
+  fetchApi<ProxmoxSnapshot[]>(`/proxmox/gast/${typ}/${vmid}/snapshots`);
+
+// Mutationen: Fehlertext des Backends durchreichen statt nur „API error: 502".
+async function proxmoxAnfrage(endpoint: string, methode: 'POST' | 'DELETE', body?: unknown): Promise<void> {
+  const res = await authedFetch(endpoint, { method: methode, body: body ? JSON.stringify(body) : undefined });
+  if (!res.ok) {
+    const daten = await res.json().catch(() => ({}));
+    throw new Error(daten.error || `Fehler ${res.status}`);
+  }
+}
+export const proxmoxGastAktion = (typ: string, vmid: number, aktion: string) =>
+  proxmoxAnfrage(`/proxmox/gast/${typ}/${vmid}/${aktion}`, 'POST');
+export const proxmoxSnapshotErstellen = (typ: string, vmid: number, name: string, beschreibung: string) =>
+  proxmoxAnfrage(`/proxmox/gast/${typ}/${vmid}/snapshots`, 'POST', { name, beschreibung });
+export const proxmoxSnapshotRollback = (typ: string, vmid: number, name: string) =>
+  proxmoxAnfrage(`/proxmox/gast/${typ}/${vmid}/snapshots/${encodeURIComponent(name)}/rollback`, 'POST');
+export const proxmoxSnapshotLoeschen = (typ: string, vmid: number, name: string) =>
+  proxmoxAnfrage(`/proxmox/gast/${typ}/${vmid}/snapshots/${encodeURIComponent(name)}`, 'DELETE');
+export const proxmoxNodeAktion = (aktion: 'reboot' | 'shutdown') =>
+  proxmoxAnfrage(`/proxmox/node/${aktion}`, 'POST', { bestaetigt: true });
+
 // Business (SaleNet + Portfolio zusammengeführt, mit lokalem "erledigt")
 export interface BusinessItem {
   ref: string;

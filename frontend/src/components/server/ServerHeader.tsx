@@ -11,6 +11,7 @@ import { clsx } from 'clsx';
 import type { Server as ServerType } from '@/lib/types';
 import type { ServerData } from '@/stores/fleetStore';
 
+import { istErreichbar } from '@/lib/formatters';
 interface ServerHeaderProps {
   server: ServerType;
   data: ServerData;
@@ -18,7 +19,7 @@ interface ServerHeaderProps {
 
 export function ServerHeader({ server, data }: ServerHeaderProps) {
   const { system } = data;
-  const isOnline = server.status === 'connected';
+  const isOnline = istErreichbar(server.status);
 
   return (
     <motion.div

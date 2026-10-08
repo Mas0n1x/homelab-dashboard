@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { useFleetStore } from '@/stores/fleetStore';
 import { useServerStore } from '@/stores/serverStore';
 
+import { istErreichbar } from '@/lib/formatters';
 function formatBytes(bytes: number): string {
   const gb = bytes / (1024 * 1024 * 1024);
   if (gb >= 1) return `${gb.toFixed(1)} GB`;
@@ -44,7 +45,7 @@ export function FleetSummaryBar() {
       totalMem += system.memory.total;
       usedMem += system.memory.used;
     }
-    if (server.status === 'connected') onlineCount++;
+    if (istErreichbar(server.status)) onlineCount++;
   });
 
   if (cpuCount > 0) avgCpu = avgCpu / cpuCount;

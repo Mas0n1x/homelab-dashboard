@@ -8,6 +8,7 @@ import fs from 'fs';
 import { getDb } from './database.js';
 import { createGlancesClient } from './glances.js';
 import { createSshDockerAgent } from './sshDockerAgent.js';
+import { istKonfiguriert as proxmoxKonfiguriert, blockSpeicher } from './proxmox.js';
 
 class ServerManager {
   constructor() {
@@ -85,6 +86,20 @@ class ServerManager {
     const glancesClient = serverConfig.glances_url
       ? createGlancesClient(serverConfig.glances_url)
       : null;
+
+    // Der Proxmox-Host (Cerberus) meldet seine VM-Platten (LVM-Thin) nicht ueber
+    // Glances — die Speicher aus der Proxmox-API in die Plattenliste mischen.
+    if (glancesClient && proxmoxKonfiguriert() && serverConfig.id === (process.env.PROXMOX_SERVER_ID || 'cerberus')) {
+      const original = glancesClient.getSystemStats.bind(glancesClient);
+      glancesClient.getSystemStats = async () => {
+        const stats = await original();
+        try {
+          stats.disk = [...(stats.disk || []), ...(await blockSpeicher())]
+            .sort((a, b) => (b.total || 0) - (a.total || 0));
+        } catch { /* Proxmox kurz weg: dann eben nur die Glances-Platten */ }
+        return stats;
+      };
+    }
 
     this.connections.set(serverConfig.id, {
       config: serverConfig,

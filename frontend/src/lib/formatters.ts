@@ -77,3 +77,9 @@ export function formatTimeAgo(dateStr: string): string {
   if (days < 7) return `vor ${days} Tag${days > 1 ? 'en' : ''}`;
   return formatDate(dateStr);
 }
+
+// 'monitoring' = nur Glances, kein Docker-Zugriff (z. B. Proxmox-Host): der
+// Server ist erreichbar und liefert Daten. Nur 'disconnected' heisst offline.
+export function istErreichbar(status: string | undefined | null): boolean {
+  return status === 'connected' || status === 'monitoring';
+}

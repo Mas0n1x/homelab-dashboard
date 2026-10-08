@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useServerStore } from '@/stores/serverStore';
 import { useMailUnread } from '@/hooks/useMailUnread';
 
+import { istErreichbar } from '@/lib/formatters';
 interface NavItem {
   href: string;
   label: string;
@@ -55,6 +56,7 @@ const TOOL_NAV: NavItem[] = [
   { href: '/bots', label: 'Discord-Bots', icon: <Bot className="w-4 h-4" /> },
   { href: '/traffic', label: 'Traffic', icon: <Globe className="w-4 h-4" /> },
   { href: '/aurora', label: 'Aurora', icon: <Cloud className="w-4 h-4" /> },
+  { href: '/proxmox', label: 'Proxmox', icon: <Server className="w-4 h-4" /> },
   { href: '/zugaenge', label: 'Zugänge', icon: <KeyRound className="w-4 h-4" /> },
 ];
 
@@ -169,7 +171,7 @@ export function Sidebar() {
                     <span
                       className={clsx(
                         'absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0a0a1a]',
-                        server.status === 'connected'
+                        istErreichbar(server.status)
                           ? 'bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.6)]'
                           : 'bg-red-400 shadow-[0_0_6px_rgba(239,68,68,0.6)]'
                       )}
@@ -506,7 +508,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
                                 <div className="relative flex-shrink-0">
                                   <Server className="w-4 h-4 text-white/60" />
                                   <span className={clsx('absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0a0a1a]',
-                                    server.status === 'connected' ? 'bg-emerald-400' : 'bg-red-400')} />
+                                    istErreichbar(server.status) ? 'bg-emerald-400' : 'bg-red-400')} />
                                 </div>
                                 <span className="text-[13px] font-medium truncate">{server.name}</span>
                               </Link>

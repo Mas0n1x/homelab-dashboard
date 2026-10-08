@@ -11,6 +11,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { useServerStore } from '@/stores/serverStore';
 import { useFleetStore } from '@/stores/fleetStore';
 
+import { istErreichbar } from '@/lib/formatters';
 export function FleetHealthWidget() {
   const { servers } = useServerStore();
   const { serverData } = useFleetStore();
@@ -18,7 +19,7 @@ export function FleetHealthWidget() {
   let score = 100;
   let onlineCount = 0;
   for (const s of servers) {
-    if (s.status !== 'connected') { score -= 25; continue; }
+    if (!istErreichbar(s.status)) { score -= 25; continue; }
     onlineCount++;
     const sys = serverData[s.id]?.system;
     if (!sys) continue;
