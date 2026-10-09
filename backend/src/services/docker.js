@@ -14,10 +14,34 @@ function getDockerInstance(dockerInstance) {
   return dockerInstance || defaultDocker;
 }
 
-export async function getContainers(dockerInstance) {
-  const docker = getDockerInstance(dockerInstance);
+// Gleichzeitige gleiche Abfragen teilen sich EINEN Aufruf. Jeder offene Browser-Tab, der
+// Alarm-, Discovery- und Uptime-Job fragen dieselbe Liste im selben Moment ab; über SSH
+// belegte jede einen der 8 Kanäle der gemeinsamen Verbindung, beim Start liefen sie voll.
+// Bewusst nur laufende Aufrufe geteilt, kein Zwischenspeicher: nach Start/Stopp eines
+// Containers kommt sofort der frische Stand.
+const laufend = new WeakMap();
+function geteilt(dockerInstance, schluessel, abruf) {
+  const objekt = dockerInstance || defaultDocker;
+  let karte = laufend.get(objekt);
+  if (!karte) { karte = new Map(); laufend.set(objekt, karte); }
+  if (karte.has(schluessel)) return karte.get(schluessel);
+  const versprechen = Promise.resolve().then(abruf).finally(() => karte.delete(schluessel));
+  karte.set(schluessel, versprechen);
+  return versprechen;
+}
+
+export function getContainers(dockerInstance) {
+  return geteilt(dockerInstance, 'containers', () => holeContainers(dockerInstance));
+}
+
+// Rohliste der Docker-API, geteilt zwischen Container-Ansicht, Discovery und Alarmjob
+export function listContainersGeteilt(dockerInstance) {
+  return geteilt(dockerInstance, 'roh', () => getDockerInstance(dockerInstance).listContainers({ all: true }));
+}
+
+async function holeContainers(dockerInstance) {
   try {
-    const containers = await docker.listContainers({ all: true });
+    const containers = await listContainersGeteilt(dockerInstance);
 
     return containers.map(container => ({
       id: container.Id,
@@ -137,7 +161,11 @@ export async function getContainerLogs(containerId, tail = 100, dockerInstance) 
   }
 }
 
-export async function getDockerInfo(dockerInstance) {
+export function getDockerInfo(dockerInstance) {
+  return geteilt(dockerInstance, 'info', () => holeDockerInfo(dockerInstance));
+}
+
+async function holeDockerInfo(dockerInstance) {
   const docker = getDockerInstance(dockerInstance);
   try {
     const info = await docker.info();

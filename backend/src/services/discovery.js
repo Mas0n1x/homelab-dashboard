@@ -4,6 +4,7 @@
  * Licensed under the MIT License.
  */
 import serverManager from './serverManager.js';
+import { listContainersGeteilt } from './docker.js';
 import { getIngressHostMap, publicUrlFromPorts } from './tunnelIngress.js';
 
 let previousDiscovered = new Map();
@@ -84,7 +85,7 @@ export async function discoverServices(serverId = 'local') {
   const ingressMap = serverId === 'local' ? await getIngressHostMap() : null;
 
   try {
-    const containers = await docker.listContainers({ all: true });
+    const containers = await listContainersGeteilt(docker);
 
     const services = containers
       .filter(c => {
