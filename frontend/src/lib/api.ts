@@ -182,6 +182,9 @@ export const getNotifications = () => fetchApi('/portfolio/notifications');
 export const markNotificationRead = (id: string) => fetchApi(`/portfolio/notifications/${id}/read`, { method: 'PUT' });
 export const clearNotifications = () => fetchApi('/portfolio/notifications', { method: 'DELETE' });
 
+// Pelican (Game-Server): UUID → Anzeigename der Spielserver
+export const getPelicanServers = () => fetchApi<{ uuid: string; name: string; description: string }[]>('/pelican/servers');
+
 // --- Proxmox (Cerberus) ---
 export interface ProxmoxGast {
   typ: 'qemu' | 'lxc'; vmid: number; name: string; status: string;

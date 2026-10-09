@@ -6,18 +6,17 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { Play, Square, RotateCcw, FileText, ChevronDown, ChevronRight, Boxes, LayoutGrid, FolderGit2, Disc3, ArrowUpCircle, Database, Network, Plug, GitCompareArrows, LayoutTemplate, FileCode2, PieChart } from 'lucide-react';
+import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
+import { Play, Square, RotateCcw, FileText, ChevronDown, ChevronRight, Boxes, Disc3, ArrowUpCircle, Database, Network, Plug, GitCompareArrows, LayoutTemplate, FileCode2, PieChart, ExternalLink, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageTransition } from '@/components/ui/PageTransition';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { OverflowTabs } from '@/components/ui/OverflowTabs';
-import { CategoryTabs } from '@/components/ui/CategoryTabs';
+import { CategorySection } from '@/components/ui/CategorySection';
 import { Modal } from '@/components/ui/Modal';
 import { ContainerResourcesInline } from '@/components/docker/ContainerResources';
-import { ComposeActions } from '@/components/docker/ComposeActions';
 import { DiskTreemap } from '@/components/docker/DiskTreemap';
 import { ImageUpdates } from '@/components/docker/ImageUpdates';
 import { ContainerComparison } from '@/components/docker/ContainerComparison';
@@ -28,14 +27,14 @@ import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import type { Container, DockerInfo } from '@/lib/types';
 import { clsx } from 'clsx';
-import { CATEGORY_ORDER, categoryOf } from '@/lib/categories';
+import { CATEGORY_ORDER, categoryOf, projectLabel } from '@/lib/categories';
 
 export default function DockerPage() {
   const queryClient = useQueryClient();
   const { activeServerId, wsFallbackMode } = useServerStore();
-  const [activeTab, setActiveTab] = useState('services');
-  const [categoryTab, setCategoryTab] = useState('Infra');
-  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(['all']));
+  const [activeTab, setActiveTab] = useState('containers');
+  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [logsModal, setLogsModal] = useState<{ open: boolean; containerId: string; name: string; logs: string }>({ open: false, containerId: '', name: '', logs: '' });
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; containerId: string; containerName: string; action: string }>({ open: false, containerId: '', containerName: '', action: '' });
   const [loading, setLoading] = useState<Record<string, boolean>>({});
@@ -60,6 +59,39 @@ export default function DockerPage() {
   const { data: volumes } = useQuery({ queryKey: ['volumes', activeServerId], queryFn: () => api.getVolumes(activeServerId), enabled: activeTab === 'volumes' });
   const { data: networks } = useQuery({ queryKey: ['networks', activeServerId], queryFn: () => api.getNetworks(activeServerId), enabled: activeTab === 'networks' });
   const { data: ports } = useQuery({ queryKey: ['ports', activeServerId], queryFn: () => api.getPorts(activeServerId), enabled: activeTab === 'ports' });
+
+  // Anzeigenamen der Pelican-Spielserver (deren Container heißen nur nach der UUID).
+  const { data: pelicanServers } = useQuery({
+    queryKey: ['pelican-servers'],
+    queryFn: () => api.getPelicanServers(),
+    staleTime: 60000,
+    retry: false,
+  });
+  const gameServerNames = new Map<string, string>((pelicanServers || []).map(g => [g.uuid.toLowerCase(), g.name]));
+
+  // Service-Links (URL) je Projekt — gleiche Daten wie der frühere Services-Tab.
+  const { data: servicesData } = useQuery({
+    queryKey: ['services', activeServerId],
+    queryFn: () => api.getServices(activeServerId),
+    staleTime: 30000,
+  });
+  const servicesByProject = new Map<string, { name: string; url: string }[]>();
+  ((servicesData as any)?.services || []).forEach((sv: any) => {
+    if (!sv.url || !sv.project) return;
+    if (!servicesByProject.has(sv.project)) servicesByProject.set(sv.project, []);
+    servicesByProject.get(sv.project)!.push({ name: sv.name, url: sv.url });
+  });
+
+  // Ganzes Compose-Projekt starten/neustarten/stoppen (früher der Tab „Projekte“).
+  const [projectBusy, setProjectBusy] = useState('');
+  const composeMutation = useMutation({
+    mutationFn: ({ project, action }: { project: string; action: string }) => api.composeAction(project, action, activeServerId),
+    onMutate: ({ project, action }) => setProjectBusy(`${project}-${action}`),
+    onSettled: () => {
+      setProjectBusy('');
+      queryClient.invalidateQueries({ queryKey: ['containers', activeServerId] });
+    },
+  });
 
   const running = containers.filter(c => c.state === 'running').length;
   const stopped = containers.filter(c => c.state === 'exited').length;
@@ -109,14 +141,14 @@ export default function DockerPage() {
       categorizedProjects.get(cat)!.push(entry);
     });
 
-  // Ein Tab je vorhandener Kategorie (Reihenfolge wie in CATEGORY_ORDER). Ist die gewählte
-  // Kategorie nicht (mehr) da, springt die Ansicht auf die erste.
-  const categoryTabs = CATEGORY_ORDER.filter(cat => categorizedProjects.has(cat)).map(name => {
-    const catProjects = categorizedProjects.get(name)!;
-    const all = catProjects.flatMap(([, cs]) => cs);
-    return { name, count: all.length, running: all.filter(c => c.state === 'running').length };
-  });
-  const activeCategory = categoryTabs.some(t => t.name === categoryTab) ? categoryTab : (categoryTabs[0]?.name ?? '');
+  const toggleCategory = (name: string) => {
+    setOpenCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
 
   const toggleProject = (name: string) => {
     setExpandedProjects(prev => {
@@ -129,11 +161,10 @@ export default function DockerPage() {
 
   // Häufig genutzte Tabs sichtbar, Rest gruppiert im "Mehr"-Menü, sonst wird die Leiste zu voll.
   const tabs = [
-    { id: 'services', label: 'Services', icon: LayoutGrid },
     { id: 'containers', label: 'Container', count: containers.length, icon: Boxes },
-    { id: 'compose', label: 'Projekte', icon: FolderGit2 },
     { id: 'images', label: 'Images', count: (images as any[])?.length, icon: Disc3 },
     { id: 'updates', label: 'Updates', icon: ArrowUpCircle },
+    { id: 'services', label: 'Service-Links', icon: ExternalLink, overflow: true },
     { id: 'volumes', label: 'Volumes', count: (volumes as any[])?.length, icon: Database, overflow: true },
     { id: 'networks', label: 'Netzwerke', count: (networks as any[])?.length, icon: Network, overflow: true },
     { id: 'ports', label: 'Ports', count: (ports as any[])?.length, icon: Plug, overflow: true },
@@ -158,38 +189,71 @@ export default function DockerPage() {
       {/* Tabs */}
       <OverflowTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
-      {/* Services Tab */}
+      {/* Service-Links (eigene Links, Favoriten) */}
       {activeTab === 'services' && <ServicesTab />}
 
-      {/* Container Tab */}
+      {/* Container-Ansicht: Kategorien untereinander, je Kategorie aufklappbar → Projekte → Container */}
       {activeTab === 'containers' && (
-        <div className="space-y-5">
-          <CategoryTabs
-            tabs={categoryTabs}
-            active={activeCategory}
-            onChange={setCategoryTab}
-          />
-          {[activeCategory].filter(cat => categorizedProjects.has(cat)).map(categoryName => {
+        <div className="space-y-3">
+          {CATEGORY_ORDER.filter(cat => categorizedProjects.has(cat)).map(categoryName => {
             const catProjects = categorizedProjects.get(categoryName)!;
+            const all = catProjects.flatMap(([, cs]) => cs);
             return (
-              <div key={categoryName} className="space-y-4">
-                {catProjects.map(([projectName, projectContainers]) => (
-            <GlassCard key={projectName} padding={false} delay={0.1}>
-              <button
-                onClick={() => toggleProject(projectName)}
-                className="relative z-10 w-full flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors rounded-t-2xl"
+              <CategorySection
+                key={categoryName}
+                name={categoryName}
+                detail={`${catProjects.length} ${catProjects.length === 1 ? 'Projekt' : 'Projekte'}`}
+                running={all.filter(c => c.state === 'running').length}
+                total={all.length}
+                open={openCategories.has(categoryName)}
+                onToggle={() => toggleCategory(categoryName)}
               >
-                <div className="flex items-center gap-3 min-w-0">
+                {catProjects.map(([projectName, projectContainers]) => {
+                  const isCompose = projectContainers.some(c => c.project);
+                  const projRunning = projectContainers.filter(c => c.state === 'running').length;
+                  const links = servicesByProject.get(projectName) || [];
+                  const busy = (a: string) => projectBusy === `${projectName}-${a}`;
+                  return (
+            <div key={projectName} className="rounded-xl bg-white/[0.02] border border-white/[0.05] overflow-hidden">
+              <div className="relative z-10 flex items-center justify-between gap-2 pr-3">
+                <button
+                  onClick={() => toggleProject(projectName)}
+                  className="flex-1 min-w-0 flex items-center gap-3 p-3.5 hover:bg-white/[0.02] transition-colors text-left"
+                >
                   {expandedProjects.has(projectName) ? <ChevronDown className="w-4 h-4 text-white/40 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-white/40 flex-shrink-0" />}
-                  <span className="font-medium truncate">{projectName}</span>
+                  <span className="font-medium truncate">{projectLabel(projectName, gameServerNames)}</span>
                   <span className="text-xs text-white/30 flex-shrink-0 hidden sm:inline">{projectContainers.length} Container</span>
+                  <span className={clsx('text-xs flex-shrink-0', projRunning === projectContainers.length ? 'text-emerald-400' : 'text-amber-400')}>{projRunning} laufend</span>
+                </button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {links.slice(0, 2).map(l => (
+                    <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" title={l.name} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/70 transition-all">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  ))}
+                  {isCompose && (
+                    <>
+                      {projRunning < projectContainers.length && (
+                        <button onClick={() => composeMutation.mutate({ project: projectName, action: 'start' })} disabled={!!projectBusy} className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-emerald-400/60 hover:text-emerald-400 transition-all disabled:opacity-30" title="Alle starten">
+                          {busy('start') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+                      {projRunning > 0 && (
+                        <>
+                          <button onClick={() => composeMutation.mutate({ project: projectName, action: 'restart' })} disabled={!!projectBusy} className="p-1.5 rounded-lg hover:bg-amber-500/10 text-amber-400/60 hover:text-amber-400 transition-all disabled:opacity-30" title="Alle neustarten">
+                            {busy('restart') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                          </button>
+                          <button onClick={() => composeMutation.mutate({ project: projectName, action: 'stop' })} disabled={!!projectBusy} className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-400/60 hover:text-red-400 transition-all disabled:opacity-30" title="Alle stoppen">
+                            {busy('stop') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Square className="w-3.5 h-3.5" />}
+                          </button>
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
-                <div className="flex gap-2 flex-shrink-0 pl-2">
-                  <span className="text-xs text-emerald-400">{projectContainers.filter(c => c.state === 'running').length} laufend</span>
-                </div>
-              </button>
+              </div>
 
-              <AnimatePresence>
+              <AnimatePresence initial={false}>
                 {expandedProjects.has(projectName) && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
@@ -263,16 +327,14 @@ export default function DockerPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </GlassCard>
-                ))}
-              </div>
+            </div>
+                  );
+                })}
+              </CategorySection>
             );
           })}
         </div>
       )}
-
-      {/* Compose Projects Tab */}
-      {activeTab === 'compose' && <ComposeActions />}
 
       {/* Images Tab */}
       {activeTab === 'images' && (

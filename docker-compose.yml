@@ -58,6 +58,8 @@ services:
       - PROXMOX_URL=${PROXMOX_URL:-}
       - PROXMOX_TOKEN_ID=${PROXMOX_TOKEN_ID:-}
       - PROXMOX_TOKEN_SECRET=${PROXMOX_TOKEN_SECRET:-}
+      - PELICAN_URL=${PELICAN_URL:-}
+      - PELICAN_API_KEY=${PELICAN_API_KEY:-}
       - MC_AGENT_URL=${MC_AGENT_URL:-}
       - MC_AGENT_TOKEN=${MC_AGENT_TOKEN:-}
       # Mehrere Minecraft-Server (JSON-Array, hat Vorrang vor MC_AGENT_URL/TOKEN)

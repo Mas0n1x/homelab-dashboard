@@ -56,3 +56,34 @@ export function categoryOf(projectKey: string | undefined | null): string {
   const hit = PROJECT_CATEGORIES.find(cat => cat.projects.includes(key));
   return hit ? hit.name : FALLBACK_CATEGORY;
 }
+
+// Lesbare Anzeigenamen für Compose-Projekte (Schlüssel = Projektname). Nicht gelistete Projekte
+// zeigen ihren Namen unverändert; Pelican-Spielserver bekommen ihren Namen aus der Pelican-API.
+export const PROJECT_LABELS: Record<string, string> = {
+  infra: 'Basis-Dienste (Cloudflare & Glances)',
+  'homelab-dashboard': 'Homelab-Dashboard (mit Mail)',
+  'uptime-kuma': 'Uptime-Kuma',
+  'offsite-backup': 'Offsite-Backup',
+  wartung: 'Wartungsseite',
+  pihole: 'Pi-hole',
+  speedtest: 'Speedtest-Tracker',
+  minecraft: 'Minecraft-Server (mit Agent)',
+  'mc-dashboard': 'Minecraft-Dashboard',
+  pelican: 'Pelican (Panel & Wings)',
+  salenet: 'SaleNet',
+  'lawnet-demo': 'LawNet-Demo',
+  'mapnet-demo': 'MapNet-Demo',
+  'azubinet-demo': 'AzubiNet-Demo',
+  'personet-demo': 'PersoNet-Demo',
+  'dispatchnet-demo': 'DispatchNet-Demo',
+  'mas0n1x-portfolio': 'Portfolio',
+  'mas0n1x-links': 'Socials',
+  profil: 'Profil',
+  'jennys-kochbuch': 'Jennys Kochbuch',
+};
+
+/** Anzeigename eines Projekts; `gameServerNames` bildet Pelican-UUIDs auf Servernamen ab. */
+export function projectLabel(projectKey: string, gameServerNames?: Map<string, string>): string {
+  const key = projectKey.toLowerCase();
+  return gameServerNames?.get(key) || PROJECT_LABELS[key] || projectKey;
+}
