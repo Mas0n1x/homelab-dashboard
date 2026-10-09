@@ -38,7 +38,7 @@ export const PROJECT_CATEGORIES: { name: string; projects: string[] }[] = [
     name: 'Persönliches',
     projects: [
       'mas0n1x-portfolio', 'mas0n1x-portfolio-backend', 'mas0n1x-links', 'profil',
-      'jennys-kochbuch', 'kochbuch',
+      'jennys-kochbuch', 'kochbuch', 'changedetection', 'archivebox', 'convertx',
     ],
   },
 ];
@@ -67,6 +67,9 @@ export const PROJECT_LABELS: Record<string, string> = {
   wartung: 'Wartungsseite',
   pihole: 'Pi-hole',
   speedtest: 'Speedtest-Tracker',
+  changedetection: 'Changedetection (mit Browser)',
+  archivebox: 'ArchiveBox',
+  convertx: 'ConvertX (Datei-Konverter)',
   minecraft: 'Minecraft-Server (mit Agent)',
   'mc-dashboard': 'Minecraft-Dashboard',
   pelican: 'Pelican (Panel & Wings)',
