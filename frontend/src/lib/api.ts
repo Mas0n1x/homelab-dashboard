@@ -182,20 +182,6 @@ export const getNotifications = () => fetchApi('/portfolio/notifications');
 export const markNotificationRead = (id: string) => fetchApi(`/portfolio/notifications/${id}/read`, { method: 'PUT' });
 export const clearNotifications = () => fetchApi('/portfolio/notifications', { method: 'DELETE' });
 
-// Aurora (Self-Hosted Cloud) — Metrics
-export interface AuroraMetrics {
-  users: number;
-  files: number;
-  folders: number;
-  storageBytes: number;
-  trashItems: number;
-  trashBytes: number;
-  versions: number;
-  versionBytes: number;
-  shares: number;
-}
-export const getAuroraMetrics = () => fetchApi<AuroraMetrics>('/aurora/metrics');
-
 // --- Proxmox (Cerberus) ---
 export interface ProxmoxGast {
   typ: 'qemu' | 'lxc'; vmid: number; name: string; status: string;
@@ -644,8 +630,6 @@ export const getMailUnread = () =>
 
 export const getUnifiedInbox = (limit = 40) =>
   fetchApi<{ emails: UnifiedEmail[] }>(`/mail/unified?limit=${limit}`);
-
-// ─── Aurora: Durchreiche-Anmeldung ───
 
 // ─── Datei-Explorer ───
 

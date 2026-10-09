@@ -38,7 +38,7 @@ export function ContainerQuickList({ containers, serverId }: ContainerQuickListP
   const byCategory = new Map<string, Map<string, Container[]>>();
   containers.forEach(c => {
     const project = c.project || 'Standalone';
-    const category = categoryForProject(project);
+    const category = categoryForProject(c.project || c.name);
     if (!byCategory.has(category)) byCategory.set(category, new Map());
     const projects = byCategory.get(category)!;
     if (!projects.has(project)) projects.set(project, []);

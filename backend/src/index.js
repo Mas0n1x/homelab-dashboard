@@ -43,7 +43,6 @@ import { getServer as getMcServer, accessHeaders as mcAccessHeaders } from './se
 import trafficRoutes from './routes/traffic.js';
 import salenetRoutes from './routes/salenet.js';
 import businessRoutes from './routes/business.js';
-import auroraRoutes from './routes/aurora.js';
 import proxmoxRoutes from './routes/proxmox.js';
 import statusRoutes from './routes/status.js';
 import timeRoutes from './routes/time.js';
@@ -118,7 +117,6 @@ app.use('/api/minecraft', minecraftRoutes);
 app.use('/api/traffic', trafficRoutes);
 app.use('/api/salenet', salenetRoutes);
 app.use('/api/business', businessRoutes);
-app.use('/api/aurora', auroraRoutes);
 app.use('/api/proxmox', proxmoxRoutes);
 app.use('/api/status', statusRoutes);
 app.use('/api/time', timeRoutes);
@@ -493,7 +491,13 @@ wss.on('connection', (ws, req) => {
         const serverId = data.serverId || 'local';
         clientState.subscriptions.add(serverId);
 
+        // Overlap-Guard: hängt ein Aufruf (z. B. SSH-Kanal nach einem Tunnelabriss),
+        // stauen sich sonst alle 10 s weitere hängende Läufe auf — und die Karte
+        // bleibt auf „Verbinde…", obwohl der Host längst wieder da ist.
+        let sendetGerade = false;
         const sendUpdates = async () => {
+          if (sendetGerade) return;
+          sendetGerade = true;
           try {
             const connection = serverManager.getConnection(serverId);
             if (!connection) return;
@@ -502,10 +506,12 @@ wss.on('connection', (ws, req) => {
             const dockerInst = connection.docker;
 
             const dockerMod = await import('./services/docker.js');
+            // Jede Teilabfrage mit eigenem Zeitlimit: die Systemwerte (Glances)
+            // dürfen nie auf einen hängenden Docker-Aufruf warten.
             const [systemStats, containers, dockerInfo] = await Promise.all([
-              glances?.getSystemStats().catch(() => null),
-              dockerInst ? dockerMod.getContainers(dockerInst).catch(() => []) : [],
-              dockerInst ? dockerMod.getDockerInfo(dockerInst).catch(() => null) : null
+              glances ? withTimeout(glances.getSystemStats(), 8000, 'glances').catch(() => null) : null,
+              dockerInst ? withTimeout(dockerMod.getContainers(dockerInst), 12000, 'docker').catch(() => []) : [],
+              dockerInst ? withTimeout(dockerMod.getDockerInfo(dockerInst), 12000, 'docker-info').catch(() => null) : null
             ]);
 
             if (ws.readyState === ws.OPEN) {
@@ -522,6 +528,8 @@ wss.on('connection', (ws, req) => {
             }
           } catch (error) {
             console.error('Error sending stats:', error.message);
+          } finally {
+            sendetGerade = false;
           }
         };
 

@@ -10,6 +10,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ExternalLink, Plus, Trash2, Zap, BarChart3, Star, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Modal } from '@/components/ui/Modal';
+import { CategoryTabs } from '@/components/ui/CategoryTabs';
 import { ServiceDetail } from '@/components/services/ServiceDetail';
 import { getIcon } from '@/lib/constants';
 import { useServerStore } from '@/stores/serverStore';
@@ -24,6 +25,7 @@ export function ServicesTab() {
   const [editModal, setEditModal] = useState<{ open: boolean; service: Service | null }>({ open: false, service: null });
   const [editForm, setEditForm] = useState({ name: '', url: '', icon: '', description: '', category: '' });
   const [expandedService, setExpandedService] = useState<string | null>(null);
+  const [categoryTab, setCategoryTab] = useState('Infra');
   const [form, setForm] = useState({ name: '', url: '', icon: 'link', description: '', category: 'Extern' });
 
   const { data: favorites } = useQuery<Favorite[]>({
@@ -109,6 +111,13 @@ export function ServicesTab() {
     categories.get(cat)!.push(s);
   });
 
+  // Ein Tab je vorhandener Kategorie; fehlt die gewählte, springt die Ansicht auf die erste.
+  const categoryTabs = CATEGORY_ORDER.filter(cat => categories.has(cat)).map(name => ({
+    name,
+    count: categories.get(name)!.length,
+  }));
+  const activeCategory = categoryTabs.some(t => t.name === categoryTab) ? categoryTab : (categoryTabs[0]?.name ?? '');
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -121,11 +130,16 @@ export function ServicesTab() {
         </button>
       </div>
 
-      {CATEGORY_ORDER.filter(cat => categories.has(cat)).map(category => {
+      <CategoryTabs
+        tabs={categoryTabs}
+        active={activeCategory}
+        onChange={setCategoryTab}
+      />
+
+      {[activeCategory].filter(cat => categories.has(cat)).map(category => {
         const catServices = categories.get(category)!;
         return (
         <div key={category}>
-          <h2 className="text-sm font-medium text-white/40 mb-3 uppercase tracking-wider">{category}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {catServices.map((service, i) => {
               const Icon = getIcon(service.icon);

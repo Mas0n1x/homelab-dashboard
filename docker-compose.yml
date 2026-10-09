@@ -70,10 +70,6 @@ services:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
       # SSH-Key für sicheren Remote-Docker-Zugriff (z. B. VPS) — Pfad IM Container
       - SSH_KEY_PATH=${SSH_KEY_PATH:-/app/ssh/id_ed25519}
-      - AURORA_METRICS_URL=${AURORA_METRICS_URL:-http://aurora:8080}
-      - AURORA_METRICS_TOKEN=${AURORA_METRICS_TOKEN:-}
-      - AURORA_SSO_EMAIL=${AURORA_SSO_EMAIL:-}
-      - AURORA_SSO_PASSWORD=${AURORA_SSO_PASSWORD:-}
       - ETSY_KEYSTRING=${ETSY_KEYSTRING:-}
       - ETSY_SHARED_SECRET=${ETSY_SHARED_SECRET:-}
       - ETSY_REDIRECT_URI=${ETSY_REDIRECT_URI:-}
@@ -140,12 +136,8 @@ services:
     container_name: homelab-nginx
     restart: unless-stopped
     logging: *default-logging
-    environment:
-      - AURORA_PROXY_AUTH=${AURORA_PROXY_AUTH:?AURORA_PROXY_AUTH muss in der .env gesetzt sein (gemeinsames Secret mit Aurora)}
-    # Template statt fertiger Config: envsubst setzt nur die explizit genannte
-    # Variable ein und laesst alle nginx-eigenen $vars (Host, remote_addr, ...)
-    # unangetastet, damit kein Geheimnis mehr im Klartext im Repo liegt.
-    command: /bin/sh -c "envsubst '$$AURORA_PROXY_AUTH' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && exec nginx -g 'daemon off;'"
+    # Template als nginx.conf übernehmen (kein Platzhalter mehr nötig)
+    command: /bin/sh -c "cp /etc/nginx/nginx.conf.template /etc/nginx/nginx.conf && exec nginx -g 'daemon off;'"
     ports:
       - "80:80"
     volumes:

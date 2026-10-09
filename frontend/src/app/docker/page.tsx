@@ -14,6 +14,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { OverflowTabs } from '@/components/ui/OverflowTabs';
+import { CategoryTabs } from '@/components/ui/CategoryTabs';
 import { Modal } from '@/components/ui/Modal';
 import { ContainerResourcesInline } from '@/components/docker/ContainerResources';
 import { ComposeActions } from '@/components/docker/ComposeActions';
@@ -33,6 +34,7 @@ export default function DockerPage() {
   const queryClient = useQueryClient();
   const { activeServerId, wsFallbackMode } = useServerStore();
   const [activeTab, setActiveTab] = useState('services');
+  const [categoryTab, setCategoryTab] = useState('Infra');
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(['all']));
   const [logsModal, setLogsModal] = useState<{ open: boolean; containerId: string; name: string; logs: string }>({ open: false, containerId: '', name: '', logs: '' });
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; containerId: string; containerName: string; action: string }>({ open: false, containerId: '', containerName: '', action: '' });
@@ -107,6 +109,15 @@ export default function DockerPage() {
       categorizedProjects.get(cat)!.push(entry);
     });
 
+  // Ein Tab je vorhandener Kategorie (Reihenfolge wie in CATEGORY_ORDER). Ist die gewählte
+  // Kategorie nicht (mehr) da, springt die Ansicht auf die erste.
+  const categoryTabs = CATEGORY_ORDER.filter(cat => categorizedProjects.has(cat)).map(name => {
+    const catProjects = categorizedProjects.get(name)!;
+    const all = catProjects.flatMap(([, cs]) => cs);
+    return { name, count: all.length, running: all.filter(c => c.state === 'running').length };
+  });
+  const activeCategory = categoryTabs.some(t => t.name === categoryTab) ? categoryTab : (categoryTabs[0]?.name ?? '');
+
   const toggleProject = (name: string) => {
     setExpandedProjects(prev => {
       const next = new Set(prev);
@@ -152,18 +163,16 @@ export default function DockerPage() {
 
       {/* Container Tab */}
       {activeTab === 'containers' && (
-        <div className="space-y-8">
-          {CATEGORY_ORDER.filter(cat => categorizedProjects.has(cat)).map(categoryName => {
+        <div className="space-y-5">
+          <CategoryTabs
+            tabs={categoryTabs}
+            active={activeCategory}
+            onChange={setCategoryTab}
+          />
+          {[activeCategory].filter(cat => categorizedProjects.has(cat)).map(categoryName => {
             const catProjects = categorizedProjects.get(categoryName)!;
-            const catRunning = catProjects.reduce((sum, [, cs]) => sum + cs.filter(c => c.state === 'running').length, 0);
             return (
               <div key={categoryName} className="space-y-4">
-                {/* Kategorie-Überschrift */}
-                <div className="flex items-center gap-3">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-white/50">{categoryName}</h3>
-                  <span className="text-xs text-white/25">{catProjects.length} Projekte · {catRunning} laufend</span>
-                  <div className="flex-1 h-px bg-white/[0.06]" />
-                </div>
                 {catProjects.map(([projectName, projectContainers]) => (
             <GlassCard key={projectName} padding={false} delay={0.1}>
               <button

@@ -10,6 +10,7 @@ import {
   Map, Bot, GitBranch, Download, Play, Home, ShoppingCart
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { CATEGORY_ORDER, categoryOf } from './categories';
 
 export const ICON_MAP: Record<string, LucideIcon> = {
   monitor: Monitor,
@@ -77,28 +78,9 @@ export const CONTAINER_STATE_BG: Record<string, string> = {
   restarting: 'bg-accent-info/10 border-accent-info/20',
 };
 
-export const PROJECT_CATEGORY_ORDER = ['Infra', 'Minecraft', 'LawNet', 'Persönliches', 'Sonstiges'] as const;
+// Kategorien kommen aus einer einzigen Quelle (lib/categories.ts).
+export const PROJECT_CATEGORY_ORDER = CATEGORY_ORDER;
 
-export const PROJECT_CATEGORIES: Record<string, (typeof PROJECT_CATEGORY_ORDER)[number]> = {
-  'homelab-dashboard': 'Infra',
-  'homelab-backend': 'Infra',
-  'homelab-frontend': 'Infra',
-  'homelab-nginx': 'Infra',
-  'homelab-stalwart': 'Infra',
-  'cloudflared': 'Infra',
-  'aurora': 'Infra',
-  'glances': 'Infra',
-  'glances-auth': 'Infra',
-  'minecraft': 'Minecraft',
-  'mc-agent': 'Minecraft',
-  'mc-dashboard': 'Minecraft',
-  'salenet': 'LawNet',
-  'mas0n1x-portfolio': 'Persönliches',
-  'mas0n1x-portfolio-backend': 'Persönliches',
-  'mas0n1x-links': 'Persönliches',
-  'profil': 'Persönliches',
-};
-
-export function categoryForProject(project: string): (typeof PROJECT_CATEGORY_ORDER)[number] {
-  return PROJECT_CATEGORIES[project.toLowerCase()] || 'Sonstiges';
+export function categoryForProject(project: string): string {
+  return categoryOf(project);
 }

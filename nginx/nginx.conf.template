@@ -16,7 +16,7 @@ http {
         # Upstreams als Variablen + resolver -> nginx löst die Container-IPs zur
         # LAUFZEIT auf statt sie beim Start zu cachen. Sonst zeigt nginx nach einem
         # "docker compose up --build" (Container bekommt neue IP) auf die alte IP
-        # und liefert 502, bis man nginx neu startet. Wie bei Aurora unten.
+        # und liefert 502, bis man nginx neu startet. 
         set $frontend_upstream http://frontend:3000;
         set $backend_upstream  http://backend:3001;
 
@@ -36,62 +36,6 @@ http {
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_cache_bypass $http_upgrade;
-        }
-
-        # Aurora (eigene Cloud) — eingebettet unter /aurora-app/. Aurora hat KEINEN
-        # offenen Host-Port mehr und ist nur noch container-intern erreichbar
-        # (gemeinsames Docker-Netz). Der Prefix wird beim Proxy entfernt;
-        # X-Forwarded-Prefix teilt Aurora den Mount-Pfad mit, damit das SPA API/Links
-        # korrekt bildet. Same-Origin -> Login-Cookie klappt.
-        location /aurora-app/ {
-            # Variable + resolver -> Auflösung zur Laufzeit (unabhängig von der
-            # Container-Startreihenfolge; nginx crasht nicht, wenn aurora kurz fehlt).
-            set $aurora_upstream http://aurora:8080;
-            proxy_http_version 1.1;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Prefix /aurora-app;
-            # Auto-Login: weist Aurora als vertrauenswuerdiger Proxy aus (Dashboard-Login schuetzt bereits).
-            # Wert kommt aus AURORA_PROXY_AUTH (.env) -> beim Container-Start per envsubst eingesetzt (siehe docker-compose.yml).
-            proxy_set_header X-Aurora-Proxy-Auth "${AURORA_PROXY_AUTH}";
-            # Aurora-eigenes X-Frame-Options (DENY) verbergen; die Einbettung
-            # erlaubt der Server-Header (SAMEORIGIN), da same-origin.
-            proxy_hide_header X-Frame-Options;
-            # Session-Cookie auf den Prefix begrenzen.
-            proxy_cookie_path / /aurora-app/;
-            client_max_body_size 2048m;
-            proxy_read_timeout 300;
-            # Prefix strippen und an den Container weiterreichen.
-            rewrite ^/aurora-app/(.*)$ /$1 break;
-            proxy_pass $aurora_upstream;
-        }
-
-        # CardDAV/CalDAV (Kontakte/Kalender-Sync für externe Clients wie iOS,
-        # Thunderbird, DAVx5). Direkt an Aurora, ohne Prefix-Strip — der DAV-Handler
-        # erwartet absolute Pfade (/dav/contacts/…). Variable + resolver wie oben.
-        location /dav/ {
-            set $aurora_dav http://aurora:8080;
-            proxy_http_version 1.1;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_hide_header X-Frame-Options;
-            client_max_body_size 50m;
-            proxy_read_timeout 300;
-            proxy_pass $aurora_dav;
-        }
-
-        # DAV-Discovery: Clients fragen /.well-known/{carddav,caldav} ab.
-        location /.well-known/carddav {
-            set $aurora_wk http://aurora:8080;
-            proxy_set_header Host $host;
-            proxy_pass $aurora_wk;
-        }
-        location /.well-known/caldav {
-            set $aurora_wkc http://aurora:8080;
-            proxy_set_header Host $host;
-            proxy_pass $aurora_wkc;
         }
 
         # Auth API (rate limited)

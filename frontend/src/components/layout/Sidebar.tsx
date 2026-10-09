@@ -15,7 +15,6 @@ import {
   ListChecks,
   Gamepad2,
   Globe,
-  Cloud,
   Bot,
   KeyRound,
   Menu, X,
@@ -55,7 +54,6 @@ const TOOL_NAV: NavItem[] = [
   { href: '/minecraft', label: 'Minecraft', icon: <Gamepad2 className="w-4 h-4" /> },
   { href: '/bots', label: 'Discord-Bots', icon: <Bot className="w-4 h-4" /> },
   { href: '/traffic', label: 'Traffic', icon: <Globe className="w-4 h-4" /> },
-  { href: '/aurora', label: 'Aurora', icon: <Cloud className="w-4 h-4" /> },
   { href: '/proxmox', label: 'Proxmox', icon: <Server className="w-4 h-4" /> },
   { href: '/zugaenge', label: 'Zugänge', icon: <KeyRound className="w-4 h-4" /> },
 ];
@@ -385,7 +383,6 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
     { href: '/', label: 'Fleet', icon: <LayoutDashboard className="w-5 h-5" /> },
     { href: '/tasks', label: 'Aufgaben', icon: <ListChecks className="w-5 h-5" /> },
     { href: '/mail', label: 'Mail', icon: <Mail className="w-5 h-5" />, badge: unread },
-    { href: '/aurora', label: 'Aurora', icon: <Cloud className="w-5 h-5" /> },
   ];
 
   const linkCls = (active: boolean) => clsx(
