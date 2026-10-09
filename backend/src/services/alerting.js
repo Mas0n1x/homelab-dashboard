@@ -333,7 +333,7 @@ export async function checkAlerts(data) {
           message: `Die höchste gemessene Temperatur liegt bei **${maxTemp.toFixed(1)} °C**.`,
           color: 0xff4444,
           fields: [
-            ...temps.slice(0, 6).map(t => ({ name: t.label || 'Sensor', value: `${Number(t.value).toFixed(1)} °C`, inline: true })),
+            ...[...temps].sort((a, b) => Number(b.value) - Number(a.value)).slice(0, 6).map(t => ({ name: t.label || 'Sensor', value: `${Number(t.value).toFixed(1)} °C`, inline: true })),
             ...contextFields(data),
           ],
         }),

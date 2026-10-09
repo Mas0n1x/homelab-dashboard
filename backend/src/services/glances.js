@@ -164,7 +164,9 @@ export function createGlancesClient(baseUrl) {
             rxRate: n.bytes_recv_rate_per_sec || n.bytes_recv_rate || 0,
             txRate: n.bytes_sent_rate_per_sec || n.bytes_sent_rate || 0
           })) : [],
-          temperature: Array.isArray(sensors) ? sensors.filter(s => s.type === 'temperature_core').map(s => ({
+          // Unplausible Werte (Sentinel/defekter Sensor, z. B. 126 °C bei Kernen um 40 °C) ausblenden,
+          // sonst verfälschen sie Maximum, Alarm und Anzeige
+          temperature: Array.isArray(sensors) ? sensors.filter(s => s.type === 'temperature_core' && Number(s.value) > 0 && Number(s.value) < 120).map(s => ({
             label: s.label,
             value: s.value
           })) : [],
