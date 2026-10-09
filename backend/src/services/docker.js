@@ -671,11 +671,20 @@ export async function getDiskUsage(dockerInstance) {
 
 // ==================== CONTAINER STATS BATCH ====================
 
-export async function getAllContainerStats(dockerInstance) {
+export function getAllContainerStats(dockerInstance) {
+  return geteilt(dockerInstance, 'stats-alle', () => holeAlleContainerStats(dockerInstance));
+}
+
+// Höchstens so viele stats-Aufrufe gleichzeitig: jeder braucht ~1 s (Docker misst über zwei
+// Stichproben) und belegt über SSH einen der 8 Kanäle. Alle 11 auf einmal sperrten die
+// Verbindung für Container-Liste und Info — bei halb abgebrochenen Aufrufen dauerhaft.
+const STATS_PARALLEL = 4;
+
+async function holeAlleContainerStats(dockerInstance) {
   const docker = getDockerInstance(dockerInstance);
   try {
     const containers = await docker.listContainers({ filters: { status: ['running'] } });
-    const statsPromises = containers.map(async (c) => {
+    const statsFuer = async (c) => {
       try {
         const container = docker.getContainer(c.Id);
         const stats = await container.stats({ stream: false });
@@ -697,9 +706,12 @@ export async function getAllContainerStats(dockerInstance) {
       } catch {
         return null;
       }
-    });
+    };
 
-    const results = await Promise.all(statsPromises);
+    const results = [];
+    for (let i = 0; i < containers.length; i += STATS_PARALLEL) {
+      results.push(...await Promise.all(containers.slice(i, i + STATS_PARALLEL).map(statsFuer)));
+    }
     return results.filter(Boolean);
   } catch (error) {
     console.error('Error fetching all container stats:', error.message);

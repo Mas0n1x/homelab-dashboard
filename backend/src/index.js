@@ -705,12 +705,18 @@ setInterval(makeJob('portfolio', async () => {
 // Background: Container stats (every 5 seconds) — nur wenn jemand zuschaut (spart SSH-Last).
 // Overlap-Guard + parallele Server + Timeout: ein langsamer SSH-Server darf den
 // 5-s-Takt nicht aufstauen.
+// Fernserver höchstens alle 10 s: pro Messung läuft je Container ein stats-Aufruf über SSH.
+const letzteStats = new Map();
 setInterval(makeJob('container-stats', async () => {
   if (wss.clients.size === 0) return;
   const dockerMod = await import('./services/docker.js');
   await forEachServer(async (server) => {
     const dockerInst = serverManager.getDocker(server.id);
     if (!dockerInst) return;
+    if (server.id !== 'local') {
+      if (Date.now() - (letzteStats.get(server.id) || 0) < 9500) return;
+      letzteStats.set(server.id, Date.now());
+    }
     const stats = await withTimeout(dockerMod.getAllContainerStats(dockerInst), 8000, 'stats');
     broadcast({ type: 'container-stats', serverId: server.id, data: stats });
   });
