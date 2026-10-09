@@ -57,6 +57,11 @@ const CONNECT_ZEITLIMIT_MS = 20 * 1000;
 // für immer. Beim Auslösen wird die Verbindung verworfen, der nächste Aufruf
 // baut sauber neu auf.
 const EXEC_ZEITLIMIT_MS = 20 * 1000;
+// Sind alle Kanäle belegt und wird auch nach dieser Frist keiner frei, hängen sie an einer
+// halbtoten Verbindung (Tunnel-Aussetzer, Neustart des Zielservers). Ohne Frist stand die
+// Warteschlange dann für immer — die Karte zeigte „0/0 Container", bis das Backend neu
+// gestartet wurde. Mit Frist wird die Verbindung verworfen und beim nächsten Aufruf neu aufgebaut.
+const KANAL_WARTE_ZEITLIMIT_MS = 10 * 1000;
 
 /**
  * Erzeugt einen http.Agent, der jede HTTP-Verbindung über einen Exec-Kanal
@@ -157,7 +162,19 @@ export function createSshDockerAgent(connectConfig, label = 'ssh') {
       return Promise.resolve();
     }
     return new Promise((erfuellen, ablehnen) => {
-      warteschlange.push({ erfuellen, ablehnen });
+      const eintrag = {
+        erfuellen: () => { clearTimeout(frist); erfuellen(); },
+        ablehnen: (e) => { clearTimeout(frist); ablehnen(e); },
+      };
+      const frist = setTimeout(() => {
+        if (!warteschlange.includes(eintrag)) return;
+        warteschlange = warteschlange.filter((x) => x !== eintrag);
+        const fehler = new Error(`Alle ${MAX_KANAELE} Kanäle zu ${label} sind belegt — Verbindung wird neu aufgebaut`);
+        zuruecksetzen(fehler, 'kanaele-voll');
+        ablehnen(fehler);
+      }, KANAL_WARTE_ZEITLIMIT_MS);
+      frist.unref?.();
+      warteschlange.push(eintrag);
     });
   }
 

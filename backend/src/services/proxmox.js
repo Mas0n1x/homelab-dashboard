@@ -89,3 +89,16 @@ export async function blockSpeicher() {
   speicherCache = { zeit: Date.now(), werte };
   return werte;
 }
+
+// Laufende Gäste mit ihrem RAM-Wert aus Proxmox. Proxmox zählt den Seitencache im Gast als
+// „belegt" — für eine ehrliche Anzeige nimmt der Aufrufer, wo möglich, den echten Wert aus dem Gast.
+let gaesteCache = { zeit: 0, werte: [] };
+export async function laufendeGaeste() {
+  if (Date.now() - gaesteCache.zeit < 20000) return gaesteCache.werte;
+  const ressourcen = await pve('GET', '/cluster/resources?type=vm');
+  const werte = ressourcen
+    .filter((g) => g.status === 'running' && g.template !== 1)
+    .map((g) => ({ vmid: g.vmid, name: g.name || `vm-${g.vmid}`, mem: g.mem || 0, maxmem: g.maxmem || 0 }));
+  gaesteCache = { zeit: Date.now(), werte };
+  return werte;
+}

@@ -361,6 +361,26 @@ export function initDatabase() {
     );
   `);
 
+  // Freigabelinks (Dateien > Teilen): öffentlicher Download per unratbarem Token.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS shares (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      token TEXT UNIQUE NOT NULL,
+      server_id TEXT NOT NULL,
+      path TEXT NOT NULL,
+      name TEXT NOT NULL,
+      size INTEGER,
+      password_hash TEXT,
+      expires_at TEXT,
+      max_downloads INTEGER,
+      downloads INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      created_by INTEGER,
+      last_download_at TEXT,
+      revoked INTEGER DEFAULT 0
+    );
+  `);
+
   // Migration: SSH-Spalten für sicheren Remote-Docker-Zugriff (ohne offenen Port)
   const serverCols = db.prepare('PRAGMA table_info(servers)').all().map(c => c.name);
   const sshCols = [

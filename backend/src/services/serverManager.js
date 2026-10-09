@@ -7,8 +7,9 @@ import Docker from 'dockerode';
 import fs from 'fs';
 import { getDb } from './database.js';
 import { createGlancesClient } from './glances.js';
+import { createProxmoxGuestClient } from './proxmoxGuest.js';
 import { createSshDockerAgent } from './sshDockerAgent.js';
-import { istKonfiguriert as proxmoxKonfiguriert, blockSpeicher } from './proxmox.js';
+import { istKonfiguriert as proxmoxKonfiguriert, blockSpeicher, laufendeGaeste } from './proxmox.js';
 
 class ServerManager {
   constructor() {
@@ -83,20 +84,26 @@ class ServerManager {
       dockerInstance = undefined;
     }
 
-    const glancesClient = serverConfig.glances_url
-      ? createGlancesClient(serverConfig.glances_url)
-      : null;
+    // "proxmox://<vmid>" = VM ohne Glances (TrueNas): Messwerte aus Proxmox + Gast-Agent
+    const gastVm = /^proxmox:\/\/(\d+)$/.exec(serverConfig.glances_url || '');
+    const glancesClient = gastVm
+      ? createProxmoxGuestClient(Number(gastVm[1]))
+      : (serverConfig.glances_url ? createGlancesClient(serverConfig.glances_url) : null);
 
     // Der Proxmox-Host (Cerberus) meldet seine VM-Platten (LVM-Thin) nicht ueber
     // Glances — die Speicher aus der Proxmox-API in die Plattenliste mischen.
     if (glancesClient && proxmoxKonfiguriert() && serverConfig.id === (process.env.PROXMOX_SERVER_ID || 'cerberus')) {
       const original = glancesClient.getSystemStats.bind(glancesClient);
       glancesClient.getSystemStats = async () => {
-        const stats = await original();
+        // Kopie: der Glances-Client teilt die Messung zwischen Aufrufern, ein Anhängen
+        // am Original würde die Platten bei jedem Abruf verdoppeln.
+        const stats = { ...(await original()) };
         try {
           stats.disk = [...(stats.disk || []), ...(await blockSpeicher())]
             .sort((a, b) => (b.total || 0) - (a.total || 0));
         } catch { /* Proxmox kurz weg: dann eben nur die Glances-Platten */ }
+        try { stats.memory = await this.echterHostSpeicher(stats.memory, glancesClient); }
+        catch { /* ohne Aufschlüsselung bleibt der Glances-Wert stehen */ }
         return stats;
       };
     }
@@ -113,6 +120,43 @@ class ServerManager {
       reachable: null,
       lastSeen: null
     });
+  }
+
+  // RAM des Proxmox-Hosts ohne die Reservierung der VMs. Der Host sieht für jede VM den
+  // vollen Prozessspeicher (auch deren Seitencache und alles, was sie je angefasst haben) —
+  // das ist „vergebener", nicht „genutzter" RAM. Echt genutzt =
+  //   Host belegt − Speicher der KVM-Prozesse + tatsächlich belegter Speicher in den Gästen.
+  // Gäste mit eigenem Glances (Mason, LawNet) liefern ihren echten Wert (gesamt − verfügbar);
+  // alle anderen (TrueNas) zählen mit dem Proxmox-Wert, der bei TrueNas auch den ZFS-Cache enthält.
+  async echterHostSpeicher(memory, glancesClient) {
+    if (!memory?.total) return memory;
+    const kvmRss = await glancesClient.getKvmRss();
+    const gaeste = await laufendeGaeste();
+    if (!kvmRss || !gaeste.length) return memory;
+
+    let gaesteBelegt = 0;
+    for (const g of gaeste) {
+      let echt = g.mem;
+      const verbindung = this.connections.get(g.name.toLowerCase());
+      if (verbindung?.glances) {
+        try {
+          const s = await verbindung.glances.getSystemStats();
+          if (s?.memory?.used) echt = s.memory.used;
+        } catch { /* Gast-Glances kurz weg: Proxmox-Wert */ }
+      }
+      gaesteBelegt += Math.min(echt, g.maxmem || echt);
+    }
+
+    const used = Math.max(0, memory.used - kvmRss + gaesteBelegt);
+    return {
+      ...memory,
+      used,
+      free: Math.max(0, memory.total - used),
+      percent: (used / memory.total) * 100,
+      // Zur Anzeige/Fehlersuche: was der Host roh gemeldet hat und wie viel davon VM-Reservierung ist
+      hostRoh: memory.used,
+      vmReserviert: kvmRss,
+    };
   }
 
   // Ergebnis einer echten Messung eintragen (Glances-Abruf im Alerting-Job).

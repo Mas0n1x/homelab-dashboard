@@ -19,7 +19,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkAuth = async () => {
-      if (PUBLIC_PATHS.includes(pathname)) {
+      if (PUBLIC_PATHS.includes(pathname) || pathname.startsWith('/s/')) {
         setChecking(false);
         return;
       }

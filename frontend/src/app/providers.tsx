@@ -43,7 +43,8 @@ function WebSocketManager({ children }: { children: React.ReactNode }) {
 function AppContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  if (pathname === '/login') {
+  // /login und die öffentlichen Freigabeseiten (/s/<token>) laufen ohne Dashboard-Hülle
+  if (pathname === '/login' || pathname.startsWith('/s/')) {
     return <>{children}</>;
   }
 

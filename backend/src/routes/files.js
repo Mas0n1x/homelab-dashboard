@@ -22,7 +22,7 @@ const DEFAULT_REMOTE_PATH = '/root';
 
 // Löst serverId auf eine SSH-Config auf (oder null für den lokalen Host-Mount).
 // Wirft, wenn der Server nicht existiert oder (noch) keinen SSH-Zugang hat.
-function resolveTarget(serverId) {
+export function resolveTarget(serverId) {
   if (!serverId || serverId === 'local') return { sshConfig: null };
   const conn = serverManager.getConnection(serverId);
   if (!conn) {

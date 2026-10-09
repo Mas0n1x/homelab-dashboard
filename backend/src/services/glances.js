@@ -12,6 +12,13 @@ const ANFRAGE_TIMEOUT_MS = 3000;
 const VERSUCHE = 2;
 const WIEDERHOLPAUSE_MS = 200;
 
+// Glances berechnet die CPU-Auslastung aus dem Abstand zwischen zwei Abrufen. Kommen
+// zwei Abrufe fast gleichzeitig (WebSocket-Takt, Alarmjob, Seitenaufruf), misst Glances
+// über ein Zehntel einer Sekunde und liefert gequantelte Ausreißer (100 / 50 / 33,3 %)
+// bei einem Server, der real zu 96 % im Leerlauf ist. Deshalb teilen sich alle Aufrufer
+// eine Messung, die höchstens alle CACHE_MS neu geholt wird.
+const CACHE_MS = 5000;
+
 // Die sechs Teilabfragen einer Systemmessung. Bewusst einzeln statt über
 // /api/4/all: das liefert denselben Inhalt in 260 KB statt in 2,5 KB.
 const TEILE = ['cpu', 'mem', 'fs', 'network', 'sensors', 'uptime'];
@@ -91,8 +98,30 @@ export function createGlancesClient(baseUrl) {
     throw letzterFehler;
   }
 
+  let cache = { zeit: 0, versprechen: null };
+
   return {
-    async getSystemStats() {
+    getSystemStats() {
+      const jetzt = Date.now();
+      if (cache.versprechen && jetzt - cache.zeit < CACHE_MS) return cache.versprechen;
+      const versprechen = this.messeSystem();
+      cache = { zeit: jetzt, versprechen };
+      // Fehlschläge nicht zwischenspeichern — der nächste Aufruf versucht es neu.
+      versprechen.catch(() => { if (cache.versprechen === versprechen) cache = { zeit: 0, versprechen: null }; });
+      return versprechen;
+    },
+
+    // Summe des physischen Speichers aller KVM-Prozesse (Proxmox-Host): Das ist der Teil
+    // des Host-RAMs, den die VMs belegen — egal ob ihr Inneres davon Cache oder Nutzlast ist.
+    async getKvmRss() {
+      const liste = await fetchGlances('/api/4/processlist');
+      if (!Array.isArray(liste)) return 0;
+      return liste
+        .filter(p => p?.name === 'kvm' || p?.name === 'qemu-system-x86')
+        .reduce((summe, p) => summe + (p?.memory_info?.rss || 0), 0);
+    },
+
+    async messeSystem() {
       // allSettled statt all: fällt eine der sechs Teilabfragen aus, wären mit
       // Promise.all auch die fünf gelungenen verloren. Über einen Tunnel mit
       // gelegentlichen Aussetzern verliert man so ein Vielfaches an Messwerten.

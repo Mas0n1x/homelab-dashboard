@@ -693,6 +693,29 @@ export async function uploadFile(serverId: string, dirPath: string, file: File):
 
 
 
+// ─── Freigabelinks (Dateien > Teilen) ───
+
+export interface ShareInfo {
+  id: number; token: string; serverId: string; path: string; name: string; size: number | null;
+  passwort: boolean; expiresAt: string | null; maxDownloads: number | null; downloads: number;
+  createdAt: string; lastDownloadAt: string | null; status: 'aktiv' | 'beendet' | 'widerrufen';
+}
+
+export const createShare = (body: { serverId: string; path: string; expiresInHours: number | null; password?: string; maxDownloads?: number | null }) =>
+  fetchApi<ShareInfo>('/shares', { method: 'POST', body: JSON.stringify(body) });
+
+export const listShares = () => fetchApi<ShareInfo[]>('/shares');
+
+export const revokeShare = (id: number) => fetchApi<{ ok: boolean }>(`/shares/${id}`, { method: 'DELETE' });
+
+// Öffentlicher Link: Basis-URL der Freigabeseite. Im LAN/lokal steht der Hostname nicht öffentlich
+// bereit, dann die öffentliche Dashboard-Adresse nehmen.
+export function shareUrl(token: string): string {
+  const { origin, hostname } = window.location;
+  const intern = hostname === 'localhost' || /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname) || hostname.endsWith('.local');
+  return `${intern ? 'https://dash.mas0n1x.online' : origin}/s/${token}`;
+}
+
 // Ein-Klick-Admin-Zugänge (Portfolio, SaleNet) — siehe backend/src/routes/sso.js
 export interface SsoTarget { id: string; name: string; beschreibung: string; url: string; konfiguriert: boolean }
 export const getSsoTargets = () => fetchApi<SsoTarget[]>('/sso/targets');

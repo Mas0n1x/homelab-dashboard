@@ -9,7 +9,7 @@ import { useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   FolderOpen, Folder, File as FileIcon, ArrowUp, Upload, FolderPlus,
-  Trash2, Download, Save, Loader2, X, AlertTriangle, Server, ShieldAlert,
+  Trash2, Download, Save, Loader2, X, AlertTriangle, Server, ShieldAlert, Share2, Link2,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { PageTransition } from '@/components/ui/PageTransition';
@@ -19,6 +19,7 @@ import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 import { formatBytes, formatDateTime } from '@/lib/formatters';
 import type { FileEntry } from '@/lib/api';
+import { ShareCreateModal, SharesListModal } from '@/components/files/ShareDialogs';
 
 const DEFAULT_PATH: Record<string, string> = {}; // pro Server gemerkter letzter Pfad
 
@@ -35,6 +36,8 @@ export default function FilesPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shareTarget, setShareTarget] = useState<{ serverId: string; path: string; name: string } | null>(null);
+  const [sharesOpen, setSharesOpen] = useState(false);
 
   const activeServer = servers.find(s => s.id === serverId) || servers[0];
   const activeId = activeServer?.id || '';
@@ -225,6 +228,12 @@ export default function FilesPage() {
             </div>
 
             <button
+              onClick={() => setSharesOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white/90 transition-colors"
+            >
+              <Link2 className="w-3.5 h-3.5" /> Freigaben
+            </button>
+            <button
               onClick={() => setNewFolder(true)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white/90 transition-colors"
             >
@@ -297,6 +306,15 @@ export default function FilesPage() {
                       </td>
                       <td className="py-2.5 pr-4 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {entry.type === 'file' && (
+                            <button
+                              onClick={() => setShareTarget({ serverId: activeId, path: `${(data?.path || activePath || '/').replace(/\/$/, '')}/${entry.name}`, name: entry.name })}
+                              title="Per Link teilen"
+                              className="p-1.5 rounded-lg text-white/40 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           {entry.type !== 'dir' && (
                             <button onClick={() => download(entry)} title="Herunterladen" className="p-1.5 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/10 transition-colors">
                               <Download className="w-3.5 h-3.5" />
@@ -354,6 +372,9 @@ export default function FilesPage() {
           </div>
         ) : null}
       </Modal>
+
+      <ShareCreateModal target={shareTarget} onClose={() => setShareTarget(null)} />
+      <SharesListModal open={sharesOpen} onClose={() => setSharesOpen(false)} />
 
       {/* Neuer Ordner */}
       <Modal isOpen={newFolder} onClose={() => setNewFolder(false)} title="Neuer Ordner" size="sm">

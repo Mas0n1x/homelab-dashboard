@@ -3,6 +3,7 @@
  * Copyright (c) 2024-2026 DEV Mas0n1x.
  * Licensed under the MIT License.
  */
+import serverManager from '../services/serverManager.js';
 import { Router } from 'express';
 import { pve, istKonfiguriert, ProxmoxFehler } from '../services/proxmox.js';
 import { logAudit } from '../services/audit.js';
@@ -59,6 +60,20 @@ router.get('/status', async (req, res) => {
         vorlage: g.template === 1, node: g.node,
       }))
       .sort((a, b) => a.vmid - b.vmid);
+    // Proxmox zählt den Seitencache im Gast als „belegt" und den Host-RAM samt VM-Reservierung.
+    // Wo ein Gast ein eigenes Glances hat, den echten Wert nehmen; für den Host den bereinigten.
+    await Promise.all(gaeste.filter((g) => g.status === 'running').map(async (g) => {
+      try {
+        const s = await serverManager.getConnection(g.name.toLowerCase())?.glances?.getSystemStats();
+        if (s?.memory?.used) { g.mem = Math.min(s.memory.used, g.maxmem || s.memory.used); g.memEcht = true; }
+      } catch { /* Gast-Glances kurz weg: Proxmox-Wert bleibt */ }
+    }));
+    let hostMem = status.memory?.used ?? 0;
+    try {
+      const h = await serverManager.getConnection(process.env.PROXMOX_SERVER_ID || 'cerberus')?.glances?.getSystemStats();
+      if (h?.memory?.vmReserviert && h.memory.used) hostMem = h.memory.used;
+    } catch { /* Host-Glances kurz weg: Proxmox-Wert bleibt */ }
+
     const speicher = ressourcen
       .filter((r) => r.type === 'storage')
       .map((s) => ({ name: s.storage, art: s.plugintype, inhalt: s.content, status: s.status, disk: s.disk ?? 0, maxdisk: s.maxdisk ?? 0 }));
@@ -68,7 +83,7 @@ router.get('/status', async (req, res) => {
       node: {
         name: node, status: status.uptime ? 'online' : 'unbekannt',
         cpu: status.cpu ?? 0, maxcpu: status.cpuinfo?.cpus ?? 0, cpuModell: status.cpuinfo?.model ?? '',
-        mem: status.memory?.used ?? 0, maxmem: status.memory?.total ?? 0,
+        mem: hostMem, maxmem: status.memory?.total ?? 0,
         disk: status.rootfs?.used ?? 0, maxdisk: status.rootfs?.total ?? 0,
         swap: status.swap?.used ?? 0, maxswap: status.swap?.total ?? 0,
         uptime: status.uptime ?? 0, last: status.loadavg ?? [], kernel: status['current-kernel']?.release ?? '',

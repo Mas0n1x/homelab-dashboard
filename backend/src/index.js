@@ -58,6 +58,7 @@ import tunnelsRoutes from './routes/tunnels.js';
 import ssoRoutes from './routes/sso.js';
 import botsRoutes, { createBotWebhookPassthrough, createBotEventsIngest } from './routes/bots.js';
 import filesRoutes from './routes/files.js';
+import { sharesAdminRoutes, sharePublicRoutes } from './routes/shares.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -106,6 +107,9 @@ app.post('/api/mail/inbound', express.json({ limit: '25mb' }), handleInboundMail
 // Zustandswert aus dem Anmeldevorgang.
 app.get('/api/etsy/callback', createEtsyCallback());
 
+// Öffentliche Freigabelinks (Download per Token, optional Passwort) — VOR der Anmelde-Middleware.
+app.use('/api/share', sharePublicRoutes);
+
 // Auth middleware for all other /api routes
 app.use('/api', authenticateToken);
 
@@ -142,6 +146,7 @@ app.use('/api/tunnels', tunnelsRoutes);
 app.use('/api/sso', ssoRoutes);
 app.use('/api/bots', botsRoutes);
 app.use('/api/files', filesRoutes);
+app.use('/api/shares', sharesAdminRoutes);
 
 // Create HTTP server
 const server = createServer(app);
