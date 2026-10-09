@@ -43,7 +43,10 @@ function fail(res, error, fallbackMessage) {
 }
 
 function defaultPath(sshConfig) {
-  return sshConfig ? DEFAULT_REMOTE_PATH : DEFAULT_LOCAL_PATH;
+  if (!sshConfig) return DEFAULT_LOCAL_PATH;
+  // Nicht-root-Benutzer (Mason, LawNet, Ares: „max") dürfen /root nicht lesen — dort im Home starten.
+  const user = sshConfig.ssh_user;
+  return user && user !== 'root' ? `/home/${user}` : DEFAULT_REMOTE_PATH;
 }
 
 // ==================== VERZEICHNIS-LISTING ====================

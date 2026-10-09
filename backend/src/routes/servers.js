@@ -67,6 +67,8 @@ router.get('/status-summary', async (req, res) => {
         maxTemp: temps.length ? Math.max(...temps.map(t => Number(t.value) || 0)) : null,
         uptime: systemStats?.uptime || null,
         lastSeen: connection?.lastSeen || null,
+        // Diagnose: Zustand der SSH-Docker-Verbindung (verbunden, offene/wartende Kanäle, letzter Abbruch)
+        ssh: connection?.sshAgent?.zustand?.() || null,
       };
     }));
 

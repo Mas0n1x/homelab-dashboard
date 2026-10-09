@@ -4,14 +4,22 @@
  * Licensed under the MIT License.
  */
 import { Router } from 'express';
-import * as glances from '../services/glances.js';
+import serverManager from '../services/serverManager.js';
 
 const router = Router();
+
+// Der Glances-Client des gewählten Servers (Standard: lokal). Der frühere Direktzugriff auf
+// GLANCES_URL ohne Zugangsdaten lief seit dem Passwortschutz von Glances auf 401.
+function glancesFuer(req) {
+  const g = serverManager.getConnection(req.query.serverId || 'local')?.glances;
+  if (!g) { const e = new Error('Für diesen Server ist kein Glances konfiguriert'); throw e; }
+  return g;
+}
 
 // Get all system stats
 router.get('/stats', async (req, res) => {
   try {
-    const stats = await glances.getSystemStats();
+    const stats = await glancesFuer(req).getSystemStats();
     res.json(stats);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch system stats', message: error.message });
@@ -21,7 +29,7 @@ router.get('/stats', async (req, res) => {
 // Get CPU stats
 router.get('/cpu', async (req, res) => {
   try {
-    const cpu = await glances.getCpu();
+    const cpu = await glancesFuer(req).getCpu();
     res.json(cpu);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch CPU stats', message: error.message });
@@ -31,7 +39,7 @@ router.get('/cpu', async (req, res) => {
 // Get memory stats
 router.get('/memory', async (req, res) => {
   try {
-    const memory = await glances.getMemory();
+    const memory = await glancesFuer(req).getMemory();
     res.json(memory);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch memory stats', message: error.message });
@@ -41,7 +49,7 @@ router.get('/memory', async (req, res) => {
 // Get disk stats
 router.get('/disk', async (req, res) => {
   try {
-    const disk = await glances.getDisk();
+    const disk = await glancesFuer(req).getDisk();
     res.json(disk);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch disk stats', message: error.message });
@@ -51,7 +59,7 @@ router.get('/disk', async (req, res) => {
 // Get network stats
 router.get('/network', async (req, res) => {
   try {
-    const network = await glances.getNetwork();
+    const network = await glancesFuer(req).getNetwork();
     res.json(network);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch network stats', message: error.message });
@@ -61,7 +69,7 @@ router.get('/network', async (req, res) => {
 // Get sensor stats (temperature)
 router.get('/sensors', async (req, res) => {
   try {
-    const sensors = await glances.getSensors();
+    const sensors = await glancesFuer(req).getSensors();
     res.json(sensors);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch sensor stats', message: error.message });
