@@ -656,7 +656,7 @@ setInterval(makeJob('uptime', () => forEachServer(async (server) => {
     ?? await withTimeout(discoverServices(server.id), 20000, 'discovery');
   const manual = db.prepare('SELECT id, url, server_id as serverId FROM manual_services WHERE server_id = ?').all(server.id);
   const allServices = [
-    ...discovered.map(s => ({ id: s.id, url: s.url, serverId: s.serverId })),
+    ...discovered.map(s => ({ id: s.id, url: s.url, serverId: s.serverId, container: { state: s.state, status: s.status } })),
     ...manual
   ];
   const results = await checkAllServices(allServices);

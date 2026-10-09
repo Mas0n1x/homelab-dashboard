@@ -80,7 +80,21 @@ function tcpProbe(hostname, port) {
   });
 }
 
-export async function checkServiceHealth(serviceId, serverId, url) {
+// Hostname ist eine IP-Adresse oder ein reiner Containername (kein Punkt): so adressierte
+// Dienste liegen im LAN oder im Docker-Netz der Zielmaschine und sind von hier aus oft gar
+// nicht erreichbar. Öffentliche Domains gehören nicht dazu — antworten die nicht, ist der
+// Dienst aus Sicht der Kunden tatsächlich weg.
+function nurLokalErreichbar(hostname) {
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || !hostname.includes('.');
+}
+
+/**
+ * @param {{ state?: string, status?: string }|null} container Zustand des zugehörigen Containers
+ *   (aus der Discovery). Der Dashboard-Container prüft per HTTP von außen; Dienste auf den
+ *   Heim-VMs (LAN-IP) oder nur an 127.0.0.1 gebunden erreicht er nicht — dann entscheidet der
+ *   Container-Zustand (läuft und nicht „unhealthy"), sonst stünden sie dauerhaft auf „offline".
+ */
+export async function checkServiceHealth(serviceId, serverId, url, container = null) {
   if (!url) return;
 
   const db = getDb();
@@ -92,7 +106,13 @@ export async function checkServiceHealth(serviceId, serverId, url) {
   let u = null;
   try { u = new URL(target); } catch { /* ungueltige URL */ }
 
-  if (u) {
+  const containerLaeuft = container?.state ? container.state === 'running' : null;
+  const containerGesund = containerLaeuft === true && !/unhealthy/i.test(container.status || '');
+
+  if (containerLaeuft === false) {
+    // Container gestoppt/beendet: sicher offline, kein Probieren nötig
+    online = false;
+  } else if (u) {
     const probe = await httpProbe(target);
     statusCode = probe.statusCode;
     if (probe.ok) {
@@ -102,6 +122,8 @@ export async function checkServiceHealth(serviceId, serverId, url) {
       // Port-Verbindung prüfen. Offen -> Dienst läuft.
       const port = u.port ? parseInt(u.port, 10) : (u.protocol === 'https:' ? 443 : 80);
       online = await tcpProbe(u.hostname, port);
+      // Von hier nicht erreichbar (LAN-IP, Loopback-Bindung): Container-Zustand entscheidet
+      if (!online && containerGesund && nurLokalErreichbar(u.hostname)) online = true;
     }
     // probe.responded && !probe.ok => 5xx => bleibt offline
   }
@@ -119,7 +141,7 @@ export async function checkAllServices(services) {
   const results = await Promise.allSettled(
     services
       .filter(s => s.url)
-      .map(s => checkServiceHealth(s.id, s.serverId || 'local', s.url))
+      .map(s => checkServiceHealth(s.id, s.serverId || 'local', s.url, s.container || null))
   );
 
   return results
@@ -261,14 +283,23 @@ export function getUptimeSummary(serverId = 'local') {
     GROUP BY service_id
   `).all(serverId, since7d);
 
+  // Entfernte Dienste (seit über 2 h nicht mehr entdeckt) zählen nicht mehr mit — sonst
+  // drücken ihre alten Messungen einen Tag lang die Verfügbarkeit.
+  const vorhanden = new Set([
+    ...db.prepare("SELECT service_id FROM service_registry WHERE server_id = ? AND last_seen > ?")
+      .all(serverId, new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()).map(r => r.service_id),
+    ...db.prepare('SELECT id FROM manual_services WHERE server_id = ?').all(serverId).map(r => r.id),
+  ]);
   const summary = {};
   for (const s of services24h) {
+    if (!vorhanden.has(s.service_id)) continue;
     summary[s.service_id] = {
       uptime24h: s.total > 0 ? parseFloat(((s.up / s.total) * 100).toFixed(1)) : null,
       avgResponseTime: Math.round(s.avg_response_time || 0)
     };
   }
   for (const s of services7d) {
+    if (!vorhanden.has(s.service_id)) continue;
     if (!summary[s.service_id]) summary[s.service_id] = {};
     summary[s.service_id].uptime7d = s.total > 0 ? parseFloat(((s.up / s.total) * 100).toFixed(1)) : null;
   }
