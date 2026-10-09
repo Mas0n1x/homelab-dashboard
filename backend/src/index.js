@@ -852,15 +852,9 @@ function runDataCleanup() {
     cleanupOldUptimeData();
     pruneMetrics(48); // Metrik-Verlauf: 48h behalten
     pruneDiskDaily(); // Tageswerte der Platte: gut ein Jahr behalten
-    // Dienste, die seit Tagen nicht mehr auf ihrem Server auftauchen, samt
-    // Historie entfernen — die Statusseite bildet damit den Ist-Zustand ab.
     const removedBackups = enforceBackupRetention();
     if (removedBackups > 0) {
       console.log(`Abgelaufene Backups gelöscht: ${removedBackups}`);
-    }
-    const { purged, names } = purgeVanishedServices();
-    if (purged > 0) {
-      console.log(`Entfernte Dienste aufgeräumt (${purged}): ${names.join(', ')}`);
     }
   } catch (error) {
     console.error('Cleanup error:', error.message);
@@ -868,6 +862,21 @@ function runDataCleanup() {
 }
 runDataCleanup();
 setInterval(runDataCleanup, 24 * 60 * 60 * 1000);
+
+// Dienste, die nicht mehr auf ihrem Server auftauchen, samt Historie entfernen —
+// die Statusseite bildet damit stündlich den Ist-Zustand ab.
+function runServicePurge() {
+  try {
+    const { purged, names } = purgeVanishedServices();
+    if (purged > 0) {
+      console.log(`Entfernte Dienste aufgeräumt (${purged}): ${names.join(', ')}`);
+    }
+  } catch (error) {
+    console.error('Service purge error:', error.message);
+  }
+}
+runServicePurge();
+setInterval(runServicePurge, 60 * 60 * 1000);
 
 // Background: Cleanup expired refresh tokens (every hour)
 setInterval(() => {

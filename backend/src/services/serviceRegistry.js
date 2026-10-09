@@ -5,14 +5,14 @@
  */
 import { getDb } from './database.js';
 
-// Wie lange ein verschwundener Dienst noch auf der Statusseite steht, bevor er
-// samt Historie aufgeräumt wird. Puffer für einen Redeploy, der ein paar Minuten
-// dauert, oder einen Server, der über Nacht nicht erreichbar war.
-const GRACE_HOURS = 24;
+// Wie lange ein verschwundener Dienst noch als „entfernt" auf der Statusseite
+// steht. Puffer für einen Redeploy oder Neustart, der ein paar Minuten dauert.
+const GRACE_HOURS = 1;
 
 // Nach dieser Zeit ohne Sichtkontakt gilt der Dienst als endgültig entfernt und
-// wird mitsamt Uptime-Historie und Override gelöscht.
-const PURGE_DAYS = 3;
+// wird mitsamt Uptime-Historie und Override gelöscht — aber nur, solange der
+// Server selbst noch Dienste meldet (siehe purgeVanishedServices).
+const PURGE_HOURS = 6;
 
 /**
  * Merkt sich die aktuell entdeckten Dienste eines Servers.
@@ -68,11 +68,18 @@ export function recordSeenServices(serverId, discovered) {
  */
 export function purgeVanishedServices() {
   const db = getDb();
-  const cutoff = new Date(Date.now() - PURGE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const cutoff = new Date(Date.now() - PURGE_HOURS * 60 * 60 * 1000).toISOString();
 
-  const gone = db.prepare(
-    'SELECT service_id, server_id, name FROM service_registry WHERE last_seen < ?'
-  ).all(cutoff);
+  // Nur Server berücksichtigen, die zuletzt noch Dienste gemeldet haben: War ein
+  // Server stundenlang offline, sind alle seine Einträge veraltet — das ist ein
+  // Ausfall, keine Entfernung, und die Historie soll bleiben.
+  const gone = db.prepare(`
+    SELECT service_id, server_id, name FROM service_registry
+    WHERE last_seen < ?
+      AND server_id IN (
+        SELECT server_id FROM service_registry GROUP BY server_id HAVING MAX(last_seen) >= ?
+      )
+  `).all(cutoff, cutoff);
 
   if (gone.length === 0) return { purged: 0, names: [] };
 
