@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -82,7 +83,7 @@ function Gauge({ value, color, label, detail }: {
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xs font-mono font-bold" style={{ color }}>{value.toFixed(1)}%</span>
+          <span className="text-xs font-mono font-bold" style={{ color }}>{zahl(value, 1)}%</span>
         </div>
       </div>
       <span className="text-[10px] text-white/40 uppercase tracking-wider">{label}</span>
@@ -93,9 +94,9 @@ function Gauge({ value, color, label, detail }: {
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return bytes + 'B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
-  if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
-  return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+  if (bytes < 1024 * 1024) return zahl(bytes / 1024, 0) + ' KB';
+  if (bytes < 1024 * 1024 * 1024) return zahl(bytes / 1024 / 1024, 1) + ' MB';
+  return zahl(bytes / 1024 / 1024 / 1024, 2) + ' GB';
 }
 
 // History storage per service
@@ -159,7 +160,7 @@ export function ServiceDetail({ service }: { service: Service }) {
                 value={stat.cpu}
                 color="#818cf8"
                 label="CPU"
-                detail={`${stat.cpu.toFixed(2)}%`}
+                detail={`${zahl(stat.cpu, 2)}%`}
               />
               <Gauge
                 value={stat.memPercent}
@@ -175,7 +176,7 @@ export function ServiceDetail({ service }: { service: Service }) {
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Cpu className="w-3 h-3 text-indigo-400/60" />
                   <span className="text-[10px] text-white/40">CPU Verlauf</span>
-                  <span className="text-[10px] font-mono text-indigo-400 ml-auto">{stat.cpu.toFixed(1)}%</span>
+                  <span className="text-[10px] font-mono text-indigo-400 ml-auto">{zahl(stat.cpu, 1)}%</span>
                 </div>
                 {cpuH.length >= 2 ? (
                   <Sparkline data={cpuH} color="#818cf8" />

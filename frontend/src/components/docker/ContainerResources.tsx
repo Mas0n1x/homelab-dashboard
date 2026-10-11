@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Cpu, MemoryStick } from 'lucide-react';
@@ -94,7 +95,7 @@ export function ContainerResourcesInline({ containerId }: { containerId: string 
       <div className="flex items-center gap-1.5">
         <Cpu className="w-3 h-3 text-white/20" />
         <Sparkline data={cpuH} color="#818cf8" />
-        <span className="text-xs font-mono text-white/40 w-12 text-right">{stat.cpu.toFixed(1)}%</span>
+        <span className="text-xs font-mono text-white/40 w-12 text-right">{zahl(stat.cpu, 1)}%</span>
       </div>
       <div className="flex items-center gap-1.5">
         <MemoryStick className="w-3 h-3 text-white/20" />
@@ -106,7 +107,7 @@ export function ContainerResourcesInline({ containerId }: { containerId: string 
 }
 
 function formatBytes(bytes: number): string {
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + 'K';
-  if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(0) + 'M';
-  return (bytes / 1024 / 1024 / 1024).toFixed(1) + 'G';
+  if (bytes < 1024 * 1024) return zahl(bytes / 1024, 0) + 'K';
+  if (bytes < 1024 * 1024 * 1024) return zahl(bytes / 1024 / 1024, 0) + 'M';
+  return zahl(bytes / 1024 / 1024 / 1024, 1) + 'G';
 }

@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useState, useCallback } from 'react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { Play, Square, RotateCcw, FileText, ChevronDown, ChevronRight, Boxes, Disc3, ArrowUpCircle, Database, Network, Plug, GitCompareArrows, LayoutTemplate, FileCode2, PieChart, ExternalLink, Loader2 } from 'lucide-react';
@@ -344,7 +345,7 @@ export default function DockerPage() {
               <div key={img.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{img.repoTags?.[0] || '<none>'}</p>
-                  <p className="text-xs text-white/30 font-mono">{img.shortId} | {(img.size / 1024 / 1024).toFixed(0)} MB</p>
+                  <p className="text-xs text-white/30 font-mono">{img.shortId} | {zahl(img.size / 1024 / 1024, 0)} MB</p>
                 </div>
                 {img.inUse && <span className="text-xs text-emerald-400">In Verwendung</span>}
               </div>

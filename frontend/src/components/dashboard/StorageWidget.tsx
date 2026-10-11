@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { motion } from 'framer-motion';
 import { HardDrive } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -13,10 +14,10 @@ import { useFleetStore } from '@/stores/fleetStore';
 
 function fmt(bytes: number): string {
   const tb = bytes / 1024 ** 4;
-  if (tb >= 1) return `${tb.toFixed(1)} TB`;
+  if (tb >= 1) return `${zahl(tb, 1)} TB`;
   const gb = bytes / 1024 ** 3;
-  if (gb >= 1) return `${gb.toFixed(0)} GB`;
-  return `${(bytes / 1024 ** 2).toFixed(0)} MB`;
+  if (gb >= 1) return `${zahl(gb, 0)} GB`;
+  return `${zahl(bytes / 1024 ** 2, 0)} MB`;
 }
 
 export function StorageWidget() {
@@ -51,7 +52,7 @@ export function StorageWidget() {
         ) : (
           <>
             <div className="flex items-baseline gap-1">
-              <span className="stat-value" style={{ color }}>{percent.toFixed(0)}</span>
+              <span className="stat-value" style={{ color }}>{zahl(percent, 0)}</span>
               <span className="text-white/40 text-sm">%</span>
             </div>
             <p className="text-[11px] text-white/30 mt-1">{fmt(used)} / {fmt(total)} belegt · fleetweit</p>

@@ -9,7 +9,7 @@ import { Cpu, MemoryStick, HardDrive, Thermometer, Clock, Wifi } from 'lucide-re
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import type { SystemStats } from '@/lib/types';
-import { formatBytes, formatBytesPerSec, formatPercent } from '@/lib/formatters';
+import { formatBytes, formatBytesPerSec, formatPercent, zahl } from '@/lib/formatters';
 
 interface SystemOverviewProps {
   stats: SystemStats | null;
@@ -50,7 +50,7 @@ export function SystemOverview({ stats }: SystemOverviewProps) {
       suffix: '%',
       decimals: 1,
       color: 'indigo' as const,
-      sub: `User: ${stats.cpu.user.toFixed(1)}% | Sys: ${stats.cpu.system.toFixed(1)}%`,
+      sub: `User: ${zahl(stats.cpu.user, 1)}% | Sys: ${zahl(stats.cpu.system, 1)}%`,
     },
     {
       icon: MemoryStick,
@@ -68,7 +68,7 @@ export function SystemOverview({ stats }: SystemOverviewProps) {
       suffix: '%',
       decimals: 1,
       color: 'cyan' as const,
-      sub: mainDisk ? `${formatBytes(mainDisk.used)} / ${formatBytes(mainDisk.total)}` : 'N/A',
+      sub: mainDisk ? `${formatBytes(mainDisk.used)} / ${formatBytes(mainDisk.total)}` : 'n. v.',
     },
     {
       icon: Thermometer,
@@ -77,7 +77,7 @@ export function SystemOverview({ stats }: SystemOverviewProps) {
       suffix: '°C',
       decimals: 0,
       color: 'amber' as const,
-      sub: mainTemp?.label || 'N/A',
+      sub: mainTemp?.label || 'n. v.',
     },
   ];
 

@@ -74,7 +74,7 @@ export function UptimeTimeline({ serviceId, serviceName }: { serviceId: string; 
             <div className="flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-white/30" />
               <span className={`text-sm font-mono font-semibold ${getUptimeColor(timeline.overallUptime)}`}>
-                {timeline.overallUptime !== null ? `${timeline.overallUptime}%` : 'N/A'}
+                {timeline.overallUptime !== null ? `${timeline.overallUptime}%` : 'n. v.'}
               </span>
               <span className="text-xs text-white/30">30 Tage</span>
             </div>

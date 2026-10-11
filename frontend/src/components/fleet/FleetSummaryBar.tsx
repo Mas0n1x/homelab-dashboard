@@ -10,12 +10,12 @@ import { motion } from 'framer-motion';
 import { useFleetStore } from '@/stores/fleetStore';
 import { useServerStore } from '@/stores/serverStore';
 
-import { istErreichbar } from '@/lib/formatters';
+import { istErreichbar, zahl } from '@/lib/formatters';
 function formatBytes(bytes: number): string {
   const gb = bytes / (1024 * 1024 * 1024);
-  if (gb >= 1) return `${gb.toFixed(1)} GB`;
+  if (gb >= 1) return `${zahl(gb, 1)} GB`;
   const mb = bytes / (1024 * 1024);
-  return `${mb.toFixed(0)} MB`;
+  return `${zahl(mb, 0)} MB`;
 }
 
 export function FleetSummaryBar() {
@@ -61,7 +61,7 @@ export function FleetSummaryBar() {
     {
       icon: <Cpu className="w-4 h-4" />,
       label: 'Avg CPU',
-      value: `${avgCpu.toFixed(1)}%`,
+      value: `${zahl(avgCpu, 1)}%`,
       color: avgCpu > 80 ? 'text-red-400' : avgCpu > 50 ? 'text-amber-400' : 'text-emerald-400',
       bg: avgCpu > 80 ? 'bg-red-500/10' : avgCpu > 50 ? 'bg-amber-500/10' : 'bg-emerald-500/10',
     },
@@ -70,8 +70,8 @@ export function FleetSummaryBar() {
       label: 'Gesamt RAM',
       // Einheit nur einmal — „9.4 GB / 19.8 GB" wurde in der Mobil-Kachel abgeschnitten.
       value: totalMem > 0
-        ? `${(usedMem / 1024 ** 3).toFixed(1)} / ${(totalMem / 1024 ** 3).toFixed(1)} GB`
-        : 'N/A',
+        ? `${zahl(usedMem / 1024 ** 3, 1)} / ${zahl(totalMem / 1024 ** 3, 1)} GB`
+        : 'n. v.',
       color: 'text-purple-400',
       bg: 'bg-purple-500/10',
     },

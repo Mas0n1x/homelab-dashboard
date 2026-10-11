@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useQuery } from '@tanstack/react-query';
 import { Settings2, CheckCircle, XCircle } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -56,12 +57,12 @@ export function SystemdServices({ serverId }: SystemdServicesProps) {
               <span className="text-xs font-medium flex-1 truncate">{service.name}</span>
               {service.cpu > 0 && (
                 <span className="text-[10px] text-white/30 tabular-nums">
-                  CPU {service.cpu.toFixed(1)}%
+                  CPU {zahl(service.cpu, 1)}%
                 </span>
               )}
               {service.mem > 0 && (
                 <span className="text-[10px] text-white/30 tabular-nums">
-                  MEM {service.mem.toFixed(1)}%
+                  MEM {zahl(service.mem, 1)}%
                 </span>
               )}
               <span className={clsx(

@@ -23,6 +23,8 @@ const CACHE_MS = 5000;
 // /api/4/all: das liefert denselben Inhalt in 260 KB statt in 2,5 KB.
 const TEILE = ['cpu', 'mem', 'fs', 'network', 'sensors', 'uptime'];
 
+const BIND_MOUNT_DATEIEN = ['/etc/hosts', '/etc/hostname', '/etc/resolv.conf'];
+
 /**
  * Netzwerkaussetzer, die beim zweiten Versuch meist durchgehen — über den
  * Cloudflare-Tunnel zu den Fernhosts kommen sie regelmäßig vor.
@@ -180,6 +182,11 @@ export function createGlancesClient(baseUrl) {
               for (const pre of ['/hostfs/root', '/hostfs']) {
                 if (mnt.startsWith(pre)) mnt = mnt.slice(pre.length) || '/';
               }
+              // Docker bind-mountet /etc/hosts, /etc/hostname und /etc/resolv.conf aus dem
+              // Host-Dateisystem in jeden Container. Läuft Glances im Container ohne
+              // /hostfs-Mount, sind das die einzigen Mountpoints der Platte — sie kamen
+              // als „/etc/hos…" in die Karte. Es ist dieselbe Platte wie „/".
+              if (BIND_MOUNT_DATEIEN.includes(mnt)) mnt = '/';
               const entry = { mountPoint: mnt, device, total: d.size, used: d.used, free: d.free, percent: d.percent };
               const prev = byDev.get(device);
               if (!prev || mnt.length < prev.mountPoint.length) byDev.set(device, entry);

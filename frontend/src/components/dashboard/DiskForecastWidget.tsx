@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useQuery } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { HardDrive, TrendingUp, TrendingDown, Minus } from 'lucide-react';
@@ -97,7 +98,7 @@ function ServerZeile({ s, minDays }: { s: DiskForecastServer; minDays: number })
       <div className="flex items-center gap-2 mb-1">
         <span className="text-[11px] text-white/45 truncate min-w-0">{s.serverName}</span>
         <span className="text-[11px] text-white/30 tabular-nums flex-shrink-0">
-          {prozent ? `${prozent.toFixed(0)} %` : '–'}
+          {prozent ? `${zahl(prozent, 0)} %` : '–'}
         </span>
         <span className={clsx(
           'ml-auto text-[11px] tabular-nums flex-shrink-0 flex items-center gap-1',

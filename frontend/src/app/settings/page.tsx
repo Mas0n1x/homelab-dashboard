@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -803,7 +804,7 @@ export default function SettingsPage() {
                               {b.status === 'completed' ? 'OK' : b.status === 'running' ? 'Läuft...' : 'Fehler'}
                             </span>
                             <span className="text-white/50">{b.type === 'full' ? 'Vollständig' : 'Datenbank'}</span>
-                            {b.size && <span className="text-white/25">{(b.size / 1024 / 1024).toFixed(1)} MB</span>}
+                            {b.size && <span className="text-white/25">{zahl(b.size / 1024 / 1024, 1)} MB</span>}
                             {b.error && <span className="text-red-400 truncate">{b.error}</span>}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">

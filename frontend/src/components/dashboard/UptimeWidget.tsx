@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -51,7 +52,7 @@ export function UptimeWidget() {
           <p className="text-xs text-white/30 mt-1">Dienste gesund (24h) · fleetweit</p>
           <div className="mt-2 pt-2 border-t border-white/[0.06] flex items-center justify-between">
             <span className="text-xs text-white/40">Ø Verfügbarkeit</span>
-            <span className="text-xs text-emerald-400 font-medium">{avgUptime.toFixed(1)}%</span>
+            <span className="text-xs text-emerald-400 font-medium">{zahl(avgUptime, 1)}%</span>
           </div>
         </div>
       </GlassCard>

@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -43,7 +44,7 @@ async function mcApi(endpoint: string, options?: RequestInit) {
 interface McServer { id: string; name: string; host: string; version: string; map?: string }
 
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '').replace(/\r/g, '');
-function fmtSize(b: number): string { if (!b) return '0 B'; const u = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(1024)); return `${(b / Math.pow(1024, i)).toFixed(1)} ${u[i]}`; }
+function fmtSize(b: number): string { if (!b) return '0 B'; const u = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(1024)); return `${zahl(b / Math.pow(1024, i), 1)} ${u[i]}`; }
 function fmtDate(iso: string): string { try { return new Date(iso).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return iso; } }
 
 // server.properties Schema
@@ -444,8 +445,8 @@ export default function MinecraftPage() {
         {tab === 'performance' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={Zap} label="TPS (Ticks/Sek.)" value={perf.tps != null ? Number(perf.tps).toFixed(1) : '—'} sub={perf.tps >= 19.5 ? 'flüssig' : perf.tps >= 15 ? 'leichte Last' : perf.tps != null ? 'überlastet' : ''} percent={perf.tps != null ? (perf.tps / 20) * 100 : 0} color={perf.tps >= 19 ? '#10b981' : perf.tps >= 15 ? '#f59e0b' : '#ef4444'} />
-              <StatCard icon={Clock} label="MSPT (ms/Tick)" value={perf.mspt != null ? Number(perf.mspt).toFixed(1) : '—'} sub="Ziel < 50" percent={perf.mspt != null ? (perf.mspt / 50) * 100 : 0} color={(perf.mspt ?? 0) < 40 ? '#10b981' : (perf.mspt ?? 0) < 50 ? '#f59e0b' : '#ef4444'} />
+              <StatCard icon={Zap} label="TPS (Ticks/Sek.)" value={perf.tps != null ? zahl(Number(perf.tps), 1) : '—'} sub={perf.tps >= 19.5 ? 'flüssig' : perf.tps >= 15 ? 'leichte Last' : perf.tps != null ? 'überlastet' : ''} percent={perf.tps != null ? (perf.tps / 20) * 100 : 0} color={perf.tps >= 19 ? '#10b981' : perf.tps >= 15 ? '#f59e0b' : '#ef4444'} />
+              <StatCard icon={Clock} label="MSPT (ms/Tick)" value={perf.mspt != null ? zahl(Number(perf.mspt), 1) : '—'} sub="Ziel < 50" percent={perf.mspt != null ? (perf.mspt / 50) * 100 : 0} color={(perf.mspt ?? 0) < 40 ? '#10b981' : (perf.mspt ?? 0) < 50 ? '#f59e0b' : '#ef4444'} />
               <StatCard icon={MemoryStick} label="Arbeitsspeicher" value={perf.memUsage ? fmtSize(perf.memUsage) : '—'} sub={perf.memLimit ? `von ${fmtSize(perf.memLimit)}` : ''} percent={perf.memLimit ? (perf.memUsage / perf.memLimit) * 100 : 0} color="#8b5cf6" />
               <StatCard icon={Cpu} label="CPU-Auslastung" value={perf.cpuPercent != null ? `${perf.cpuPercent}%` : '—'} sub="des Servers" percent={perf.cpuPercent ?? 0} color="#06b6d4" />
             </div>

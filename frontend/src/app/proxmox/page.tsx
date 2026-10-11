@@ -17,7 +17,7 @@ import {
   proxmoxSnapshotLoeschen, proxmoxNodeAktion,
   type ProxmoxStatus, type ProxmoxAufgabe, type ProxmoxGast, type ProxmoxSnapshot,
 } from '@/lib/api';
-import { formatBytes } from '@/lib/formatters';
+import { formatBytes, zahl } from '@/lib/formatters';
 
 const KARTE = 'glass-card';
 
@@ -202,7 +202,7 @@ export default function ProxmoxPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
               <Kennzahl
                 icon={<Cpu className="w-4 h-4" />} titel="CPU"
-                wert={`${(node.cpu * 100).toFixed(1)} %`}
+                wert={`${zahl(node.cpu * 100, 1)} %`}
                 unter={`${node.maxcpu} Threads · Last ${node.last.slice(0, 3).join(' / ')}`}
                 anteil={node.cpu}
               />
@@ -248,7 +248,7 @@ export default function ProxmoxPage() {
                               </div>
                             </div>
                             <div className="grid grid-cols-3 gap-4 text-xs text-white/50 flex-1 basis-64">
-                              <div><div className="text-white/30">CPU</div>{laeuft ? `${(g.cpu * 100).toFixed(0)} %` : '–'}</div>
+                              <div><div className="text-white/30">CPU</div>{laeuft ? `${zahl(g.cpu * 100, 0)} %` : '–'}</div>
                               <div><div className="text-white/30">RAM</div>{laeuft ? formatBytes(g.mem, 0) : formatBytes(g.maxmem, 0)}</div>
                               <div><div className="text-white/30">Laufzeit</div>{laeuft ? dauer(g.uptime) : 'aus'}</div>
                             </div>

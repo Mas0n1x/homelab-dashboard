@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import Link from 'next/link';
 import { Wallet, CalendarClock } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -45,10 +46,10 @@ export function CostWidget() {
           ) : (
             <>
               <div className="flex items-baseline gap-1">
-                <span className="stat-value">{totalEur.toFixed(2)}</span>
+                <span className="stat-value">{zahl(totalEur, 2)}</span>
                 <span className="text-white/40 text-sm">€</span>
               </div>
-              <p className="text-[11px] text-white/30 mt-1">{withCost.length} von {servers.length} Servern erfasst · {(totalEur * 12).toFixed(0)} €/Jahr</p>
+              <p className="text-[11px] text-white/30 mt-1">{withCost.length} von {servers.length} Servern erfasst · {zahl(totalEur * 12, 0)} €/Jahr</p>
               {/* In der schmalen Mobil-Kachel klebten Label und Wert aneinander */}
               {next && next.days != null && (
                 <div className="mt-2 pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2">

@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useQuery } from '@tanstack/react-query';
 import { HardDrive } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -15,9 +16,9 @@ import type { DiskUsage } from '@/lib/types';
 function formatSize(bytes: number): string {
   if (bytes <= 0) return '0 B';
   if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
-  return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+  if (bytes < 1024 * 1024) return zahl(bytes / 1024, 1) + ' KB';
+  if (bytes < 1024 * 1024 * 1024) return zahl(bytes / 1024 / 1024, 1) + ' MB';
+  return zahl(bytes / 1024 / 1024 / 1024, 2) + ' GB';
 }
 
 interface TreemapItem {

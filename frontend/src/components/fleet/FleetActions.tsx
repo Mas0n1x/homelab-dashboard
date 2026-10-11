@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Sparkles, Loader2, PackageCheck, Trash2, CheckCircle2 } from 'lucide-react';
@@ -14,7 +15,7 @@ import { useServerStore } from '@/stores/serverStore';
 import * as api from '@/lib/api';
 
 function fmtMB(bytes: number) {
-  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
+  if (bytes >= 1024 * 1024 * 1024) return `${zahl(bytes / 1024 / 1024 / 1024, 1)} GB`;
   return `${Math.round(bytes / 1024 / 1024)} MB`;
 }
 

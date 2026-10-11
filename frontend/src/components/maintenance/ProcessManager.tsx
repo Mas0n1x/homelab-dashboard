@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Cpu, ArrowUpDown, Search } from 'lucide-react';
@@ -23,7 +24,7 @@ function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+  return `${zahl(bytes / Math.pow(1024, i), 1)} ${units[i]}`;
 }
 
 export function ProcessManager({ serverId }: ProcessManagerProps) {
@@ -111,14 +112,14 @@ export function ProcessManager({ serverId }: ProcessManagerProps) {
                     <span className={clsx(
                       p.cpuPercent > 50 ? 'text-red-400' : p.cpuPercent > 20 ? 'text-amber-400' : 'text-white/50'
                     )}>
-                      {p.cpuPercent.toFixed(1)}
+                      {zahl(p.cpuPercent, 1)}
                     </span>
                   </td>
                   <td className="py-1.5 px-2 text-right tabular-nums">
                     <span className={clsx(
                       p.memPercent > 50 ? 'text-red-400' : p.memPercent > 20 ? 'text-purple-400' : 'text-white/50'
                     )}>
-                      {p.memPercent.toFixed(1)}
+                      {zahl(p.memPercent, 1)}
                     </span>
                   </td>
                   <td className="py-1.5 px-2 text-right text-white/30 tabular-nums hidden lg:table-cell">{formatBytes(p.memRss)}</td>

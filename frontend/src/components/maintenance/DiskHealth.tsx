@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useQuery } from '@tanstack/react-query';
 import { HardDrive, ArrowDown, ArrowUp } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -21,7 +22,7 @@ function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+  return `${zahl(bytes / Math.pow(1024, i), 1)} ${units[i]}`;
 }
 
 function formatRate(bytes: number): string {
@@ -72,7 +73,7 @@ export function DiskHealth({ serverId }: DiskHealthProps) {
                 </div>
                 <div className="flex items-center justify-between text-[10px] text-white/30">
                   <span>{formatBytes(disk.used)} belegt</span>
-                  <span style={{ color }} className="font-semibold">{disk.percent.toFixed(1)}%</span>
+                  <span style={{ color }} className="font-semibold">{zahl(disk.percent, 1)}%</span>
                   <span>{formatBytes(disk.free)} frei</span>
                 </div>
               </div>

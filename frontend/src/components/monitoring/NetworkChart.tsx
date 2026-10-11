@@ -47,7 +47,7 @@ export function NetworkChart({ network }: NetworkChartProps) {
             </div>
           </div>
         </div>
-        <span className="text-xs text-white/30 font-mono">{mainNet?.interface || 'N/A'}</span>
+        <span className="text-xs text-white/30 font-mono">{mainNet?.interface || 'n. v.'}</span>
       </div>
       <div className="h-[160px]">
         <ResponsiveContainer width="100%" height="100%">

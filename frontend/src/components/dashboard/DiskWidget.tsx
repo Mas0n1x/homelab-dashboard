@@ -5,14 +5,15 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { HardDrive } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import type { DiskInfo } from '@/lib/types';
 
 function formatBytes(bytes: number) {
-  if (bytes >= 1e12) return `${(bytes / 1e12).toFixed(1)} TB`;
-  if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
-  return `${(bytes / 1e6).toFixed(0)} MB`;
+  if (bytes >= 1e12) return `${zahl(bytes / 1e12, 1)} TB`;
+  if (bytes >= 1e9) return `${zahl(bytes / 1e9, 1)} GB`;
+  return `${zahl(bytes / 1e6, 0)} MB`;
 }
 
 function getColor(percent: number) {
@@ -42,7 +43,7 @@ export function DiskWidget({ disks }: { disks: DiskInfo[] }) {
             <div key={d.mountPoint}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-white/50 truncate max-w-[120px]" title={d.mountPoint}>{d.mountPoint}</span>
-                <span className={`text-xs font-medium ${getTextColor(d.percent)}`}>{d.percent.toFixed(0)}%</span>
+                <span className={`text-xs font-medium ${getTextColor(d.percent)}`}>{zahl(d.percent, 0)}%</span>
               </div>
               <div className="w-full h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all ${getColor(d.percent)}`} style={{ width: `${d.percent}%` }} />

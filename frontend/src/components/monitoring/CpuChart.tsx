@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useRef, useEffect, useState } from 'react';
 import { AreaChart, Area, ResponsiveContainer, YAxis, Tooltip } from 'recharts';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -59,7 +60,7 @@ export function CpuChart({ cpuTotal }: CpuChartProps) {
                 color: '#fff',
                 fontSize: '12px',
               }}
-              formatter={(v: number) => [`${v.toFixed(1)}%`, 'CPU']}
+              formatter={(v: number) => [`${zahl(v, 1)}%`, 'CPU']}
               labelFormatter={() => ''}
             />
             <Area

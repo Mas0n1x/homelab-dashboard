@@ -81,7 +81,7 @@ export function ImageUpdatesWidget() {
         <div className="flex items-center gap-2.5 py-3">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
           <span className="text-[13px] text-white/70">Alle Images aktuell</span>
-          <span className="ml-auto text-[10px] text-white/25">{data?.counts.checked ?? 0} geprüft</span>
+          <span className="ml-auto text-[10px] text-white/25">{data?.counts?.checked ?? 0} geprüft</span>
         </div>
       ) : (
         <>

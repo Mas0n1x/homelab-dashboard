@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { motion } from 'framer-motion';
 
 interface AnimatedGaugeProps {
@@ -76,7 +77,7 @@ export function AnimatedGauge({
             className="text-lg font-bold tabular-nums"
             style={{ color: strokeColor }}
           >
-            {percent.toFixed(1)}%
+            {zahl(percent, 1)}%
           </span>
         </div>
       </div>

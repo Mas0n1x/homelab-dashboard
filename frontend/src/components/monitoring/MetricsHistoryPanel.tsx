@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { clsx } from 'clsx';
@@ -20,7 +21,7 @@ function fmtRate(bytes: number) {
   if (!bytes || bytes < 1) return '0 B/s';
   const u = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${u[i]}`;
+  return `${zahl(bytes / Math.pow(1024, i), 1)} ${u[i]}`;
 }
 
 // Lineare Regression über die Disk-Samples -> geschätzte Zeit bis 100 %.

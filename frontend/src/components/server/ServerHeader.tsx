@@ -11,7 +11,7 @@ import { clsx } from 'clsx';
 import type { Server as ServerType } from '@/lib/types';
 import type { ServerData } from '@/stores/fleetStore';
 
-import { istErreichbar } from '@/lib/formatters';
+import { istErreichbar, zahl, formatUptime } from '@/lib/formatters';
 interface ServerHeaderProps {
   server: ServerType;
   data: ServerData;
@@ -54,16 +54,16 @@ export function ServerHeader({ server, data }: ServerHeaderProps) {
       {/* Quick stats */}
       {system && (
         <div className="flex items-center gap-4 sm:gap-6">
-          <QuickStat icon={<Cpu className="w-3.5 h-3.5" />} label="CPU" value={`${system.cpu.total.toFixed(1)}%`}
+          <QuickStat icon={<Cpu className="w-3.5 h-3.5" />} label="CPU" value={`${zahl(system.cpu.total, 1)}%`}
             color={system.cpu.total > 80 ? 'text-red-400' : system.cpu.total > 50 ? 'text-amber-400' : 'text-emerald-400'} />
-          <QuickStat icon={<MemoryStick className="w-3.5 h-3.5" />} label="RAM" value={`${system.memory.percent.toFixed(1)}%`}
+          <QuickStat icon={<MemoryStick className="w-3.5 h-3.5" />} label="RAM" value={`${zahl(system.memory.percent, 1)}%`}
             color={system.memory.percent > 80 ? 'text-red-400' : 'text-purple-400'} />
           {system.temperature?.[0] && (
-            <QuickStat icon={<Thermometer className="w-3.5 h-3.5" />} label="Temp" value={`${system.temperature[0].value.toFixed(0)}°C`}
+            <QuickStat icon={<Thermometer className="w-3.5 h-3.5" />} label="Temp" value={`${zahl(system.temperature[0].value, 0)}°C`}
               color={system.temperature[0].value > 75 ? 'text-red-400' : system.temperature[0].value > 60 ? 'text-amber-400' : 'text-emerald-400'} />
           )}
           {system.uptime && (
-            <QuickStat icon={<Clock className="w-3.5 h-3.5" />} label="Uptime" value={system.uptime} color="text-white/60" />
+            <QuickStat icon={<Clock className="w-3.5 h-3.5" />} label="Uptime" value={formatUptime(system.uptime)} color="text-white/60" />
           )}
         </div>
       )}

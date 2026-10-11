@@ -16,7 +16,7 @@ import { Sparkline } from '@/components/ui/Sparkline';
 import type { ServerData } from '@/stores/fleetStore';
 import type { Server as ServerType, MetricSample, TunnelInfo } from '@/lib/types';
 
-import { istErreichbar } from '@/lib/formatters';
+import { istErreichbar, zahl, formatUptime, formatPreis } from '@/lib/formatters';
 interface ServerNodeCardProps {
   server: ServerType;
   data: ServerData;
@@ -25,16 +25,16 @@ interface ServerNodeCardProps {
 
 function formatBytes(bytes: number): string {
   const gb = bytes / (1024 * 1024 * 1024);
-  if (gb >= 1) return `${gb.toFixed(1)} GB`;
+  if (gb >= 1) return `${zahl(gb, 1)} GB`;
   const mb = bytes / (1024 * 1024);
-  return `${mb.toFixed(0)} MB`;
+  return `${zahl(mb, 0)} MB`;
 }
 
 function formatRate(bytes: number): string {
   if (!bytes || bytes < 1) return '0 B/s';
   const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+  return `${zahl(bytes / Math.pow(1024, i), 1)} ${units[i]}`;
 }
 
 function relativeTime(iso?: string | null): string | null {
@@ -152,6 +152,9 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
   const memUsed = system?.memory.used ?? 0;
   const memTotal = system?.memory.total ?? 0;
   const temp = system?.temperature?.[0]?.value ?? null;
+  // Teilmessungen, die ausfielen (z. B. TrueNas ohne Gast-Agent): „nicht gemessen", nicht „0"
+  const memFehlt = !!system?.fehlend?.includes('mem');
+  const diskFehlt = !!system?.fehlend?.includes('fs');
 
   const hasDocker = !!(server.is_local || server.docker_socket || server.docker_host || server.ssh_host);
   const running = containers?.filter(c => c.state === 'running').length ?? 0;
@@ -180,7 +183,7 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
   const tunnelColor = !tunnel ? '' : tunnel.status === 'healthy' ? 'text-emerald-400' : tunnel.status === 'degraded' ? 'text-amber-400' : 'text-red-400';
 
   // Betriebs-Metadaten
-  const cost = server.monthly_cost != null ? `${server.monthly_cost}${server.currency === 'USD' ? ' $' : ' €'}/mtl.` : null;
+  const cost = server.monthly_cost != null ? `${formatPreis(server.monthly_cost, server.currency)}/mtl.` : null;
   const expDays = daysUntil(server.expires_at);
   const lastContact = relativeTime(server.lastSeen);
 
@@ -195,7 +198,7 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
     if (cpuPercent > TH.cpu) activeAlerts.push(`CPU > ${TH.cpu}%`);
     if (memPercent > TH.ram) activeAlerts.push(`RAM > ${TH.ram}%`);
     if (diskAgg > TH.disk) activeAlerts.push(`Speicher > ${TH.disk}%`);
-    if (temp !== null && temp > TH.temp) activeAlerts.push(`Temperatur ${temp.toFixed(0)}°C`);
+    if (temp !== null && temp > TH.temp) activeAlerts.push(`Temperatur ${zahl(temp, 0)}°C`);
   }
   const hasAlert = activeAlerts.length > 0;
 
@@ -211,7 +214,7 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
         {/* Statusstreifen oben */}
         <div className={clsx('absolute top-0 left-0 right-0 h-[2px]', hasAlert ? 'bg-gradient-to-r from-red-500/0 via-red-400 to-red-500/0' : isOnline ? 'bg-gradient-to-r from-emerald-500/0 via-emerald-400/70 to-emerald-500/0' : 'bg-gradient-to-r from-red-500/0 via-red-400/70 to-red-500/0')} />
 
-        <div className="relative z-10 p-4 sm:p-5 flex-1">
+        <div className="relative z-10 p-4 sm:p-5 flex-1 flex flex-col">
           {/* Header */}
           <div className="flex items-start gap-3 mb-3 sm:mb-4">
             <div className="relative">
@@ -227,7 +230,7 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
             <div className="flex flex-col items-end gap-1 flex-shrink-0">
               {hasAlert && (
                 <span className="flex items-center gap-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-red-500/15 border border-red-500/30 text-red-400 animate-pulse" title={activeAlerts.join(' · ')}>
-                  <AlertTriangle className="w-2.5 h-2.5" /> {activeAlerts.length} Alert{activeAlerts.length > 1 ? 's' : ''}
+                  <AlertTriangle className="w-2.5 h-2.5" /> {activeAlerts.length} {activeAlerts.length > 1 ? 'Alarme' : 'Alarm'}
                 </span>
               )}
               {tunnel && (
@@ -270,27 +273,30 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
               )}
             </div>
           ) : (
-            <>
-              {/* CPU Gauge + Stat-Spalte */}
-              <div className="flex items-center gap-4 mb-4">
+            <div className="flex-1 flex flex-col">
+              {/* CPU Gauge + Stat-Spalte — feste Höhe und immer drei Zeilen, damit die
+                  Karten im Raster auf gleicher Höhe beginnen (auch ohne Docker/Sensor) */}
+              <div className="flex items-center gap-4 mb-4 min-h-[76px]">
                 <CpuRingGauge percent={cpuPercent} />
                 <div className="flex-1 space-y-1.5">
                   <div className="flex items-center gap-1.5">
                     <Thermometer className={clsx('w-3.5 h-3.5', tempColor)} />
                     <span className={clsx('text-sm font-semibold tabular-nums', tempColor)}>
-                      {temp !== null ? `${temp.toFixed(1)}°C` : 'n/a'}
+                      {temp !== null ? `${zahl(temp, 1)}°C` : 'n. v.'}
                     </span>
                   </div>
-                  {hasDocker && (
-                    <div className="flex items-center gap-1.5">
-                      <Box className="w-3.5 h-3.5 text-cyan-400/60" />
+                  <div className="flex items-center gap-1.5">
+                    <Box className={clsx('w-3.5 h-3.5', hasDocker ? 'text-cyan-400/60' : 'text-white/20')} />
+                    {hasDocker ? (
                       <span className="text-sm text-white/70 tabular-nums">
                         <span className="text-cyan-400 font-semibold">{running}</span>
                         <span className="text-white/30">/{totalCt}</span>
                         <span className="text-[10px] text-white/30 ml-1">Container</span>
                       </span>
-                    </div>
-                  )}
+                    ) : (
+                      <span className="text-sm text-white/30">Kein Docker</span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 text-[11px] tabular-nums">
                     <span className="flex items-center gap-1 text-emerald-400/70"><ArrowDown className="w-3 h-3" />{formatRate(rxRate)}</span>
                     <span className="flex items-center gap-1 text-blue-400/70"><ArrowUp className="w-3 h-3" />{formatRate(txRate)}</span>
@@ -300,7 +306,7 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
 
               {/* Sparklines (Verlauf 60 Min) — mobil aus: die Werte stehen
                   schon oben, der Verlauf gehört auf die Detailseite */}
-              {cpuSeries.length >= 2 && (
+              {(
                 <div className="hidden sm:grid grid-cols-3 gap-2 mb-4">
                   <MiniSpark label="CPU" value={`${Math.round(cpuPercent)}`} unit="%" series={cpuSeries} color="#10b981" min={0} max={100} />
                   <MiniSpark label="RAM" value={`${Math.round(memPercent)}`} unit="%" series={memSeries} color="#8b5cf6" min={0} max={100} />
@@ -310,7 +316,10 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
 
               {/* RAM + Disk */}
               <div className="space-y-3">
-                <StatBar label="RAM" percent={memPercent} right={`${formatBytes(memUsed)} / ${formatBytes(memTotal)}`} color={memColor} icon={<MemoryStick className="w-2.5 h-2.5 text-violet-400/60" />} />
+                <StatBar label="RAM" percent={memFehlt ? 0 : memPercent} right={memFehlt ? 'n. v. (Gast-Agent nicht erreichbar)' : `${formatBytes(memUsed)} / ${formatBytes(memTotal)}`} color={memColor} icon={<MemoryStick className="w-2.5 h-2.5 text-violet-400/60" />} />
+                {disks.length === 0 && (
+                  <StatBar label="Speicher" percent={0} right={diskFehlt ? 'n. v. (Gast-Agent nicht erreichbar)' : 'n. v.'} color="#06b6d4" icon={<HardDrive className="w-2.5 h-2.5 text-cyan-400/60" />} />
+                )}
                 {disks.length > 0 && (() => {
                   const totalCap = disks.reduce((s, d) => s + (d.total || 0), 0);
                   const totalUsed = disks.reduce((s, d) => s + (d.used || 0), 0);
@@ -320,8 +329,9 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
                   return (
                     <>
                       <StatBar label="Speicher" percent={aggPct} right={`${formatBytes(totalUsed)} / ${formatBytes(totalCap)}`} color={aggColor} icon={<HardDrive className="w-2.5 h-2.5 text-cyan-400/60" />} />
-                      {/* Einzelne Laufwerke mobil aus — der Summenbalken genügt */}
-                      {disks.length >= 1 && (
+                      {/* Einzelne Laufwerke nur bei mehreren — bei einem wiederholte die Zeile den
+                          Summenbalken. Mobil aus: der Summenbalken genügt. */}
+                      {disks.length > 1 && (
                         <div className="hidden sm:block space-y-1 pl-4">
                           {disks.map(d => (
                             <div key={d.device} className="flex items-center gap-2 text-[10px] text-white/35">
@@ -339,14 +349,14 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
                 })()}
               </div>
 
-              {/* Footer: Uptime + Cloudflare-Verbindungen */}
-              {system?.uptime && (
-                <div className="mt-3 pt-3 border-t border-white/[0.04] flex items-center justify-between">
+              {/* Footer: Uptime — immer am Kartenboden, egal wie viele Zeilen darüber stehen */}
+              <div className="mt-auto pt-3">
+                <div className="pt-3 border-t border-white/[0.04] flex items-center justify-between">
                   <span className="text-[10px] text-white/25">Uptime</span>
-                  <span className="text-[11px] text-white/40 font-mono">{system.uptime}</span>
+                  <span className="text-[11px] text-white/40 font-mono">{formatUptime(system?.uptime)}</span>
                 </div>
-              )}
-            </>
+              </div>
+            </div>
           )}
         </div>
 

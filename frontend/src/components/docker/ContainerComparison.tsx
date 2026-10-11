@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart3 } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -12,7 +13,7 @@ import { useServerStore } from '@/stores/serverStore';
 import type { ContainerStats } from '@/lib/types';
 
 function formatMB(bytes: number): string {
-  return (bytes / 1024 / 1024).toFixed(0);
+  return zahl(bytes / 1024 / 1024, 0);
 }
 
 export function ContainerComparison() {
@@ -65,7 +66,7 @@ export function ContainerComparison() {
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-white/60 truncate max-w-[150px]">{container.name.replace(/^\//, '')}</span>
                 <div className="flex items-center gap-3 text-[10px] font-mono">
-                  <span className="text-indigo-400">{container.cpu.toFixed(1)}%</span>
+                  <span className="text-indigo-400">{zahl(container.cpu, 1)}%</span>
                   <span className="text-emerald-400">{formatMB(container.memUsage)} MB</span>
                 </div>
               </div>
@@ -93,7 +94,7 @@ export function ContainerComparison() {
         <div className="mt-4 pt-3 border-t border-white/[0.04] grid grid-cols-3 gap-3 text-center">
           <div>
             <span className="text-xs font-bold text-indigo-400 block">
-              {sorted.reduce((s, c) => s + c.cpu, 0).toFixed(1)}%
+              {zahl(sorted.reduce((s, c) => s + c.cpu, 0), 1)}%
             </span>
             <span className="text-[9px] text-white/30">CPU Gesamt</span>
           </div>

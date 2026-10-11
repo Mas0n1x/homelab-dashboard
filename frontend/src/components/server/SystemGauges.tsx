@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { motion } from 'framer-motion';
 import { Cpu, MemoryStick, HardDrive, Thermometer } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -69,7 +70,7 @@ function ArcGauge({
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-white/30 mb-1">{icon}</span>
           <span className="text-2xl font-bold tabular-nums" style={{ color }}>
-            {percent.toFixed(1)}%
+            {zahl(percent, 1)}%
           </span>
         </div>
       </div>
@@ -81,9 +82,9 @@ function ArcGauge({
 
 function formatBytes(bytes: number): string {
   const gb = bytes / (1024 * 1024 * 1024);
-  if (gb >= 1) return `${gb.toFixed(1)} GB`;
+  if (gb >= 1) return `${zahl(gb, 1)} GB`;
   const mb = bytes / (1024 * 1024);
-  return `${mb.toFixed(0)} MB`;
+  return `${zahl(mb, 0)} MB`;
 }
 
 export function SystemGauges({ stats }: SystemGaugesProps) {
@@ -113,7 +114,7 @@ export function SystemGauges({ stats }: SystemGaugesProps) {
         label="CPU"
         icon={<Cpu className="w-4 h-4" />}
         color={cpuColor}
-        sublabel={`User: ${stats.cpu.user.toFixed(1)}% | Sys: ${stats.cpu.system.toFixed(1)}%`}
+        sublabel={`User: ${zahl(stats.cpu.user, 1)}% | Sys: ${zahl(stats.cpu.system, 1)}%`}
       />
       <ArcGauge
         percent={stats.memory.percent}
@@ -136,7 +137,7 @@ export function SystemGauges({ stats }: SystemGaugesProps) {
         label="Temperatur"
         icon={<Thermometer className="w-4 h-4" />}
         color={tempColor}
-        sublabel={temp !== null ? `${temp.toFixed(1)}°C` : 'N/A'}
+        sublabel={temp !== null ? `${zahl(temp, 1)}°C` : 'n. v.'}
       />
     </div>
   );

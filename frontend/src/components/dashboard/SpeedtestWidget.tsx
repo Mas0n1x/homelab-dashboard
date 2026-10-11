@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Gauge, ArrowDown, ArrowUp, Activity, Loader2 } from 'lucide-react';
@@ -70,7 +71,7 @@ export function SpeedtestWidget() {
                 <ArrowDown className="w-3 h-3 text-emerald-400" />
                 <span className="text-xs text-white/40">Download</span>
               </div>
-              <span className="text-lg font-bold text-emerald-400 font-mono">{latest.download.toFixed(1)}</span>
+              <span className="text-lg font-bold text-emerald-400 font-mono">{zahl(latest.download, 1)}</span>
               <span className="text-xs text-white/30 ml-1">Mbps</span>
             </div>
             <div className="text-center">
@@ -78,7 +79,7 @@ export function SpeedtestWidget() {
                 <ArrowUp className="w-3 h-3 text-blue-400" />
                 <span className="text-xs text-white/40">Upload</span>
               </div>
-              <span className="text-lg font-bold text-blue-400 font-mono">{latest.upload.toFixed(1)}</span>
+              <span className="text-lg font-bold text-blue-400 font-mono">{zahl(latest.upload, 1)}</span>
               <span className="text-xs text-white/30 ml-1">Mbps</span>
             </div>
             <div className="text-center">
@@ -86,7 +87,7 @@ export function SpeedtestWidget() {
                 <Activity className="w-3 h-3 text-amber-400" />
                 <span className="text-xs text-white/40">Ping</span>
               </div>
-              <span className="text-lg font-bold text-amber-400 font-mono">{latest.ping.toFixed(0)}</span>
+              <span className="text-lg font-bold text-amber-400 font-mono">{zahl(latest.ping, 0)}</span>
               <span className="text-xs text-white/30 ml-1">ms</span>
             </div>
           </div>

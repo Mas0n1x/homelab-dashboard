@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useEffect, useRef, useState } from 'react';
 
 interface AnimatedNumberProps {
@@ -48,7 +49,7 @@ export function AnimatedNumber({ value, duration = 500, decimals = 0, suffix = '
 
   return (
     <span className={className}>
-      {display.toFixed(decimals)}{suffix}
+      {zahl(display, decimals)}{suffix}
     </span>
   );
 }

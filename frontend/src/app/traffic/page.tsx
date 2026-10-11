@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Globe, Activity, Database, Users, ShieldAlert, Zap, ExternalLink, RotateCw, AlertTriangle } from 'lucide-react';
@@ -15,16 +16,16 @@ type Range = '24h' | '7d' | '30d';
 const RANGES: [Range, string][] = [['24h', '24 Stunden'], ['7d', '7 Tage'], ['30d', '30 Tage']];
 
 function fmtNum(n: number): string {
-  if (n >= 1e9) return (n / 1e9).toFixed(1) + ' Mrd.';
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + ' Mio.';
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k';
+  if (n >= 1e9) return zahl(n / 1e9, 1) + ' Mrd.';
+  if (n >= 1e6) return zahl(n / 1e6, 1) + ' Mio.';
+  if (n >= 1e3) return zahl(n / 1e3, 1) + 'k';
   return String(n ?? 0);
 }
 function fmtBytes(n: number): string {
   if (!n) return '0 B';
   const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0; let v = n;
   while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
-  return `${v.toFixed(v < 10 && i > 0 ? 1 : 0)} ${u[i]}`;
+  return `${zahl(v, v < 10 && i > 0 ? 1 : 0)} ${u[i]}`;
 }
 
 function BarChart({ series, color }: { series: { t: string; requests: number }[]; color: string }) {

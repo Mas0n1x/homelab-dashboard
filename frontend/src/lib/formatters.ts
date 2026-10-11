@@ -3,28 +3,44 @@
  * Copyright (c) 2024-2026 DEV Mas0n1x.
  * Licensed under the MIT License.
  */
+// Zahl mit deutschem Dezimalkomma. `toFixed` liefert immer den Punkt — in einer
+// deutschen Oberfläche steht dort „9.9 GB" statt „9,9 GB". Nur für Anzeigetexte;
+// SVG-Pfade und CSS-Werte brauchen weiterhin den Punkt.
+export function zahl(wert: number, nachkomma = 1): string {
+  if (!Number.isFinite(wert)) return '–';
+  return wert.toLocaleString('de-DE', { minimumFractionDigits: nachkomma, maximumFractionDigits: nachkomma });
+}
+
 export function formatBytes(bytes: number, decimals = 1): string {
-  if (bytes === 0) return '0 B';
+  if (!bytes) return '0 B';
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
+  const i = Math.min(sizes.length - 1, Math.max(0, Math.floor(Math.log(bytes) / Math.log(k))));
+  // Überflüssige Nullen weglassen (wie zuvor parseFloat), aber mit Komma
+  return (bytes / Math.pow(k, i)).toLocaleString('de-DE', { maximumFractionDigits: decimals }) + ' ' + sizes[i];
 }
 
 export function formatBytesPerSec(bytes: number): string {
-  if (bytes === 0) return '0 B/s';
+  if (!bytes) return '0 B/s';
   const k = 1024;
   const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  const i = Math.min(sizes.length - 1, Math.max(0, Math.floor(Math.log(bytes) / Math.log(k))));
+  return (bytes / Math.pow(k, i)).toLocaleString('de-DE', { maximumFractionDigits: 1 }) + ' ' + sizes[i];
 }
 
 export function formatPercent(value: number): string {
-  return value.toFixed(1) + '%';
+  return zahl(value, 1) + '%';
 }
 
-export function formatUptime(uptime: string): string {
-  return uptime || 'N/A';
+// Glances und der Proxmox-Gast liefern die Laufzeit englisch („2 days, 10:02:17").
+export function formatUptime(uptime: string | null | undefined): string {
+  if (!uptime) return 'n. v.';
+  return uptime.replace(/(\d+) days?,\s*/, (_, n) => `${n} ${Number(n) === 1 ? 'Tag' : 'Tage'}, `);
+}
+
+// Monatspreis: „2,10 €" — immer zwei Nachkommastellen, Symbol je Währung.
+export function formatPreis(wert: number, waehrung?: string | null): string {
+  return `${zahl(wert, 2)} ${waehrung === 'USD' ? '$' : '€'}`;
 }
 
 export function formatDate(dateStr: string): string {

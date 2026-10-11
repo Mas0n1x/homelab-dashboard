@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useQuery } from '@tanstack/react-query';
 import { GitFork, Star, Eye, ExternalLink, MapPin, LinkIcon, Clock } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -207,7 +208,7 @@ export function GitHubWidget() {
                   key={lang}
                   className="h-full first:rounded-l-full last:rounded-r-full"
                   style={{ width: `${(size / totalSize) * 100}%`, backgroundColor: LANG_COLORS[lang] || '#888' }}
-                  title={`${lang}: ${((size / totalSize) * 100).toFixed(1)}%`}
+                  title={`${lang}: ${zahl((size / totalSize) * 100, 1)}%`}
                 />
               ))}
             </div>
@@ -215,7 +216,7 @@ export function GitHubWidget() {
               {topLanguages.map(([lang, size]) => (
                 <span key={lang} className="flex items-center gap-1 text-[10px] text-white/40">
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: LANG_COLORS[lang] || '#888' }} />
-                  {lang} <span className="text-white/20">{((size / totalSize) * 100).toFixed(0)}%</span>
+                  {lang} <span className="text-white/20">{zahl((size / totalSize) * 100, 0)}%</span>
                 </span>
               ))}
             </div>

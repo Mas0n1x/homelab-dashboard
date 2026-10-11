@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Reply, ReplyAll, Forward, Trash2, Paperclip, Download } from 'lucide-react';
 import { jmapCall, getMailAttachmentUrl } from '@/lib/api';
@@ -212,7 +213,7 @@ export function EmailReader({ folders }: EmailReaderProps) {
                 <span className="flex-1 truncate text-white/70">{att.name || 'Unbenannt'}</span>
                 <span className="text-[10px] text-white/30 shrink-0">
                   {att.size > 1048576
-                    ? `${(att.size / 1048576).toFixed(1)} MB`
+                    ? `${zahl(att.size / 1048576, 1)} MB`
                     : `${Math.round(att.size / 1024)} KB`}
                 </span>
               </a>

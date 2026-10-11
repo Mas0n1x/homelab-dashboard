@@ -5,6 +5,7 @@
  */
 'use client';
 
+import { zahl } from '@/lib/formatters';
 import { useQuery } from '@tanstack/react-query';
 import { Network, Globe, ArrowDown, ArrowUp } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -20,14 +21,14 @@ function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+  return `${zahl(bytes / Math.pow(1024, i), 1)} ${units[i]}`;
 }
 
 function formatRate(bytesPerSec: number): string {
   if (bytesPerSec === 0) return '0 B/s';
   const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
   const i = Math.floor(Math.log(bytesPerSec) / Math.log(1024));
-  return `${(bytesPerSec / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+  return `${zahl(bytesPerSec / Math.pow(1024, i), 1)} ${units[i]}`;
 }
 
 export function NetworkInfo({ serverId }: NetworkInfoProps) {
