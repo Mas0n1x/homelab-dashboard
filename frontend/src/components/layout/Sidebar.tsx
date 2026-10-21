@@ -23,6 +23,8 @@ import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useServerStore } from '@/stores/serverStore';
 import { useMailUnread } from '@/hooks/useMailUnread';
+import { useGameservers } from '@/hooks/useGameservers';
+import { gameIcon, stateStyle } from '@/components/gameserver/shared';
 
 import { istErreichbar } from '@/lib/formatters';
 interface NavItem {
@@ -223,6 +225,8 @@ export function Sidebar() {
                 </AnimatePresence>
               </div>
             ))}
+
+            <GameserverNav pathname={pathname} collapsed={collapsed} />
 
             {/* Separator */}
             <div className="!my-3 mx-1 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
@@ -488,6 +492,8 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
                     </div>
                   </div>
 
+                  <MobileGameservers pathname={pathname} linkCls={linkCls} />
+
                   {/* Server: Kopfzeile führt direkt zur Übersicht, Unterpunkte
                       klappen erst auf Wunsch aus — spart drei Viertel der Höhe. */}
                   <div>
@@ -542,5 +548,88 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+/**
+ * Spielserver aus Pelican. Es gibt keine Liste zu pflegen: Legt man im Panel einen
+ * Server an, taucht er hier beim nächsten Abruf auf. Minecraft-Server leben unter
+ * „Minecraft“ und stehen deshalb nicht doppelt in der Sidebar.
+ */
+function useSidebarGameservers() {
+  const { data } = useGameservers();
+  const all = data?.servers || [];
+  return {
+    all,
+    others: all.filter(s => s.game !== 'minecraft'),
+    running: all.filter(s => s.state.running).length,
+    show: !!data?.configured && all.length > 0,
+  };
+}
+
+function GameserverNav({ pathname, collapsed }: { pathname: string; collapsed: boolean }) {
+  const { all, others, running, show } = useSidebarGameservers();
+  if (!show) return null;
+  return (
+    <>
+      <div className="!my-3 mx-1 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+      {!collapsed && (
+        <div className="px-2 mb-1 flex items-center justify-between">
+          <span className="text-[10px] uppercase tracking-widest text-white/25 font-medium">Gameserver</span>
+          <span className="text-[10px] text-white/25 tabular-nums">{running}/{all.length} online</span>
+        </div>
+      )}
+      <SidebarLink href="/gameserver" icon={<LayoutDashboard className="w-4 h-4" />} label="Übersicht" active={pathname === '/gameserver'} collapsed={collapsed} />
+      {others.map(s => {
+        const Icon = gameIcon(s.game);
+        const st = stateStyle(s.state);
+        const active = pathname === `/gameserver/${s.id}`;
+        return (
+          <Link
+            key={s.id}
+            href={`/gameserver/${s.id}`}
+            title={collapsed ? `${s.name} — ${st.text}` : undefined}
+            className={clsx(
+              'relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200',
+              active ? 'bg-white/[0.08] text-white' : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+            )}
+          >
+            <div className="relative flex-shrink-0">
+              <Icon className="w-4 h-4" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0a0a1a]" style={{ background: st.color, boxShadow: `0 0 6px ${st.color}99` }} />
+            </div>
+            {!collapsed && (
+              <>
+                <span className="flex-1 truncate text-[13px]">{s.name}</span>
+                <span className="text-[10px] text-white/25 truncate max-w-[70px]">{s.gameLabel}</span>
+              </>
+            )}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
+function MobileGameservers({ pathname, linkCls }: { pathname: string; linkCls: (active: boolean) => string }) {
+  const { others, show } = useSidebarGameservers();
+  if (!show) return null;
+  return (
+    <div>
+      <p className="px-2 mb-1.5 text-[10px] uppercase tracking-widest text-white/25 font-medium">Gameserver</p>
+      <div className="grid grid-cols-2 gap-1">
+        <Link href="/gameserver" className={linkCls(pathname === '/gameserver')}><LayoutDashboard className="w-4 h-4" /><span>Übersicht</span></Link>
+        {others.map(s => {
+          const Icon = gameIcon(s.game);
+          const st = stateStyle(s.state);
+          return (
+            <Link key={s.id} href={`/gameserver/${s.id}`} className={linkCls(pathname === `/gameserver/${s.id}`)}>
+              <span className="relative flex-shrink-0"><Icon className="w-4 h-4" /><span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full" style={{ background: st.color }} /></span>
+              <span className="truncate">{s.name}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
   );
 }

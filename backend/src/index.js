@@ -45,6 +45,8 @@ import salenetRoutes from './routes/salenet.js';
 import businessRoutes from './routes/business.js';
 import proxmoxRoutes from './routes/proxmox.js';
 import pelicanRoutes from './routes/pelican.js';
+import gameserverRoutes from './routes/gameservers.js';
+import * as gameservers from './services/gameservers.js';
 import statusRoutes from './routes/status.js';
 import timeRoutes from './routes/time.js';
 import etsyRoutes, { createEtsyCallback } from './routes/etsy.js';
@@ -124,6 +126,7 @@ app.use('/api/salenet', salenetRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/proxmox', proxmoxRoutes);
 app.use('/api/pelican', pelicanRoutes);
+app.use('/api/gameservers', gameserverRoutes);
 app.use('/api/status', statusRoutes);
 app.use('/api/time', timeRoutes);
 app.use('/api/etsy', etsyRoutes);
@@ -156,10 +159,27 @@ const wss = new WebSocketServer({ noServer: true });
 
 // Minecraft-Live-Konsole: WebSocket-Proxy zum MC-Agent (Agent-Token bleibt server-seitig)
 const mcConsoleWss = new WebSocketServer({ noServer: true });
+// Pelican-Spielserver: Konsole kommt per WebSocket von Wings, nicht vom mc-agent.
+// Gleiches Protokoll wie beim Agent ({type:'log'|'error'|…} raus, {type:'command'} rein).
+const gsConsoleWss = new WebSocketServer({ noServer: true });
+async function gameserverKonsole(client, req) {
+  try {
+    const u = new URL(req.url, `http://${req.headers.host}`);
+    verifyToken(u.searchParams.get('token') || '');
+    const id = (u.searchParams.get('server') || '').replace(/^pelican:/, '');
+    const server = await gameservers.getServer(id);
+    gameservers.konsoleAnhaengen(client, server);
+  } catch (e) {
+    client.close(e?.status === 404 ? 4004 : 4001, 'Unauthorized');
+  }
+}
+gsConsoleWss.on('connection', gameserverKonsole);
+
 mcConsoleWss.on('connection', (client, req) => {
   let mcServer = null;
   try {
     const u = new URL(req.url, `http://${req.headers.host}`);
+    if ((u.searchParams.get('server') || '').startsWith('pelican:')) { gameserverKonsole(client, req); return; }
     verifyToken(u.searchParams.get('token') || '');
     mcServer = getMcServer(u.searchParams.get('server') || '');
   } catch { client.close(4001, 'Unauthorized'); return; }
@@ -185,6 +205,8 @@ server.on('upgrade', (req, socket, head) => {
     wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
   } else if (pathname === '/api/minecraft/console') {
     mcConsoleWss.handleUpgrade(req, socket, head, (ws) => mcConsoleWss.emit('connection', ws, req));
+  } else if (pathname === '/api/gameservers/console') {
+    gsConsoleWss.handleUpgrade(req, socket, head, (ws) => gsConsoleWss.emit('connection', ws, req));
   } else {
     socket.destroy();
   }

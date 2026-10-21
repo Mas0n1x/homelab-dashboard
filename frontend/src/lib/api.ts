@@ -185,6 +185,9 @@ export const clearNotifications = () => fetchApi('/portfolio/notifications', { m
 // Pelican (Game-Server): UUID → Anzeigename der Spielserver
 export const getPelicanServers = () => fetchApi<{ uuid: string; name: string; description: string }[]>('/pelican/servers');
 
+// Spielserver (Pelican): alle Server samt Zustand — die Liste füllt sich von selbst, sobald im Panel einer angelegt wird
+export const getGameservers = () => fetchApi<{ configured: boolean; servers: import('@/components/gameserver/shared').GameServer[]; error?: string }>('/gameservers');
+
 // --- Proxmox (Cerberus) ---
 export interface ProxmoxGast {
   typ: 'qemu' | 'lxc'; vmid: number; name: string; status: string;

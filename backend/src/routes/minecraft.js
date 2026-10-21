@@ -5,6 +5,8 @@
  */
 import { Router } from 'express';
 import { getServer, publicServers, accessHeaders } from '../services/mcServers.js';
+import * as gameservers from '../services/gameservers.js';
+import gameserverRoutes from './gameservers.js';
 
 const router = Router();
 
@@ -37,9 +39,29 @@ function reqServer(req) {
   return getServer(req.query.server);
 }
 
-// Liste aller konfigurierten Server (ohne Token) für den Switcher im Frontend.
-router.get('/servers', (req, res) => {
-  res.json({ servers: publicServers() });
+// Liste aller Minecraft-Server (ohne Token) für den Switcher im Frontend: die per
+// mc-agent angebundenen plus jeder Minecraft-Server, der in Pelican angelegt wird.
+router.get('/servers', async (req, res) => {
+  const servers = publicServers();
+  if (gameservers.konfiguriert()) {
+    try {
+      const pelican = (await gameservers.listServers()).filter(s => s.game === 'minecraft');
+      const versionen = await Promise.all(pelican.map(s => gameservers.minecraftPing(s).then(p => p?.version || '').catch(() => '')));
+      pelican.forEach((s, i) => servers.push({
+        id: `pelican:${s.id}`, name: s.name, host: s.host, version: versionen[i], map: '', provider: 'pelican',
+      }));
+    } catch { /* Pelican kurz weg: die Agent-Server bleiben bedienbar */ }
+  }
+  res.json({ servers });
+});
+
+// Pelican-Server sprechen dieselbe Sprache wie der Agent — die Anfrage geht an die
+// Spielserver-Routen weiter, nur Plugins/Welt/Automatik gibt es dort nicht.
+router.use((req, res, next) => {
+  const sid = String(req.query.server || '');
+  if (!sid.startsWith('pelican:')) return next();
+  req.url = `/${encodeURIComponent(sid.slice(8))}${req.url}`;
+  gameserverRoutes(req, res, next);
 });
 
 router.get('/status', async (req, res) => {

@@ -64,6 +64,8 @@ services:
       - TRUENAS_VMID=${TRUENAS_VMID:-102}
       - PELICAN_URL=${PELICAN_URL:-}
       - PELICAN_API_KEY=${PELICAN_API_KEY:-}
+      - PELICAN_CLIENT_KEY=${PELICAN_CLIENT_KEY:-}
+      - PELICAN_PUBLIC_HOST=${PELICAN_PUBLIC_HOST:-}
       - MC_AGENT_URL=${MC_AGENT_URL:-}
       - MC_AGENT_TOKEN=${MC_AGENT_TOKEN:-}
       # Mehrere Minecraft-Server (JSON-Array, hat Vorrang vor MC_AGENT_URL/TOKEN)
