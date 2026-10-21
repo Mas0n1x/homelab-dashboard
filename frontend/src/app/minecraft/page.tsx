@@ -116,10 +116,13 @@ function CodeEditor({ value, onChange }: { value: string; onChange: (v: string) 
   );
 }
 function Avatar({ name, size = 32 }: { name: string; size?: number }) {
-  const [err, setErr] = useState(false);
+  // mc-heads.net liefert aktuell fuer jeden Namen nur den Steve-Kopf -> minotar zuerst, mc-heads als Reserve.
+  const [stage, setStage] = useState(0);
   const px = `${size}px`;
-  if (err || !name) return <div style={{ width: px, height: px }} className="rounded-md bg-white/[0.05] border border-white/[0.08] flex items-center justify-center"><User className="w-1/2 h-1/2 text-white/30" /></div>;
-  return <img src={`https://mc-heads.net/avatar/${encodeURIComponent(name)}/${size}`} alt={name} onError={() => setErr(true)} style={{ width: px, height: px }} className="rounded-md" />;
+  if (stage > 1 || !name) return <div style={{ width: px, height: px }} className="rounded-md bg-white/[0.05] border border-white/[0.08] flex items-center justify-center"><User className="w-1/2 h-1/2 text-white/30" /></div>;
+  const n = encodeURIComponent(name);
+  const src = stage === 0 ? `https://minotar.net/helm/${n}/${size * 2}.png` : `https://mc-heads.net/avatar/${n}/${size * 2}`;
+  return <img key={stage} src={src} alt={name} onError={() => setStage(stage + 1)} style={{ width: px, height: px, imageRendering: 'pixelated' }} className="rounded-md" />;
 }
 
 type Tab = 'console' | 'performance' | 'players' | 'world' | 'config' | 'files' | 'plugins' | 'backups' | 'automation' | 'startup' | 'map';
@@ -323,7 +326,7 @@ export default function MinecraftPage() {
   const saveConfig = async () => { setBusy(true); const c = isProps && !rawMode ? applyProps(rawContent, props) : rawContent; await mcApi(`/config/${activeConfig}`, { method: 'PUT', body: JSON.stringify({ content: c }) }); setRawContent(c); if (isProps) setProps(parseProps(c)); setBusy(false); setDirty(false); setSavedFlash(true); setTimeout(() => setSavedFlash(false), 1500); };
 
   const playerList: string[] = (() => { if (!playerCfg) return []; try { const a = JSON.parse(rawContent || '[]'); return Array.isArray(a) ? a.map((p: any) => p.name || p.uuid || String(p)) : []; } catch { return []; } })();
-  const addPlayer = async () => { const n = newPlayer.trim(); if (!n || !playerCfg) return; setBusy(true); setNewPlayer(''); const r = await rcon(`${playerCfg.add} ${n}`); setBusy(false); if (r.response) flash(stripAnsi(r.response)); setTimeout(() => loadConfig(activeConfig), 900); };
+  const addPlayer = async () => { const n = newPlayer.trim(); if (!n || !playerCfg) return; setBusy(true); setNewPlayer(''); const r = await rcon(`${playerCfg.add} ${n}`); setBusy(false); flash(r?.response ? stripAnsi(r.response) : `Fehlgeschlagen: ${r?.error || 'keine Antwort vom Server'}`); setTimeout(() => loadConfig(activeConfig), 900); };
   const removePlayer = async (n: string) => { if (!playerCfg) return; await rcon(`${playerCfg.remove} ${n}`); setTimeout(() => loadConfig(activeConfig), 900); };
 
   const power = async (a: string) => { setBusy(true); await mcApi('/power', { method: 'POST', body: JSON.stringify({ action: a }) }); setTimeout(refreshStatus, 1500); setBusy(false); };
