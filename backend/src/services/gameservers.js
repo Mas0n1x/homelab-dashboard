@@ -645,8 +645,9 @@ export function minecraftPing(server) {
   const hit = pingCache.get(server.id);
   if (hit && Date.now() - hit.at < 5000) return Promise.resolve(hit.value);
   return new Promise((resolve) => {
-    const host = server.allocations.find(a => a.default)?.ip || server.hostName;
-    const ziel = /^(0\.0\.0\.0|)$/.test(host) ? '127.0.0.1' : host;
+    // 0.0.0.0 heißt „überall“ — aus dem Container wäre 127.0.0.1 der Container selbst, also die öffentliche Adresse nehmen.
+    const host = server.hostName || server.allocations.find(a => a.default)?.ip;
+    const ziel = /^(0\.0\.0\.0|)$/.test(host || '') ? '127.0.0.1' : host;
     const sock = net.connect({ host: ziel, port: server.port, timeout: 3000 });
     let buf = Buffer.alloc(0);
     const fertig = (v) => { sock.destroy(); pingCache.set(server.id, { at: Date.now(), value: v }); resolve(v); };
