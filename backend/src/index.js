@@ -50,10 +50,10 @@ import * as gameservers from './services/gameservers.js';
 import statusRoutes from './routes/status.js';
 import timeRoutes from './routes/time.js';
 import etsyRoutes, { createEtsyCallback } from './routes/etsy.js';
-import { checkAlerts, sendStatusReport } from './services/alerting.js';
+import { checkAlerts, sendStatusReport, checkForecastAlerts, notifyImageUpdates } from './services/alerting.js';
 import { runDueBackups, enforceBackupRetention } from './services/backup.js';
 import { recordMetric, pruneMetrics } from './services/metrics.js';
-import { recordDiskDaily, pruneDiskDaily } from './services/diskForecast.js';
+import { recordDiskDaily, pruneDiskDaily, getDiskForecast } from './services/diskForecast.js';
 import { checkFleetImageUpdates } from './services/imageUpdates.js';
 import metricsRoutes from './routes/metrics.js';
 import tunnelsRoutes from './routes/tunnels.js';
@@ -868,9 +868,17 @@ const pruefeImageUpdates = makeJob('image-updates', async () => {
   if (ergebnis.rateLimited) {
     console.warn('Image-Updates: Abruf-Limit der Registry erreicht — Ergebnis unvollständig.');
   }
+  await notifyImageUpdates(ergebnis);
 });
 setTimeout(pruefeImageUpdates, 2 * 60 * 1000);
 setInterval(pruefeImageUpdates, IMAGE_UPDATE_MS);
+
+// Background: Speicher-Prognose beobachten (alle 15 Minuten) und bei „voll in ≤ 30 Tagen" in Discord warnen.
+const pruefePrognose = makeJob('disk-forecast-alerts', async () => {
+  await checkForecastAlerts(getDiskForecast(30));
+});
+setTimeout(pruefePrognose, 3 * 60 * 1000);
+setInterval(pruefePrognose, 15 * 60 * 1000);
 
 // Background: Geplante Backups prüfen (alle 5 Minuten; Fälligkeit anhand Intervall)
 setInterval(() => {

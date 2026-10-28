@@ -49,6 +49,8 @@ const EVENT_CATEGORY = {
   new_portfolio_customer: 'Portfolio · Kunde',
   backup_completed: 'Backup · Erfolg',
   backup_failed: 'Backup · Fehler',
+  disk_forecast: 'Speicher · Prognose',
+  image_updates: 'Docker · Updates',
   test: 'Verbindungstest',
 };
 function categoryFromEvent(event) {
@@ -513,6 +515,72 @@ export async function notify(event, payload) {
     if (!events.includes(event)) continue;
     await sendWebhook(channel, { event, ...payload });
   }
+}
+
+// ── Speicher-Prognose: warnen, wenn eine Platte in absehbarer Zeit voll läuft ──
+// Zustandsbasiert (Alarm + Entwarnung) über dieselbe Streak-Logik wie die Schwellwerte;
+// aufgerufen alle 15 Minuten, bewusst NICHT im 30-s-Zyklus (die Prognose ändert sich nur täglich).
+const FORECAST_WARN_DAYS = 30;
+
+function tageText(tage) {
+  if (tage <= 1) return 'binnen eines Tages';
+  return `in ca. ${tage} Tagen`;
+}
+
+export async function checkForecastAlerts(forecast) {
+  const db = getDb();
+  const channels = db.prepare('SELECT * FROM alert_channels WHERE enabled = 1').all();
+  for (const channel of channels) {
+    const events = JSON.parse(channel.events || '[]');
+    if (!events.includes('disk_forecast')) continue;
+    for (const s of forecast.servers || []) {
+      const knapp = s.daysUntilFull !== null && s.daysUntilFull <= FORECAST_WARN_DAYS;
+      await handleThreshold(db, channel, {
+        event: 'disk_forecast',
+        scope: s.serverId,
+        subject: s.serverName,
+        isHigh: knapp,
+        alert: (name) => ({
+          title: `🗄️ Speicherplatz wird knapp: ${name}`,
+          message: `Die Platte von **${name}** ist laut Prognose ${tageText(s.daysUntilFull)} voll (${fmtPct(s.percent)} belegt, Zuwachs ca. ${((s.bytesPerDay || 0) / 1e9).toFixed(1).replace('.', ',')} GB/Tag).`,
+          color: s.daysUntilFull <= 7 ? 0xff4444 : 0xff8800,
+        }),
+        recovery: (name) => ({
+          title: `✅ Speicherplatz entspannt: ${name}`,
+          message: `Die Prognose für **${name}** zeigt keinen Engpass mehr (${fmtPct(s.percent)} belegt).`,
+          color: 0x10b981,
+        }),
+      });
+    }
+  }
+}
+
+// ── Image-Updates: einmal melden, wenn Container auf veralteten Images laufen ──
+// Nur bei geänderter Liste und höchstens alle 20 Stunden — der Durchlauf selbst läuft alle 6 h.
+let letzteImageMeldung = { key: '', time: 0 };
+const IMAGE_MELDUNG_PAUSE_MS = 20 * 60 * 60 * 1000;
+
+export async function notifyImageUpdates(lauf) {
+  const veraltet = lauf?.outdated || [];
+  if (veraltet.length === 0) { letzteImageMeldung = { key: '', time: letzteImageMeldung.time }; return; }
+
+  const key = veraltet.map(c => c.containerId || c.containerName).sort().join('|');
+  if (key === letzteImageMeldung.key) return;
+  if (Date.now() - letzteImageMeldung.time < IMAGE_MELDUNG_PAUSE_MS) return;
+
+  const proServer = new Map();
+  for (const s of lauf.servers || []) {
+    const namen = s.containers.filter(c => c.hasUpdate).map(c => c.containerName);
+    if (namen.length) proServer.set(s.serverName, namen);
+  }
+  const zeilen = [...proServer].slice(0, 12).map(([name, namen]) => `**${name}**: ${namen.slice(0, 8).join(', ')}${namen.length > 8 ? ` und ${namen.length - 8} weitere` : ''}`);
+
+  letzteImageMeldung = { key, time: Date.now() };
+  await notify('image_updates', {
+    title: `🐳 ${veraltet.length} Container laufen auf einem veralteten Image`,
+    message: zeilen.join('\n'),
+    color: 0xff8800,
+  });
 }
 
 // Get all channels

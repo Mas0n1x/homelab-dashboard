@@ -37,6 +37,8 @@ const EVENT_OPTIONS = [
   { id: 'new_portfolio_customer', label: 'Neuer Kunde', icon: '👤' },
   { id: 'backup_completed', label: 'Backup erfolgreich', icon: '💾' },
   { id: 'backup_failed', label: 'Backup fehlgeschlagen', icon: '⚠️' },
+  { id: 'disk_forecast', label: 'Speicher-Prognose (voll in ≤ 30 Tagen)', icon: '📉' },
+  { id: 'image_updates', label: 'Veraltete Container-Images', icon: '🐳' },
 ];
 
 const SETTINGS_TABS = [
