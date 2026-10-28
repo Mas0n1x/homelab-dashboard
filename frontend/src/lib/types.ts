@@ -643,6 +643,8 @@ export interface DiskForecastServer {
   confidence: number | null
   trend: 'steigend' | 'fallend' | 'stabil' | 'unbekannt'
   reason?: string
+  /** Tag der letzten großen Aufräumaktion — der Trend zählt erst ab da. */
+  aufgeraeumtAm?: string | null
 }
 
 export interface DiskForecast {

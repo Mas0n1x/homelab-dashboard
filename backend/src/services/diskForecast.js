@@ -18,6 +18,25 @@ const MIN_DAYS = 7;
 // aufgeräumte Altlasten mit und verfälschen den aktuellen Trend.
 const WINDOW_DAYS = 30;
 
+// Ein Rückgang über dieser Schwelle (Anteil der Platte, mindestens aber der
+// Festbetrag) gilt als Aufräumaktion und nicht als Schwankung. Davor zählen die
+// Tage nicht mehr: sonst rechnet die Regression eine Löschaktion als Trend ein
+// und meldet z. B. „voll in 13 Tagen", obwohl gerade 90 GB frei geworden sind.
+const AUFRAEUMEN_ANTEIL = 0.08;
+const AUFRAEUMEN_MIN_BYTES = 10 * 1024 ** 3;
+
+/**
+ * Index der ersten Zeile NACH dem letzten großen Rückgang (0, wenn es keinen gab).
+ */
+function indexNachAufraeumen(zeilen) {
+  for (let i = zeilen.length - 1; i > 0; i--) {
+    const rueckgang = zeilen[i - 1].used_bytes - zeilen[i].used_bytes;
+    const schwelle = Math.max(AUFRAEUMEN_MIN_BYTES, (zeilen[i].total_bytes || 0) * AUFRAEUMEN_ANTEIL);
+    if (rueckgang >= schwelle) return i;
+  }
+  return 0;
+}
+
 /**
  * Tageswert der Plattenbelegung festhalten.
  *
@@ -65,9 +84,14 @@ export function getDiskForecast(windowDays = WINDOW_DAYS) {
   const ergebnisse = [];
 
   for (const server of servers) {
-    const zeilen = db.prepare(
+    const alle = db.prepare(
       'SELECT day, used_bytes, total_bytes, percent FROM disk_daily WHERE server_id = ? AND day >= ? ORDER BY day ASC'
     ).all(server.id, seit);
+
+    // Nur der Verlauf seit der letzten Aufräumaktion taugt für den Trend.
+    const ab = indexNachAufraeumen(alle);
+    const zeilen = alle.slice(ab);
+    const aufgeraeumtAm = ab > 0 ? alle[ab].day : null;
 
     const aktuell = zeilen[zeilen.length - 1] || null;
 
@@ -83,11 +107,15 @@ export function getDiskForecast(windowDays = WINDOW_DAYS) {
       fullAt: null,
       confidence: null,
       trend: 'unbekannt',
+      aufgeraeumtAm,
     };
 
     if (zeilen.length < MIN_DAYS || !aktuell?.total_bytes) {
+      const datum = aufgeraeumtAm ? aufgeraeumtAm.split('-').reverse().slice(0, 2).join('.') + '.' : null;
       basis.reason = zeilen.length < MIN_DAYS
-        ? `Noch zu wenig Verlauf (${zeilen.length} von ${MIN_DAYS} Tagen)`
+        ? (datum
+          ? `Aufgeräumt am ${datum} — neuer Verlauf: ${zeilen.length} von ${MIN_DAYS} Tagen`
+          : `Noch zu wenig Verlauf (${zeilen.length} von ${MIN_DAYS} Tagen)`)
         : 'Keine Plattengröße bekannt';
       ergebnisse.push(basis);
       continue;
