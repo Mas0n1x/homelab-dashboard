@@ -1,0 +1,211 @@
+# ARES-VARIANTE von docker-compose.yml (automatisch abgeleitet, 2026-10-09).
+# Unterschiede: kein minecraft_default-Netz, homelab-network fest auf 172.20.0.0/16.
+# Start: docker compose -f docker-compose.ares.yml up -d   (erst am Umzugstag!)
+# Log-Rotation: begrenzt die json-file-Logs (sonst wachsen sie unbegrenzt und
+# verschleißen die Pi-SSD). Pro Service via *default-logging referenziert.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: homelab-frontend
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      - NODE_ENV=production
+    networks:
+      - homelab-network
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: homelab-backend
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - CORS_ORIGIN=${CORS_ORIGIN:-}
+      - GLANCES_URL=http://host.docker.internal:61208
+      - DB_PATH=/app/data/dashboard.db
+      - CONFIG_PATH=/app/data/config.json
+      # Das Portfolio liegt seit 2026-10-09 auf der Mason-VM (Heimnetz) und ist vom VPS nur
+      # noch über die öffentliche Adresse erreichbar; Standard bleibt der alte Weg.
+      - PORTFOLIO_API_URL=${PORTFOLIO_API_URL:-http://host.docker.internal:3000}
+      # Lesender Dienst-Schlüssel des Portfolios (dort SERVICE_API_KEY).
+      - PORTFOLIO_API_KEY=${PORTFOLIO_API_KEY:?PORTFOLIO_API_KEY muss in der .env gesetzt sein (SERVICE_API_KEY des Portfolios)}
+      # Alter Weg über das Admin-Passwort — nur noch Fallback, darf leer bleiben.
+      - PORTFOLIO_PASSWORD=${PORTFOLIO_PASSWORD:-}
+      # Ein-Klick-Admin-Zugänge (Seite „Zugänge"). Je Ziel dasselbe Geheimnis
+      # wie dort SSO_SECRET (mind. 32 Zeichen). Leer = Kachel deaktiviert.
+      - PORTFOLIO_SSO_SECRET=${PORTFOLIO_SSO_SECRET:-}
+      - SALENET_SSO_SECRET=${SALENET_SSO_SECRET:-}
+      - MAIL_ACCOUNT_PASSWORD=${MAIL_ACCOUNT_PASSWORD:?MAIL_ACCOUNT_PASSWORD muss in der .env gesetzt sein}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET muss in der .env gesetzt sein}
+      # Eigener Schluessel fuer gespeicherte Mail-Zugangsdaten. Frueher hing das
+      # am JWT_SECRET — eine Rotation machte damit alle Zugaenge unlesbar.
+      - MAIL_CRYPT_KEY=${MAIL_CRYPT_KEY:-}
+      # Nur waehrend einer Rotation gesetzt (siehe scripts/mail-crypt-rotate.mjs).
+      - MAIL_CRYPT_KEY_LEGACY=${MAIL_CRYPT_KEY_LEGACY:-}
+      # Proxmox auf Cerberus (Seite "Proxmox"). Erreichbar ueber den Reverse-SSH-Tunnel
+      # auf der Docker-Bridge; Token des Proxmox-Benutzers dashboard@pve. Leer = Seite zeigt Hinweis.
+      - PROXMOX_URL=${PROXMOX_URL:-}
+      - PROXMOX_TOKEN_ID=${PROXMOX_TOKEN_ID:-}
+      - PROXMOX_TOKEN_SECRET=${PROXMOX_TOKEN_SECRET:-}
+      - PELICAN_URL=${PELICAN_URL:-}
+      - PELICAN_API_KEY=${PELICAN_API_KEY:-}
+      - MC_AGENT_URL=${MC_AGENT_URL:-}
+      - MC_AGENT_TOKEN=${MC_AGENT_TOKEN:-}
+      # Mehrere Minecraft-Server (JSON-Array, hat Vorrang vor MC_AGENT_URL/TOKEN)
+      - MC_SERVERS=${MC_SERVERS:-}
+      # Discord-Bots: zentrale Bot-Runtime + PersoNet (extern)
+      - BOT_RUNTIME_URL=http://bot-runtime:3200
+      - BOT_RUNTIME_TOKEN=${BOT_RUNTIME_TOKEN:-}
+      - PERSONET_BOT_URL=${PERSONET_BOT_URL:-}
+      - PERSONET_BOT_API_KEY=${PERSONET_BOT_API_KEY:-}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
+      # SSH-Key für sicheren Remote-Docker-Zugriff (z. B. VPS) — Pfad IM Container
+      - SSH_KEY_PATH=${SSH_KEY_PATH:-/app/ssh/id_ed25519}
+      - ETSY_KEYSTRING=${ETSY_KEYSTRING:-}
+      - ETSY_SHARED_SECRET=${ETSY_SHARED_SECRET:-}
+      - ETSY_REDIRECT_URI=${ETSY_REDIRECT_URI:-}
+      - DOCKERHUB_USER=${DOCKERHUB_USER:-}
+      - DOCKERHUB_TOKEN=${DOCKERHUB_TOKEN:-}
+      - STALWART_URL=http://stalwart:8080
+      - STALWART_ADMIN_USER=${STALWART_ADMIN_USER:-admin}
+      - STALWART_ADMIN_PASSWORD=${STALWART_ADMIN_PASSWORD:-}
+      # Kein Default-Secret: ohne gesetzten Wert wird der öffentliche Inbound-Webhook
+      # deaktiviert (503), statt mit einem bekannten Default angreifbar zu sein.
+      - MAIL_WEBHOOK_SECRET=${MAIL_WEBHOOK_SECRET:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - homelab-data:/app/data
+      - /srv:/host/srv:rw
+      # SSH-Key (read-only) für Remote-Docker via SSH — Host-Pfad in der .env setzen
+      - ${SSH_KEY_HOST_PATH:-./ssh}:/app/ssh:ro
+    networks:
+      - homelab-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  bot-runtime:
+    build:
+      context: ./bot-runtime
+      dockerfile: Dockerfile
+    container_name: homelab-bot-runtime
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      - NODE_ENV=production
+      - PORT=3200
+      - BOT_DB_PATH=/app/data/bots.db
+      - BOT_RUNTIME_TOKEN=${BOT_RUNTIME_TOKEN:?BOT_RUNTIME_TOKEN muss in der .env gesetzt sein (gemeinsames Token mit dem Backend)}
+      # Portfolio-Bot: GitHub-Anbindung + "Meine Server" (interner Zugriff aufs Dashboard)
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
+      - PORTFOLIO_WEBHOOK_URL=${PORTFOLIO_WEBHOOK_URL:-}
+      # Projektliste für die "Projekte"-Nachricht: kuratierte Auswahl aus dem Portfolio-Admin
+      - PORTFOLIO_PROJECTS_URL=${PORTFOLIO_PROJECTS_URL:-https://mas0n1x.online/api/projects}
+      - HOMELAB_API_URL=${BOT_HOMELAB_API_URL:-http://backend:3001}
+      - HOMELAB_USER=${BOT_HOMELAB_USER:-}
+      - HOMELAB_PASSWORD=${BOT_HOMELAB_PASSWORD:-}
+      # SaleNet-Bot
+      - SALENET_DISCORD_BOT_TOKEN=${SALENET_DISCORD_BOT_TOKEN:-}
+      - SALENET_DB_PATH=/app/data/salenet.db
+      - SALENET_PRODUCTS_URL=${SALENET_PRODUCTS_URL:-}
+      - STRIPE_SECRET_KEY=${SALENET_STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${SALENET_STRIPE_WEBHOOK_SECRET:-}
+    volumes:
+      - bot-runtime-data:/app/data
+    networks:
+      - homelab-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:alpine
+    container_name: homelab-nginx
+    restart: unless-stopped
+    logging: *default-logging
+    # Template als nginx.conf übernehmen (kein Platzhalter mehr nötig)
+    command: /bin/sh -c "cp /etc/nginx/nginx.conf.template /etc/nginx/nginx.conf && exec nginx -g 'daemon off;'"
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+    networks:
+      - homelab-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - frontend
+      - backend
+
+  stalwart:
+    # Festgenagelt auf 0.15.5. `:latest` ist inzwischen 0.16.20, und die
+    # startet mit diesem Datenstand im Bootstrap-Modus ("No configuration file
+    # was found") — der Mailserver wäre also nach einem beliebigen `pull`
+    # stillschweigend leer und offline. Der Sprung auf 0.16 braucht eine
+    # eigene Migration der Konfiguration, nicht nur ein neues Image.
+    # Achtung: Docker Hub führt keine 0.15-Tags mehr, nur noch diesen Digest.
+    image: stalwartlabs/stalwart@sha256:dcf575db2d53d9ef86d6ced8abe4ba491984659a0f8862cc6079ee7b41c3c568
+    container_name: homelab-stalwart
+    restart: unless-stopped
+    logging: *default-logging
+    hostname: mail.mas0n1x.online
+    volumes:
+      - stalwart-data:/opt/stalwart
+    ports:
+      - "25:25"
+      - "587:587"
+      - "465:465"
+      - "143:143"
+      - "993:993"
+      - "127.0.0.1:2525:2525"
+      - "127.0.0.1:4587:4587"
+      - "127.0.0.1:4465:4465"
+      - "127.0.0.1:9993:9993"
+    networks:
+      - homelab-network
+
+  # Cloudflare Tunnel (uncomment to enable public access)
+  # 1. Create a tunnel at https://one.dash.cloudflare.com -> Networks -> Tunnels
+  # 2. Copy the tunnel token to .env as CLOUDFLARE_TUNNEL_TOKEN
+  # 3. Add a public hostname pointing to http://nginx:80
+  # 4. Uncomment the service below and run: docker compose up -d cloudflared
+  #
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: homelab-cloudflared
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run
+  #   environment:
+  #     - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+  #   networks:
+  #     - homelab-network
+  #   depends_on:
+  #     - nginx
+
+networks:
+  homelab-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+volumes:
+  homelab-data:
+  stalwart-data:
+  bot-runtime-data:
