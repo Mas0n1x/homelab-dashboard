@@ -15,9 +15,43 @@ interface Ev {
   ts: number;
   label: string;
   detail?: string;
+  /** Voller Text für den Tooltip (nur bei Alarmen). */
+  full?: string;
   Icon: ReturnType<typeof formatAudit>['Icon'];
   tint: string;
   count: number;
+}
+
+/**
+ * Alarm-Texte lesbar machen. Sammelmeldungen der Form
+ *   **Hermes (VPS)**: minecraft, wartung, … und 3 weitere
+ *   **AMO (VPS)**: amo-cloudflared, …
+ * werden zu „Titel + Zähler je Server“ verdichtet; Markdown-Sterne fliegen raus.
+ */
+function formatAlert(a: any): { label: string; detail?: string; full: string } {
+  const raw = String(a.message ?? '');
+  const full = raw.replace(/\*\*/g, '').replace(/\s*\n\s*/g, '\n').trim();
+  const gruppen: { server: string; n: number }[] = [];
+  const re = /\*\*([^*]+)\*\*:\s*([\s\S]*?)(?=\s*\*\*[^*]+\*\*:|$)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) !== null) {
+    // Die Liste endet bei langen Servern auf „… h und 3 weitere“ (ohne Komma).
+    let liste = m[2].trim();
+    let n = 0;
+    const mehr = liste.match(/\s+und (\d+) weitere$/);
+    if (mehr) { n += parseInt(mehr[1], 10); liste = liste.slice(0, mehr.index); }
+    n += liste.split(',').map(t => t.trim()).filter(Boolean).length;
+    gruppen.push({ server: m[1].replace(/\s*\([^)]*\)\s*/g, '').trim(), n });
+  }
+  if (gruppen.length > 0) {
+    const summe = gruppen.reduce((s, g) => s + g.n, 0);
+    const label = a.event_type === 'image_updates'
+      ? `${summe} Container mit veraltetem Image`
+      : `${summe} Meldungen auf ${gruppen.length} Server${gruppen.length > 1 ? 'n' : ''}`;
+    return { label, detail: gruppen.map(g => `${g.server} ${g.n}`).join(' · '), full };
+  }
+  const einzeilig = full.replace(/\n+/g, ' · ');
+  return { label: einzeilig || a.event_type || 'Alarm', detail: cleanAuditValue(a.channel_name), full };
 }
 
 function rel(ms: number): string {
@@ -37,7 +71,8 @@ export function EventsWidget() {
   const raw: Ev[] = [];
   for (const a of alerts ?? []) {
     const ts = new Date((a.sent_at || '') + 'Z').getTime();
-    raw.push({ ts, label: cleanAuditValue(a.message) || a.event_type || 'Alarm', detail: cleanAuditValue(a.channel_name), ...alertMeta(), count: 1 });
+    const f = formatAlert(a);
+    raw.push({ ts, label: f.label, detail: f.detail, full: f.full, ...alertMeta(), count: 1 });
   }
   for (const e of audit ?? []) {
     const ts = new Date((e.created_at || '') + 'Z').getTime();
@@ -74,7 +109,7 @@ export function EventsWidget() {
             {events.map((e, i) => {
               const Icon = e.Icon;
               return (
-                <div key={i} className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 hover:bg-white/[0.02] transition">
+                <div key={i} title={e.full} className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 hover:bg-white/[0.02] transition">
                   <div className="w-6 h-6 rounded-md bg-white/[0.04] flex items-center justify-center flex-shrink-0">
                     <Icon className={`w-3.5 h-3.5 ${e.tint}`} />
                   </div>
