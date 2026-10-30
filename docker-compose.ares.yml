@@ -29,6 +29,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: homelab-backend
+    # Docker fragte einen toten DNS-Server (192.168.178.2); direkt Fritzbox, Ausweich Cloudflare
+    dns: [192.168.178.1, 1.1.1.1]
     restart: unless-stopped
     logging: *default-logging
     environment:
@@ -108,6 +110,8 @@ services:
       context: ./bot-runtime
       dockerfile: Dockerfile
     container_name: homelab-bot-runtime
+    # Docker fragte einen toten DNS-Server (192.168.178.2); direkt Fritzbox, Ausweich Cloudflare
+    dns: [192.168.178.1, 1.1.1.1]
     restart: unless-stopped
     logging: *default-logging
     environment:
