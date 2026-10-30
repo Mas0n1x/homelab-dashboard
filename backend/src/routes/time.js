@@ -15,7 +15,7 @@ const isIso = (v) => typeof v === 'string' && !Number.isNaN(Date.parse(v));
 
 const DEFAULT_PROFILE = {
   issuerName: 'Max-Cedrik Blecker',
-  issuerAddress: 'Hülsenweg 5\n42579 Heiligenhaus',
+  issuerAddress: 'Philosophenweg 47\n45279 Essen',
   issuerEmail: '',
   taxId: '',
   vatRate: 19,

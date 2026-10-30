@@ -24,7 +24,7 @@ import { PageTransition } from '@/components/ui/PageTransition';
 
 const WEATHER_LOCATIONS: WeatherLocation[] = [
   { latitude: 50.7539, longitude: 8.4869, city: 'Hartenrod' },
-  { latitude: 51.3267, longitude: 6.9694, city: 'Heiligenhaus' },
+  { latitude: 51.4556, longitude: 7.0116, city: 'Essen' },
 ];
 
 export default function FleetOverviewPage() {
