@@ -19,11 +19,23 @@ interface UploadedFile {
   size: number;
 }
 
+// Nur bei offenem Dialog mounten — sonst bleiben Vorbelegung (Antwort/Weiterleiten)
+// und Absender vom ersten Öffnen hängen.
 export function ComposeModal() {
+  const composeOpen = useMailStore(s => s.composeOpen);
+  return composeOpen ? <ComposeDialog /> : null;
+}
+
+function ComposeDialog() {
   const {
-    email: mailEmail, accountId,
-    composeOpen, setComposeOpen, composeMode, replyToEmail,
+    email: activeEmail, accounts,
+    setComposeOpen, composeMode, replyToEmail,
   } = useMailStore();
+  // Absender: standardmäßig das aktive Konto (bei Antworten das Konto der Mail).
+  const [fromEmail, setFromEmail] = useState(activeEmail || accounts[0]?.email || '');
+  const fromAccount = accounts.find(a => a.email === fromEmail);
+  const mailEmail = fromEmail || null;
+  const accountId = fromAccount?.accountId ?? null;
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,9 +93,9 @@ export function ComposeModal() {
         ['Identity/get', { accountId }, 'i'],
         ['Mailbox/get', { accountId, ids: null }, 'mb'],
       ]);
-      const identityResponse = setupResult.methodResponses?.[0]?.[1] as { list?: { id: string }[] } | undefined;
+      const identityResponse = setupResult.methodResponses?.[0]?.[1] as { list?: { id: string; email?: string }[] } | undefined;
       const identities = identityResponse?.list || [];
-      const identityId = identities[0]?.id;
+      const identityId = (identities.find(i => i.email?.toLowerCase() === mailEmail.toLowerCase()) ?? identities[0])?.id;
       if (!identityId) throw new Error('Keine Identität gefunden');
 
       const mailboxResponse = setupResult.methodResponses?.[1]?.[1] as { list?: { id: string; role: string | null }[] } | undefined;
@@ -94,7 +106,7 @@ export function ComposeModal() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const draft: Record<string, any> = {
-        from: [{ email: mailEmail }],
+        from: [fromAccount?.displayName ? { name: fromAccount.displayName, email: mailEmail } : { email: mailEmail }],
         to: toAddresses,
         subject: subject || '(Kein Betreff)',
         bodyValues: {
@@ -171,8 +183,6 @@ export function ComposeModal() {
     setUploading(false);
   };
 
-  if (!composeOpen) return null;
-
   return (
     <>
       {/* Backdrop */}
@@ -199,6 +209,24 @@ export function ComposeModal() {
 
         {/* Form */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div>
+            <label className="text-[10px] text-white/40 mb-1 block">Von</label>
+            <select
+              value={fromEmail}
+              onChange={(e) => {
+                setFromEmail(e.target.value);
+                // Anhänge liegen als Blob im alten Konto — dort nicht verwendbar.
+                setAttachments([]);
+              }}
+              className="glass-input w-full text-sm"
+            >
+              {accounts.map(a => (
+                <option key={a.email} value={a.email} className="bg-neutral-900">
+                  {a.displayName ? `${a.displayName} <${a.email}>` : a.email}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="text-[10px] text-white/40 mb-1 block">An</label>
             <input
