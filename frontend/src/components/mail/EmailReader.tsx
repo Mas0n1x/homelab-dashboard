@@ -110,7 +110,11 @@ export function EmailReader({ folders }: EmailReaderProps) {
   // Get HTML or text body
   const htmlPart = emailData.htmlBody?.[0];
   const textPart = emailData.textBody?.[0];
-  const htmlContent = htmlPart && emailData.bodyValues?.[htmlPart.partId]?.value;
+  // JMAP liefert bei reinen Textmails den text/plain-Teil auch in htmlBody –
+  // nur echtes HTML im iframe rendern, sonst gehen die Zeilenumbrüche verloren.
+  const htmlContent = htmlPart?.type === 'text/html'
+    ? emailData.bodyValues?.[htmlPart.partId]?.value
+    : undefined;
   const textContent = textPart && emailData.bodyValues?.[textPart.partId]?.value;
 
   // Sanitize HTML: remove scripts, event handlers
