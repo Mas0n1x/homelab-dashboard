@@ -18,7 +18,7 @@ interface EmailListProps {
 }
 
 export function EmailList({ folders }: EmailListProps) {
-  const { email, accountId, activeFolderId, setSelectedEmailId, searchQuery, searchActive } = useMailStore();
+  const { email, accountId, activeFolderId, openEmail, searchQuery, searchActive } = useMailStore();
   const [position, setPosition] = useState(0);
   const queryClient = useQueryClient();
   const limit = 50;
@@ -125,7 +125,7 @@ export function EmailList({ folders }: EmailListProps) {
   });
 
   const handleClick = (emailItem: MailEmail) => {
-    setSelectedEmailId(emailItem.id);
+    if (email) openEmail(emailItem.id, email);
     if (!emailItem.keywords?.['$seen']) {
       markReadMutation.mutate(emailItem.id);
     }

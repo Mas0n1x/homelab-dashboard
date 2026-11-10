@@ -82,8 +82,12 @@ export const useMailStore = create<MailStore>((set, get) => ({
   accountId: null,
 
   setAccounts: (accounts) => {
-    const active = accounts.find(a => a.isActive);
-    const activeEmail = active?.email || null;
+    // Beim Nachladen der Übersicht (z. B. nach „gelesen markieren") das gewählte
+    // Konto behalten — sonst springt es aufs erste, und die offene Mail-ID wird im
+    // falschen Postfach geladen (Stalwart-IDs überschneiden sich zwischen Konten).
+    const current = get().activeAccountEmail;
+    const keep = current && accounts.some(a => a.email === current) ? current : null;
+    const activeEmail = keep || accounts.find(a => a.isActive)?.email || null;
     set({ accounts, activeAccountEmail: activeEmail, ...deriveFields(accounts, activeEmail) });
   },
 

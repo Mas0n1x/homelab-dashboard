@@ -18,9 +18,12 @@ interface EmailReaderProps {
 
 export function EmailReader({ folders }: EmailReaderProps) {
   const {
-    email, accountId, selectedEmailId, setSelectedEmailId,
+    email: activeEmail, accounts, selectedEmailId, selectedEmailAccount, setSelectedEmailId,
     setComposeOpen, setComposeMode, setReplyToEmail,
   } = useMailStore();
+  // Immer das Konto der geöffneten Mail verwenden, nie das gerade „aktive".
+  const email = selectedEmailAccount || activeEmail;
+  const accountId = accounts.find(a => a.email === email)?.accountId ?? null;
   const queryClient = useQueryClient();
 
   const { data: emailData, isLoading } = useQuery({
