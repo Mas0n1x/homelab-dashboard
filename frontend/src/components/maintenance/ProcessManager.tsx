@@ -60,11 +60,11 @@ export function ProcessManager({ serverId }: ProcessManagerProps) {
           </div>
           <div>
             <h3 className="text-sm font-medium">Prozesse</h3>
-            <p className="text-[10px] text-white/30">{filtered.length} Prozesse</p>
+            <p className="text-[11px] text-white/50">{filtered.length} Prozesse</p>
           </div>
         </div>
         <div className="relative w-40">
-          <Search className="w-3.5 h-3.5 text-white/20 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-white/50 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={filter}
@@ -76,25 +76,25 @@ export function ProcessManager({ serverId }: ProcessManagerProps) {
       </div>
 
       {isLoading ? (
-        <div className="py-8 text-center text-white/20 text-xs">Lade Prozesse...</div>
+        <div className="py-8 text-center text-white/50 text-xs">Lade Prozesse...</div>
       ) : error ? (
         <div className="py-8 text-center text-red-400/60 text-xs">Fehler: {(error as Error).message}</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-white/30 border-b border-white/[0.04]">
-                <th className="text-left py-2 px-2 font-medium cursor-pointer hover:text-white/50" onClick={() => handleSort('pid')}>
+              <tr className="text-white/50 border-b border-white/[0.04]">
+                <th className="text-left py-2 px-2 font-medium cursor-pointer hover:text-white/65" onClick={() => handleSort('pid')}>
                   PID <SortIcon field="pid" current={sortBy} asc={sortAsc} />
                 </th>
-                <th className="text-left py-2 px-2 font-medium cursor-pointer hover:text-white/50" onClick={() => handleSort('name')}>
+                <th className="text-left py-2 px-2 font-medium cursor-pointer hover:text-white/65" onClick={() => handleSort('name')}>
                   Name <SortIcon field="name" current={sortBy} asc={sortAsc} />
                 </th>
                 <th className="text-left py-2 px-2 font-medium">User</th>
-                <th className="text-right py-2 px-2 font-medium cursor-pointer hover:text-white/50" onClick={() => handleSort('cpuPercent')}>
+                <th className="text-right py-2 px-2 font-medium cursor-pointer hover:text-white/65" onClick={() => handleSort('cpuPercent')}>
                   CPU% <SortIcon field="cpuPercent" current={sortBy} asc={sortAsc} />
                 </th>
-                <th className="text-right py-2 px-2 font-medium cursor-pointer hover:text-white/50" onClick={() => handleSort('memPercent')}>
+                <th className="text-right py-2 px-2 font-medium cursor-pointer hover:text-white/65" onClick={() => handleSort('memPercent')}>
                   MEM% <SortIcon field="memPercent" current={sortBy} asc={sortAsc} />
                 </th>
                 <th className="text-right py-2 px-2 font-medium hidden lg:table-cell">RSS</th>
@@ -105,31 +105,31 @@ export function ProcessManager({ serverId }: ProcessManagerProps) {
             <tbody>
               {filtered.map(p => (
                 <tr key={p.pid} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors group">
-                  <td className="py-1.5 px-2 tabular-nums text-white/40">{p.pid}</td>
+                  <td className="py-1.5 px-2 tabular-nums text-white/55">{p.pid}</td>
                   <td className="py-1.5 px-2 font-medium text-white/70 max-w-[200px] truncate" title={p.cmdline}>{p.name}</td>
-                  <td className="py-1.5 px-2 text-white/30">{p.username}</td>
+                  <td className="py-1.5 px-2 text-white/50">{p.username}</td>
                   <td className="py-1.5 px-2 text-right tabular-nums">
                     <span className={clsx(
-                      p.cpuPercent > 50 ? 'text-red-400' : p.cpuPercent > 20 ? 'text-amber-400' : 'text-white/50'
+                      p.cpuPercent > 50 ? 'text-red-400' : p.cpuPercent > 20 ? 'text-amber-400' : 'text-white/65'
                     )}>
                       {zahl(p.cpuPercent, 1)}
                     </span>
                   </td>
                   <td className="py-1.5 px-2 text-right tabular-nums">
                     <span className={clsx(
-                      p.memPercent > 50 ? 'text-red-400' : p.memPercent > 20 ? 'text-purple-400' : 'text-white/50'
+                      p.memPercent > 50 ? 'text-red-400' : p.memPercent > 20 ? 'text-purple-400' : 'text-white/65'
                     )}>
                       {zahl(p.memPercent, 1)}
                     </span>
                   </td>
-                  <td className="py-1.5 px-2 text-right text-white/30 tabular-nums hidden lg:table-cell">{formatBytes(p.memRss)}</td>
-                  <td className="py-1.5 px-2 text-right text-white/30 tabular-nums hidden lg:table-cell">{p.numThreads}</td>
+                  <td className="py-1.5 px-2 text-right text-white/50 tabular-nums hidden lg:table-cell">{formatBytes(p.memRss)}</td>
+                  <td className="py-1.5 px-2 text-right text-white/50 tabular-nums hidden lg:table-cell">{p.numThreads}</td>
                   <td className="py-1.5 px-2">
                     <span className={clsx(
-                      'text-[10px] px-1.5 py-0.5 rounded-full',
+                      'text-[11px] px-1.5 py-0.5 rounded-full',
                       p.status === 'running' ? 'bg-emerald-500/10 text-emerald-400' :
                       p.status === 'sleeping' ? 'bg-blue-500/10 text-blue-400' :
-                      'bg-white/[0.04] text-white/30'
+                      'bg-white/[0.04] text-white/50'
                     )}>
                       {p.status}
                     </span>

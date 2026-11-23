@@ -25,7 +25,7 @@ export function Tabs({ tabs, activeTab, onChange }: TabsProps) {
             'relative px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex-shrink-0 whitespace-nowrap',
             activeTab === tab.id
               ? 'text-white'
-              : 'text-white/50 hover:text-white/80'
+              : 'text-white/65 hover:text-white/80'
           )}
         >
           {activeTab === tab.id && (
@@ -40,7 +40,7 @@ export function Tabs({ tabs, activeTab, onChange }: TabsProps) {
             {tab.count !== undefined && (
               <span className={clsx(
                 'ml-1.5 text-xs px-1.5 py-0.5 rounded-full',
-                activeTab === tab.id ? 'bg-accent/20 text-accent-light' : 'bg-white/[0.06] text-white/40'
+                activeTab === tab.id ? 'bg-accent/20 text-accent-light' : 'bg-white/[0.06] text-white/55'
               )}>
                 {tab.count}
               </span>

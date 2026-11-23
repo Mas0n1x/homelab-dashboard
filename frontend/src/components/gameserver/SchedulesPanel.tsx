@@ -129,18 +129,18 @@ export function SchedulesPanel({ api, flash }: { api: Api; flash: (m: string) =>
       </div>
 
       <div className="glass-card rounded-2xl divide-y divide-white/[0.04]">
-        {loaded && list.length === 0 && <p className="text-sm text-white/30 p-5 text-center">Noch keine Zeitpläne.</p>}
+        {loaded && list.length === 0 && <p className="text-sm text-white/50 p-5 text-center">Noch keine Zeitpläne.</p>}
         {list.map(s => (
           <div key={s.id} className="flex items-center gap-3 px-4 py-3">
-            <CalendarClock className={`w-4 h-4 flex-shrink-0 ${s.active ? 'text-orange-400/80' : 'text-white/25'}`} />
+            <CalendarClock className={`w-4 h-4 flex-shrink-0 ${s.active ? 'text-orange-400/80' : 'text-white/50'}`} />
             <div className="flex-1 min-w-0">
-              <p className={`text-sm truncate ${s.active ? 'text-white/80' : 'text-white/40'}`}>{s.name}</p>
-              <p className="text-[11px] text-white/30 truncate">{cronText(s.cron)}{s.tasks.length ? ` · ${s.tasks.map(taskText).join(' → ')}` : ' · keine Aufgabe'}</p>
-              <p className="text-[11px] text-white/20">{s.active && s.nextRun ? `nächster Lauf ${fmtDate(s.nextRun)}` : 'pausiert'}{s.lastRun ? ` · zuletzt ${fmtDate(s.lastRun)}` : ''}</p>
+              <p className={`text-sm truncate ${s.active ? 'text-white/80' : 'text-white/55'}`}>{s.name}</p>
+              <p className="text-[12px] text-white/50 truncate">{cronText(s.cron)}{s.tasks.length ? ` · ${s.tasks.map(taskText).join(' → ')}` : ' · keine Aufgabe'}</p>
+              <p className="text-[12px] text-white/50">{s.active && s.nextRun ? `nächster Lauf ${fmtDate(s.nextRun)}` : 'pausiert'}{s.lastRun ? ` · zuletzt ${fmtDate(s.lastRun)}` : ''}</p>
             </div>
-            <button onClick={() => run(s)} disabled={s.processing} title="Jetzt ausführen" className="p-2 rounded-lg text-white/30 hover:text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-30 transition"><Play className="w-4 h-4" /></button>
+            <button onClick={() => run(s)} disabled={s.processing} title="Jetzt ausführen" className="p-2 rounded-lg text-white/50 hover:text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-30 transition"><Play className="w-4 h-4" /></button>
             <Toggle checked={s.active} onChange={() => toggle(s)} />
-            <button onClick={() => remove(s)} title="Löschen" className="p-2 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition"><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => remove(s)} title="Löschen" className="p-2 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition"><Trash2 className="w-4 h-4" /></button>
           </div>
         ))}
       </div>

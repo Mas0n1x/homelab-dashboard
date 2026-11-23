@@ -72,7 +72,7 @@ export function AnimatedGauge({
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {icon && <span className="text-white/25 mb-0.5">{icon}</span>}
+          {icon && <span className="text-white/50 mb-0.5">{icon}</span>}
           <span
             className="text-lg font-bold tabular-nums"
             style={{ color: strokeColor }}
@@ -81,8 +81,8 @@ export function AnimatedGauge({
           </span>
         </div>
       </div>
-      {label && <p className="text-xs font-medium text-white/50 mt-1.5">{label}</p>}
-      {sublabel && <p className="text-[10px] text-white/25 mt-0.5">{sublabel}</p>}
+      {label && <p className="text-xs font-medium text-white/65 mt-1.5">{label}</p>}
+      {sublabel && <p className="text-[11px] text-white/50 mt-0.5">{sublabel}</p>}
     </div>
   );
 }

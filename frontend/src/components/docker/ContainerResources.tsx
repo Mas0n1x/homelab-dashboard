@@ -93,14 +93,14 @@ export function ContainerResourcesInline({ containerId }: { containerId: string 
   return (
     <div className="flex items-center gap-3 mr-2">
       <div className="flex items-center gap-1.5">
-        <Cpu className="w-3 h-3 text-white/20" />
+        <Cpu className="w-3 h-3 text-white/50" />
         <Sparkline data={cpuH} color="#818cf8" />
-        <span className="text-xs font-mono text-white/40 w-12 text-right">{zahl(stat.cpu, 1)}%</span>
+        <span className="text-xs font-mono text-white/55 w-12 text-right">{zahl(stat.cpu, 1)}%</span>
       </div>
       <div className="flex items-center gap-1.5">
-        <MemoryStick className="w-3 h-3 text-white/20" />
+        <MemoryStick className="w-3 h-3 text-white/50" />
         <Sparkline data={memH} color="#34d399" />
-        <span className="text-xs font-mono text-white/40 w-14 text-right">{formatBytes(stat.memUsage)}</span>
+        <span className="text-xs font-mono text-white/55 w-14 text-right">{formatBytes(stat.memUsage)}</span>
       </div>
     </div>
   );

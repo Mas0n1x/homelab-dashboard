@@ -52,8 +52,13 @@ function tint(code: number, isDay: boolean): string {
   return 'from-violet-500/15 to-transparent';
 }
 
-export function WeatherWidget({ location }: { location: WeatherLocation }) {
-  const { data: weather, isLoading } = useQuery<WeatherData>({
+export const WEATHER_LOCATIONS: WeatherLocation[] = [
+  { latitude: 50.7539, longitude: 8.4869, city: 'Hartenrod' },
+  { latitude: 51.4556, longitude: 7.0116, city: 'Essen' },
+];
+
+function useWeather(location: WeatherLocation) {
+  return useQuery<WeatherData>({
     queryKey: ['weather', location.latitude, location.longitude],
     queryFn: async () => {
       const res = await fetch(
@@ -66,6 +71,27 @@ export function WeatherWidget({ location }: { location: WeatherLocation }) {
     staleTime: 600000,
     refetchInterval: 600000,
   });
+}
+
+/** Kleine Wetteranzeige für die Kopfleiste: Symbol, Ort, Temperatur. */
+export function WeatherChip({ location }: { location: WeatherLocation }) {
+  const { data: weather } = useWeather(location);
+  if (!weather) return null;
+  const isDay = weather.is_day === 1;
+  return (
+    <span
+      className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/70"
+      title={`${location.city}: ${WEATHER_TEXT[weather.weathercode] || 'Unbekannt'}, ${Math.round(weather.windspeed)} km/h Wind`}
+    >
+      <span className="text-sm leading-none">{weatherEmoji(weather.weathercode, isDay)}</span>
+      <span className="text-white/55">{location.city}</span>
+      <span className="font-medium tabular-nums text-white/85">{Math.round(weather.temperature)}°</span>
+    </span>
+  );
+}
+
+export function WeatherWidget({ location }: { location: WeatherLocation }) {
+  const { data: weather, isLoading } = useWeather(location);
 
   const isDay = weather ? weather.is_day === 1 : true;
   const emoji = weather ? weatherEmoji(weather.weathercode, isDay) : '☁️';
@@ -80,16 +106,16 @@ export function WeatherWidget({ location }: { location: WeatherLocation }) {
           <span className="text-xl sm:text-3xl leading-none">{emoji}</span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] sm:text-[13px] font-medium text-white/80 truncate" title={location.city}>{location.city}</p>
+          <p className="text-[12px] sm:text-[13px] font-medium text-white/80 truncate" title={location.city}>{location.city}</p>
           <div className="flex items-baseline gap-1 mt-0.5">
             <span className="text-2xl sm:text-3xl font-semibold tabular-nums leading-none">
               {weather ? Math.round(weather.temperature) : '–'}
             </span>
-            <span className="text-sm sm:text-base text-white/40 leading-none">°C</span>
+            <span className="text-sm sm:text-base text-white/55 leading-none">°C</span>
           </div>
-          <p className="text-[10px] sm:text-[11px] text-white/40 truncate mt-0.5 sm:mt-1">
+          <p className="text-[11px] sm:text-[12px] text-white/55 truncate mt-0.5 sm:mt-1">
             {isLoading ? 'Lädt…' : description}
-            {weather && <span className="text-white/25"> · {Math.round(weather.windspeed)} km/h</span>}
+            {weather && <span className="text-white/50"> · {Math.round(weather.windspeed)} km/h</span>}
           </p>
         </div>
       </div>

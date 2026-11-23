@@ -140,7 +140,7 @@ export default function TerminalPage() {
               <TermIcon className="w-5 h-5 text-cyan-400" />
               Terminal
             </h1>
-            <p className="text-sm text-white/40 mt-0.5 flex items-center gap-1.5">
+            <p className="text-sm text-white/55 mt-0.5 flex items-center gap-1.5">
               <ShieldAlert className="w-3.5 h-3.5 text-amber-400/70" />
               Root-Shell direkt auf dem Server-Host
             </p>
@@ -160,7 +160,7 @@ export default function TerminalPage() {
                     'flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm border transition-all',
                     active
                       ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                      : 'bg-white/[0.03] border-white/[0.08] text-white/60 hover:text-white/90 hover:bg-white/[0.06]'
+                      : 'bg-white/[0.03] border-white/[0.08] text-white/70 hover:text-white/90 hover:bg-white/[0.06]'
                   )}
                 >
                   <span className="relative flex-shrink-0">
@@ -169,7 +169,7 @@ export default function TerminalPage() {
                       s.status === 'connected' ? 'bg-emerald-400' : 'bg-red-400')} />
                   </span>
                   <span className="truncate max-w-[160px]">{s.name}</span>
-                  {loading && <span className="text-[10px] text-white/40">verbinde…</span>}
+                  {loading && <span className="text-[11px] text-white/55">verbinde…</span>}
                 </button>
               );
             })}
@@ -185,8 +185,8 @@ export default function TerminalPage() {
         <GlassCard padding={false} className="flex-1 overflow-hidden">
           <div className="relative z-10 h-full">
             {!connectedId && !connectingId && !xtermRef.current && (
-              <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-white/30 gap-4">
-                <TermIcon className="w-16 h-16 text-white/10" />
+              <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-white/50 gap-4">
+                <TermIcon className="w-16 h-16 text-white/50" />
                 <p className="text-sm">Wähle einen Server, um eine Root-Shell zu öffnen</p>
               </div>
             )}

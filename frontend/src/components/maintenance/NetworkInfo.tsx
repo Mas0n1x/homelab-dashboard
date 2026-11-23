@@ -47,7 +47,7 @@ export function NetworkInfo({ serverId }: NetworkInfoProps) {
         <div>
           <h3 className="text-sm font-medium">Netzwerk</h3>
           {data?.publicIp && (
-            <p className="text-[10px] text-white/30 flex items-center gap-1">
+            <p className="text-[11px] text-white/50 flex items-center gap-1">
               <Globe className="w-3 h-3" /> {data.publicIp}
             </p>
           )}
@@ -55,7 +55,7 @@ export function NetworkInfo({ serverId }: NetworkInfoProps) {
       </div>
 
       {isLoading ? (
-        <div className="py-6 text-center text-white/20 text-xs">Lade...</div>
+        <div className="py-6 text-center text-white/50 text-xs">Lade...</div>
       ) : error ? (
         <div className="py-6 text-center text-red-400/60 text-xs">Fehler: {(error as Error).message}</div>
       ) : (
@@ -71,24 +71,24 @@ export function NetworkInfo({ serverId }: NetworkInfoProps) {
                   <span className="text-xs font-medium font-mono">{iface.name}</span>
                 </div>
                 {iface.speed > 0 && (
-                  <span className="text-[10px] text-white/20">{iface.speed} Mbit/s</span>
+                  <span className="text-[11px] text-white/50">{iface.speed} Mbit/s</span>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-3 text-[11px]">
+              <div className="grid grid-cols-2 gap-3 text-[12px]">
                 <div className="flex items-center gap-1.5">
                   <ArrowDown className="w-3 h-3 text-emerald-400/60" />
                   <div>
-                    <span className="text-white/30">RX: </span>
+                    <span className="text-white/50">RX: </span>
                     <span className="text-emerald-400/80 tabular-nums">{formatRate(iface.rxRate)}</span>
-                    <span className="text-white/15 ml-1">({formatBytes(iface.rxBytes)})</span>
+                    <span className="text-white/50 ml-1">({formatBytes(iface.rxBytes)})</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <ArrowUp className="w-3 h-3 text-blue-400/60" />
                   <div>
-                    <span className="text-white/30">TX: </span>
+                    <span className="text-white/50">TX: </span>
                     <span className="text-blue-400/80 tabular-nums">{formatRate(iface.txRate)}</span>
-                    <span className="text-white/15 ml-1">({formatBytes(iface.txBytes)})</span>
+                    <span className="text-white/50 ml-1">({formatBytes(iface.txBytes)})</span>
                   </div>
                 </div>
               </div>

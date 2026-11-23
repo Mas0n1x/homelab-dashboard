@@ -39,13 +39,13 @@ export function GameServerView({ id }: { id: string }) {
 
   const flash = useMemo(() => (m: string) => { setToast(m); setTimeout(() => setToast(''), 3200); }, []);
 
-  if (isLoading) return <PageTransition><p className="text-sm text-white/40">Lade…</p></PageTransition>;
+  if (isLoading) return <PageTransition><p className="text-sm text-white/55">Lade…</p></PageTransition>;
   if (!server) {
     return (
       <PageTransition>
         <div className="space-y-3">
-          <Link href="/gameserver" className="flex items-center gap-1 text-sm text-white/40 hover:text-white/70 transition"><ChevronLeft className="w-4 h-4" /> Alle Gameserver</Link>
-          <p className="text-white/60">{data?.error ? `Pelican nicht erreichbar: ${data.error}` : 'Dieser Server existiert nicht (mehr).'}</p>
+          <Link href="/gameserver" className="flex items-center gap-1 text-sm text-white/55 hover:text-white/70 transition"><ChevronLeft className="w-4 h-4" /> Alle Gameserver</Link>
+          <p className="text-white/70">{data?.error ? `Pelican nicht erreichbar: ${data.error}` : 'Dieser Server existiert nicht (mehr).'}</p>
         </div>
       </PageTransition>
     );
@@ -76,10 +76,10 @@ export function GameServerView({ id }: { id: string }) {
             <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-2xl font-bold flex items-center gap-3">
               <Icon className="w-6 h-6 text-orange-400/80" /> <span>{server.name}</span>
             </motion.h1>
-            <div className="flex items-center gap-2 mt-1 text-sm text-white/40 flex-wrap">
+            <div className="flex items-center gap-2 mt-1 text-sm text-white/55 flex-wrap">
               <Circle className="w-2.5 h-2.5" style={{ fill: st.color, color: st.color }} /><span style={{ color: st.color }}>{st.text}</span>
-              <span className="text-white/20">·</span><span>{server.gameLabel}</span>
-              {server.host && <><span className="text-white/20">·</span><span className="font-mono">{server.host}</span></>}
+              <span className="text-white/50">·</span><span>{server.gameLabel}</span>
+              {server.host && <><span className="text-white/50">·</span><span className="font-mono">{server.host}</span></>}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ export function GameServerView({ id }: { id: string }) {
 
         <div className="flex items-center gap-1 border-b border-white/[0.06] overflow-x-auto">
           {TABS.map(([tid, label, TabIcon]) => (
-            <button key={tid} onClick={() => setTab(tid)} className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 -mb-px whitespace-nowrap transition ${tab === tid ? 'border-orange-400 text-white' : 'border-transparent text-white/40 hover:text-white/70'}`}><TabIcon className="w-4 h-4" /> {label}</button>
+            <button key={tid} onClick={() => setTab(tid)} className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 -mb-px whitespace-nowrap transition ${tab === tid ? 'border-orange-400 text-white' : 'border-transparent text-white/55 hover:text-white/70'}`}><TabIcon className="w-4 h-4" /> {label}</button>
           ))}
         </div>
 
@@ -109,13 +109,13 @@ export function GameServerView({ id }: { id: string }) {
         {tab === 'startup' && <StartupPanel api={api} flash={flash} />}
         {tab === 'network' && (
           <div className="glass-card rounded-2xl divide-y divide-white/[0.04]">
-            {server.allocations.length === 0 && <p className="text-sm text-white/30 p-5 text-center">Keine Ports zugewiesen.</p>}
+            {server.allocations.length === 0 && <p className="text-sm text-white/50 p-5 text-center">Keine Ports zugewiesen.</p>}
             {server.allocations.map(a => (
               <div key={a.id} className="flex items-center gap-3 px-5 py-3">
-                <Network className="w-4 h-4 text-white/30" />
+                <Network className="w-4 h-4 text-white/50" />
                 <span className="font-mono text-sm text-white/80">{a.alias || a.ip}:{a.port}</span>
-                {a.default && <span className="text-[10px] uppercase tracking-wider text-orange-300/80 bg-orange-500/10 rounded px-1.5 py-0.5">Haupt-Port</span>}
-                {a.notes && <span className="text-[12px] text-white/35 ml-auto">{a.notes}</span>}
+                {a.default && <span className="text-[11px] uppercase tracking-wider text-orange-300/80 bg-orange-500/10 rounded px-1.5 py-0.5">Haupt-Port</span>}
+                {a.notes && <span className="text-[12px] text-white/50 ml-auto">{a.notes}</span>}
               </div>
             ))}
           </div>

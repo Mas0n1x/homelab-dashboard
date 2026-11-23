@@ -46,7 +46,7 @@ export function DiskHealth({ serverId }: DiskHealthProps) {
       </div>
 
       {isLoading ? (
-        <div className="py-6 text-center text-white/20 text-xs">Lade...</div>
+        <div className="py-6 text-center text-white/50 text-xs">Lade...</div>
       ) : error ? (
         <div className="py-6 text-center text-red-400/60 text-xs">Fehler: {(error as Error).message}</div>
       ) : (
@@ -58,9 +58,9 @@ export function DiskHealth({ serverId }: DiskHealthProps) {
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <span className="text-xs font-mono font-medium">{disk.mountPoint}</span>
-                    <span className="text-[10px] text-white/20 ml-2">{disk.device}</span>
+                    <span className="text-[11px] text-white/50 ml-2">{disk.device}</span>
                   </div>
-                  <span className="text-[10px] text-white/20">{disk.fsType}</span>
+                  <span className="text-[11px] text-white/50">{disk.fsType}</span>
                 </div>
                 <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden mb-1.5">
                   <motion.div
@@ -71,7 +71,7 @@ export function DiskHealth({ serverId }: DiskHealthProps) {
                     transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                   />
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-white/30">
+                <div className="flex items-center justify-between text-[11px] text-white/50">
                   <span>{formatBytes(disk.used)} belegt</span>
                   <span style={{ color }} className="font-semibold">{zahl(disk.percent, 1)}%</span>
                   <span>{formatBytes(disk.free)} frei</span>
@@ -83,11 +83,11 @@ export function DiskHealth({ serverId }: DiskHealthProps) {
           {/* Disk I/O */}
           {data?.io && data.io.length > 0 && (
             <div className="mt-3 pt-3 border-t border-white/[0.04]">
-              <p className="text-[10px] uppercase tracking-wider text-white/20 mb-2">I/O</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/50 mb-2">I/O</p>
               <div className="space-y-1.5">
                 {data.io.map(io => (
-                  <div key={io.name} className="flex items-center gap-3 text-[11px]">
-                    <span className="text-white/40 font-mono w-16 truncate">{io.name}</span>
+                  <div key={io.name} className="flex items-center gap-3 text-[12px]">
+                    <span className="text-white/55 font-mono w-16 truncate">{io.name}</span>
                     <div className="flex items-center gap-1 text-emerald-400/60">
                       <ArrowDown className="w-3 h-3" />
                       <span className="tabular-nums">{formatRate(io.readRate)}</span>

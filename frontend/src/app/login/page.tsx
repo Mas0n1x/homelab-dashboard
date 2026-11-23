@@ -68,7 +68,7 @@ export default function LoginPage() {
                 </div>
               </div>
               <h1 className="text-xl font-semibold text-center mb-1 text-gradient">Homelab Dashboard</h1>
-              <p className="text-sm text-white/40 text-center mb-8">Anmelden</p>
+              <p className="text-sm text-white/55 text-center mb-8">Anmelden</p>
 
               {error && (
                 <motion.div
@@ -83,9 +83,9 @@ export default function LoginPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="text-xs text-white/40 block mb-1.5">Benutzername</label>
+                  <label className="text-xs text-white/55 block mb-1.5">Benutzername</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
                     <input
                       className="glass-input w-full pl-10"
                       value={username}
@@ -97,9 +97,9 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-white/40 block mb-1.5">Passwort</label>
+                  <label className="text-xs text-white/55 block mb-1.5">Passwort</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
                     <input
                       type="password"
                       className="glass-input w-full pl-10"

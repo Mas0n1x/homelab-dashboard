@@ -100,10 +100,10 @@ export function EventsWidget() {
           <div className="w-7 h-7 rounded-lg bg-purple-500/10 flex items-center justify-center">
             <History className="w-3.5 h-3.5 text-purple-400" />
           </div>
-          <span className="text-xs font-medium text-white/60">Ereignisse</span>
+          <span className="text-xs font-medium text-white/70">Ereignisse</span>
         </div>
         {events.length === 0 ? (
-          <p className="text-sm text-white/25 text-center py-6">Noch keine Ereignisse</p>
+          <p className="text-sm text-white/50 text-center py-6">Noch keine Ereignisse</p>
         ) : (
           <div className="space-y-0.5">
             {events.map((e, i) => {
@@ -116,11 +116,11 @@ export function EventsWidget() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-white/75 truncate">
                       {e.label}
-                      {e.count > 1 && <span className="ml-1.5 text-[10px] text-white/40">×{e.count}</span>}
+                      {e.count > 1 && <span className="ml-1.5 text-[11px] text-white/55">×{e.count}</span>}
                     </p>
-                    {e.detail && <p className="text-[10px] text-white/30 truncate">{e.detail}</p>}
+                    {e.detail && <p className="text-[11px] text-white/50 truncate">{e.detail}</p>}
                   </div>
-                  <span className="text-[10px] text-white/25 tabular-nums flex-shrink-0">{rel(e.ts)}</span>
+                  <span className="text-[11px] text-white/50 tabular-nums flex-shrink-0">{rel(e.ts)}</span>
                 </div>
               );
             })}

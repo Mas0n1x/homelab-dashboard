@@ -68,14 +68,14 @@ function ArcGauge({
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-white/30 mb-1">{icon}</span>
+          <span className="text-white/50 mb-1">{icon}</span>
           <span className="text-2xl font-bold tabular-nums" style={{ color }}>
             {zahl(percent, 1)}%
           </span>
         </div>
       </div>
-      <p className="text-xs font-medium text-white/60 mt-2">{label}</p>
-      {sublabel && <p className="text-[10px] text-white/30 mt-0.5">{sublabel}</p>}
+      <p className="text-xs font-medium text-white/70 mt-2">{label}</p>
+      {sublabel && <p className="text-[11px] text-white/50 mt-0.5">{sublabel}</p>}
     </div>
   );
 }

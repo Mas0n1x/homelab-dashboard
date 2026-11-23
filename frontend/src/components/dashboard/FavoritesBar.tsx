@@ -58,7 +58,7 @@ export function FavoritesBar() {
 
   return (
     <div className="mb-6">
-      <h2 className="text-xs font-medium text-white/30 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+      <h2 className="text-xs font-medium text-white/50 uppercase tracking-wider mb-3 flex items-center gap-1.5">
         <Star className="w-3 h-3" />
         Favoriten
       </h2>
@@ -89,14 +89,14 @@ export function FavoritesBar() {
                     <p className="text-sm font-medium truncate">{service.name}</p>
                     <div className="flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                      <span className="text-xs text-white/30">{isOnline ? 'Online' : 'Offline'}</span>
+                      <span className="text-xs text-white/50">{isOnline ? 'Online' : 'Offline'}</span>
                     </div>
                   </div>
                   <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    {service.url && <ExternalLink className="w-3.5 h-3.5 text-white/30" />}
+                    {service.url && <ExternalLink className="w-3.5 h-3.5 text-white/50" />}
                     <button
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeMutation.mutate(service.id); }}
-                      className="p-0.5 hover:text-amber-400 text-white/20 transition-colors"
+                      className="p-0.5 hover:text-amber-400 text-white/50 transition-colors"
                     >
                       <Star className="w-3.5 h-3.5 fill-current" />
                     </button>

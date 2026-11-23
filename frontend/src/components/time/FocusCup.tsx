@@ -75,7 +75,7 @@ export function FocusCup({ tasks, onStart, onPause, onStop, busy = false }: Focu
         <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
         <h2 className="text-sm font-semibold">In Arbeit</h2>
         {laeuft && (
-          <span className="flex items-center gap-1.5 text-[11px] text-accent-light">
+          <span className="flex items-center gap-1.5 text-[12px] text-accent-light">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-light animate-pulse" />
             Uhr läuft
           </span>
@@ -95,7 +95,7 @@ export function FocusCup({ tasks, onStart, onPause, onStop, busy = false }: Focu
                   'flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[12px] transition-colors max-w-[14rem]',
                   on
                     ? 'bg-cyan-500/15 border-cyan-400/35 text-cyan-100'
-                    : 'bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/70 hover:border-white/[0.12]',
+                    : 'bg-white/[0.02] border-white/[0.06] text-white/55 hover:text-white/70 hover:border-white/[0.12]',
                 )}
               >
                 {t.timer_running && <span className="w-1.5 h-1.5 rounded-full bg-accent-light animate-pulse flex-shrink-0" />}
@@ -178,7 +178,7 @@ export function FocusCup({ tasks, onStart, onPause, onStop, busy = false }: Focu
         {/* Aufgabe, Zeit, Knöpfe */}
         <div className="min-w-0 flex-1 w-full text-center sm:text-left">
           <p className="text-[15px] font-medium truncate">{active.title}</p>
-          <div className="flex items-center justify-center sm:justify-start gap-3 mt-1 text-[11px] text-white/40">
+          <div className="flex items-center justify-center sm:justify-start gap-3 mt-1 text-[12px] text-white/55">
             {active.project && (
               <span className="flex items-center gap-1 truncate">
                 <Folder className="w-3 h-3 flex-shrink-0" />
@@ -200,7 +200,7 @@ export function FocusCup({ tasks, onStart, onPause, onStop, busy = false }: Focu
           >
             {grosseZeit}
           </div>
-          <p className="text-[10px] uppercase tracking-widest text-white/25 mt-1.5">
+          <p className="text-[11px] uppercase tracking-widest text-white/50 mt-1.5">
             {soll === null ? 'erfasste Zeit' : ueberzogen ? 'über der Schätzung' : 'verbleibend'}
           </p>
 

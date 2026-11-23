@@ -142,7 +142,7 @@ export function EmailList({ folders }: EmailListProps) {
   if (isLoading) {
     return (
       <div className="glass-card p-8 text-center">
-        <div className="animate-pulse text-white/30 text-sm">Lade E-Mails...</div>
+        <div className="animate-pulse text-white/50 text-sm">Lade E-Mails...</div>
       </div>
     );
   }
@@ -150,7 +150,7 @@ export function EmailList({ folders }: EmailListProps) {
   if (!activeFolderId && !searchActive) {
     return (
       <div className="glass-card p-8 text-center">
-        <p className="text-white/30 text-sm">Ordner auswählen</p>
+        <p className="text-white/50 text-sm">Ordner auswählen</p>
       </div>
     );
   }
@@ -158,7 +158,7 @@ export function EmailList({ folders }: EmailListProps) {
   if (emails.length === 0) {
     return (
       <div className="glass-card p-8 text-center">
-        <p className="text-white/30 text-sm">
+        <p className="text-white/50 text-sm">
           {searchActive ? 'Keine Ergebnisse' : 'Keine E-Mails in diesem Ordner'}
         </p>
       </div>
@@ -182,13 +182,13 @@ export function EmailList({ folders }: EmailListProps) {
     <div>
       {/* Header mit Refresh-Button */}
       <div className="flex items-center justify-between mb-3">
-        <div className="text-xs text-white/40">
+        <div className="text-xs text-white/55">
           {total} {total === 1 ? 'E-Mail' : 'E-Mails'}
         </div>
         <button
           onClick={handleRefresh}
           disabled={isLoading}
-          className="btn-glass p-1.5 text-white/60 hover:text-white disabled:opacity-30 transition-all group"
+          className="btn-glass p-1.5 text-white/70 hover:text-white disabled:opacity-30 transition-all group"
           title="Aktualisieren"
         >
           <RefreshCw className={clsx('w-4 h-4', isLoading && 'animate-spin')} />
@@ -220,26 +220,26 @@ export function EmailList({ folders }: EmailListProps) {
                   <span className={clsx('text-sm truncate', !isRead ? 'font-semibold' : 'text-white/70')}>
                     {formatSender(item.from)}
                   </span>
-                  <span className="text-[10px] text-white/30 shrink-0">{formatDate(item.receivedAt)}</span>
+                  <span className="text-[11px] text-white/50 shrink-0">{formatDate(item.receivedAt)}</span>
                 </div>
-                <p className={clsx('text-sm truncate', !isRead ? 'text-white/90' : 'text-white/60')}>
+                <p className={clsx('text-sm truncate', !isRead ? 'text-white/90' : 'text-white/70')}>
                   {item.subject || '(Kein Betreff)'}
                 </p>
-                <p className="text-xs text-white/30 truncate mt-0.5">{item.preview}</p>
+                <p className="text-xs text-white/50 truncate mt-0.5">{item.preview}</p>
               </div>
 
               {/* Icons */}
               <div className="flex items-center gap-1 shrink-0">
-                {item.hasAttachment && <Paperclip className="w-3.5 h-3.5 text-white/30" />}
+                {item.hasAttachment && <Paperclip className="w-3.5 h-3.5 text-white/50" />}
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleFlagMutation.mutate({ emailId: item.id, flagged: isFlagged }); }}
                   className="p-1 rounded hover:bg-white/10"
                 >
-                  <Star className={clsx('w-3.5 h-3.5', isFlagged ? 'text-yellow-400 fill-yellow-400' : 'text-white/20')} />
+                  <Star className={clsx('w-3.5 h-3.5', isFlagged ? 'text-yellow-400 fill-yellow-400' : 'text-white/50')} />
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(item.id); }}
-                  className="p-1 rounded hover:bg-white/10 text-white/20 hover:text-red-400"
+                  className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-red-400"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -251,7 +251,7 @@ export function EmailList({ folders }: EmailListProps) {
 
       {/* Pagination */}
       {total > limit && (
-        <div className="flex items-center justify-between mt-3 text-xs text-white/40">
+        <div className="flex items-center justify-between mt-3 text-xs text-white/55">
           <span>{position + 1}–{Math.min(position + limit, total)} von {total}</span>
           <div className="flex gap-1">
             <button

@@ -58,7 +58,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
                 onClick={onClose}
                 className="p-1.5 rounded-lg hover:bg-white/10 transition-all duration-200 hover:rotate-90"
               >
-                <X className="w-5 h-5 text-white/60" />
+                <X className="w-5 h-5 text-white/70" />
               </button>
             </div>
             <div className="absolute bottom-[calc(100%-73px)] left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent z-20" />

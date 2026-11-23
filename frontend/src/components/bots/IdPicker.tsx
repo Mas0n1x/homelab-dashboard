@@ -76,7 +76,7 @@ function OptionLabel({ opt }: { opt: Option }) {
       {opt.color ? (
         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: opt.color }} />
       ) : (
-        <Icon className="w-3.5 h-3.5 text-white/35 flex-shrink-0" />
+        <Icon className="w-3.5 h-3.5 text-white/50 flex-shrink-0" />
       )}
       <span className="truncate">{opt.name}</span>
     </span>
@@ -131,13 +131,13 @@ function IdPicker({ label, value, onChange, options, unavailable, unavailableHin
   return (
     <div className="block min-w-0">
       <div className="flex items-center justify-between gap-2 mb-1.5">
-        <span className="text-[12px] text-white/45 truncate">{label}</span>
+        <span className="text-[12px] text-white/60 truncate">{label}</span>
         {!unavailable && (
           <button
             type="button"
             onClick={() => setManual(m => !m)}
             title={byManual ? 'Aus Liste wählen' : 'ID manuell eintragen'}
-            className={`p-1 rounded-lg transition-colors ${byManual ? 'text-accent-light/80' : 'text-white/25 hover:text-white/60'}`}
+            className={`p-1 rounded-lg transition-colors ${byManual ? 'text-accent-light/80' : 'text-white/50 hover:text-white/70'}`}
           >
             <Keyboard className="w-3.5 h-3.5" />
           </button>
@@ -153,7 +153,7 @@ function IdPicker({ label, value, onChange, options, unavailable, unavailableHin
             className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] font-mono text-[12px] text-white/85 outline-none focus:border-accent/40 transition-colors"
           />
           {unavailable && unavailableHint && (
-            <span className="flex items-center gap-1 text-[11px] text-amber-300/60 mt-1">
+            <span className="flex items-center gap-1 text-[12px] text-amber-300/60 mt-1">
               <AlertTriangle className="w-3 h-3" /> {unavailableHint}
             </span>
           )}
@@ -173,9 +173,9 @@ function IdPicker({ label, value, onChange, options, unavailable, unavailableHin
                 <span className="font-mono text-[12px] truncate">{value}</span>
               </span>
             ) : (
-              <span className="text-white/30">{emptyLabel}</span>
+              <span className="text-white/50">{emptyLabel}</span>
             )}
-            <ChevronDown className="w-4 h-4 text-white/30 flex-shrink-0" />
+            <ChevronDown className="w-4 h-4 text-white/50 flex-shrink-0" />
           </button>
 
           {open && (
@@ -186,20 +186,20 @@ function IdPicker({ label, value, onChange, options, unavailable, unavailableHin
             // schiebt nachfolgende Inhalte stattdessen einfach nach unten.
             <div className="relative z-10 mt-2 rounded-2xl bg-[#0a0a18] border border-white/[0.12] shadow-2xl overflow-hidden">
                 <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.07]">
-                  <Search className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
+                  <Search className="w-3.5 h-3.5 text-white/50 flex-shrink-0" />
                   <input
                     autoFocus
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Suchen…"
-                    className="flex-1 bg-transparent text-[13px] text-white/85 outline-none placeholder:text-white/25"
+                    className="flex-1 bg-transparent text-[13px] text-white/85 outline-none placeholder:text-white/45"
                   />
                   {value && (
                     <button
                       type="button"
                       onClick={() => { onChange(''); setOpen(false); }}
                       title="Auswahl entfernen"
-                      className="p-1 rounded-lg text-white/30 hover:text-red-300 transition-colors"
+                      className="p-1 rounded-lg text-white/50 hover:text-red-300 transition-colors"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -207,11 +207,11 @@ function IdPicker({ label, value, onChange, options, unavailable, unavailableHin
                 </div>
                 <div className="max-h-64 overflow-y-auto py-1 scrollbar-hide">
                   {rows.length === 0 && (
-                    <div className="px-3 py-4 text-center text-[12px] text-white/30">Kein Treffer.</div>
+                    <div className="px-3 py-4 text-center text-[12px] text-white/50">Kein Treffer.</div>
                   )}
                   {rows.map((row, i) =>
                     'head' in row ? (
-                      <div key={`h${i}`} className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider text-white/25 truncate">
+                      <div key={`h${i}`} className="px-3 pt-2 pb-1 text-[11px] uppercase tracking-wider text-white/50 truncate">
                         {row.head}
                       </div>
                     ) : (
@@ -310,7 +310,7 @@ export function DirectoryStatus({ dir }: { dir: Directory }) {
   const empty = dir.channels.length === 0 && dir.roles.length === 0;
   return (
     <div className="flex items-center justify-between gap-3 flex-wrap">
-      <span className="text-[12px] text-white/35 flex items-center gap-1.5">
+      <span className="text-[12px] text-white/50 flex items-center gap-1.5">
         {dir.loading ? (
           <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Lade Kanäle und Rollen…</>
         ) : empty ? (
@@ -322,7 +322,7 @@ export function DirectoryStatus({ dir }: { dir: Directory }) {
       <button
         type="button"
         onClick={dir.reload}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[12px] bg-white/[0.04] border border-white/[0.08] text-white/45 hover:text-white/80 hover:bg-white/[0.08] transition-colors"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[12px] bg-white/[0.04] border border-white/[0.08] text-white/60 hover:text-white/80 hover:bg-white/[0.08] transition-colors"
       >
         <RefreshCw className={`w-3.5 h-3.5 ${dir.loading ? 'animate-spin' : ''}`} /> Neu laden
       </button>

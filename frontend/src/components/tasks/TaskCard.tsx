@@ -153,7 +153,7 @@ export function TaskCard({
             <span
               className={clsx(
                 'block text-[13.5px] sm:text-[13px] font-medium leading-snug break-words',
-                done ? 'line-through text-white/40' : 'text-white/90'
+                done ? 'line-through text-white/55' : 'text-white/90'
               )}
             >
               {task.title}
@@ -161,24 +161,24 @@ export function TaskCard({
           </button>
 
           {task.notes && (
-            <p className="text-[11px] text-white/35 mt-1 line-clamp-2 whitespace-pre-wrap break-words">
+            <p className="text-[12px] text-white/50 mt-1 line-clamp-2 whitespace-pre-wrap break-words">
               {task.notes}
             </p>
           )}
 
           {/* Meta-Chips */}
           <div className="flex flex-wrap items-center gap-1.5 mt-2">
-            <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-md border', prio.chip)}>
+            <span className={clsx('text-[11px] px-1.5 py-0.5 rounded-md border', prio.chip)}>
               {prio.label}
             </span>
             {task.project && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md border bg-white/[0.04] border-white/[0.08] text-white/50 flex items-center gap-1 max-w-[10rem]">
+              <span className="text-[11px] px-1.5 py-0.5 rounded-md border bg-white/[0.04] border-white/[0.08] text-white/65 flex items-center gap-1 max-w-[10rem]">
                 <Folder className="w-2.5 h-2.5 flex-shrink-0" />
                 <span className="truncate">{task.project}</span>
               </span>
             )}
             {due && (
-              <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-md border flex items-center gap-1', due.className)}>
+              <span className={clsx('text-[11px] px-1.5 py-0.5 rounded-md border flex items-center gap-1', due.className)}>
                 <CalendarDays className="w-2.5 h-2.5" />
                 {due.label}
               </span>
@@ -186,7 +186,7 @@ export function TaskCard({
             {progress.total > 0 && (
               <button
                 onClick={() => setShowSubtasks(v => !v)}
-                className="text-[10px] px-1.5 py-1 rounded-md border bg-white/[0.04] border-white/[0.08] text-white/50 hover:text-white/80 hover:border-white/[0.15] flex items-center gap-1 transition-colors"
+                className="text-[11px] px-1.5 py-1 rounded-md border bg-white/[0.04] border-white/[0.08] text-white/65 hover:text-white/80 hover:border-white/[0.15] flex items-center gap-1 transition-colors"
               >
                 <ListChecks className="w-2.5 h-2.5" />
                 {progress.done}/{progress.total}
@@ -228,7 +228,7 @@ export function TaskCard({
                   >
                     <Check className="w-2.5 h-2.5" />
                   </span>
-                  <span className={clsx('text-[11.5px] truncate', sub.done ? 'line-through text-white/30' : 'text-white/60')}>
+                  <span className={clsx('text-[11.5px] truncate', sub.done ? 'line-through text-white/50' : 'text-white/70')}>
                     {sub.title}
                   </span>
                 </button>
@@ -250,7 +250,7 @@ export function TaskCard({
               'flex-shrink-0 -m-1 p-1 rounded-lg transition-colors',
               laeuft
                 ? 'text-red-300 hover:bg-red-500/12'
-                : 'text-white/25 hover:text-accent-light hover:bg-accent/10',
+                : 'text-white/50 hover:text-accent-light hover:bg-accent/10',
             )}
           >
             {laeuft
@@ -264,7 +264,7 @@ export function TaskCard({
             <button
               onClick={() => onStatusChange('doing')}
               title="In Arbeit nehmen"
-              className="p-1 rounded-lg text-white/25 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors"
+              className="p-1 rounded-lg text-white/50 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors"
             >
               <Play className="w-3.5 h-3.5" />
             </button>
@@ -273,7 +273,7 @@ export function TaskCard({
             <button
               onClick={() => onStatusChange('open')}
               title="Zurück zu Offen"
-              className="p-1 rounded-lg text-white/25 hover:text-white/70 hover:bg-white/[0.06] transition-colors"
+              className="p-1 rounded-lg text-white/50 hover:text-white/70 hover:bg-white/[0.06] transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -281,19 +281,19 @@ export function TaskCard({
           <button
             onClick={onEdit}
             title="Bearbeiten"
-            className="p-1 rounded-lg text-white/25 hover:text-accent-light hover:bg-accent/10 transition-colors"
+            className="p-1 rounded-lg text-white/50 hover:text-accent-light hover:bg-accent/10 transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onDelete}
             title="Löschen"
-            className="p-1 rounded-lg text-white/25 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="p-1 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
           {draggable && (
-            <span className="p-1 text-white/15" title="Ziehen zum Sortieren">
+            <span className="p-1 text-white/50" title="Ziehen zum Sortieren">
               <GripVertical className="w-3.5 h-3.5" />
             </span>
           )}
@@ -302,7 +302,7 @@ export function TaskCard({
         <button
           onClick={() => setMenuOpen(true)}
           aria-label="Aktionen"
-          className="md:hidden -m-1 p-1 rounded-lg text-white/30 active:bg-white/[0.08] flex-shrink-0"
+          className="md:hidden -m-1 p-1 rounded-lg text-white/50 active:bg-white/[0.08] flex-shrink-0"
         >
           <MoreHorizontal className="w-5 h-5" />
         </button>
@@ -371,12 +371,12 @@ function ZeitChipAnzeige({
   return (
     <span
       className={clsx(
-        'text-[10px] px-1.5 py-0.5 rounded-md border flex items-center gap-1 tabular-nums',
+        'text-[11px] px-1.5 py-0.5 rounded-md border flex items-center gap-1 tabular-nums',
         running
           ? 'bg-accent/15 border-accent/30 text-accent-light'
           : ueberzogen
             ? 'bg-amber-500/12 border-amber-400/25 text-amber-300'
-            : 'bg-white/[0.04] border-white/[0.08] text-white/50',
+            : 'bg-white/[0.04] border-white/[0.08] text-white/65',
       )}
       title={estimateSeconds !== null ? `Erfasst gegen Schätzung (${Math.round(estimateSeconds / 60)} Min.)` : 'Erfasste Zeit'}
     >

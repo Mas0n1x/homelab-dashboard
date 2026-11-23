@@ -62,11 +62,11 @@ export function BookmarksWidget() {
           <div className="flex items-center gap-2">
             <Bookmark className="w-4 h-4 text-amber-400/50" />
             <span className="text-sm font-medium">Quick Links</span>
-            <span className="text-[10px] text-white/20">{bookmarks.length}</span>
+            <span className="text-[11px] text-white/50">{bookmarks.length}</span>
           </div>
           <button
             onClick={() => setShowAdd(!showAdd)}
-            className="p-1 rounded hover:bg-white/[0.06] text-white/40 hover:text-accent-light transition-colors"
+            className="p-1 rounded hover:bg-white/[0.06] text-white/55 hover:text-accent-light transition-colors"
           >
             {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           </button>
@@ -98,15 +98,15 @@ export function BookmarksWidget() {
         {/* Bookmarks list */}
         {bookmarks.length === 0 ? (
           <div className="py-4 text-center">
-            <Bookmark className="w-6 h-6 mx-auto mb-1.5 text-white/10" />
-            <p className="text-xs text-white/30">Keine Links gespeichert</p>
+            <Bookmark className="w-6 h-6 mx-auto mb-1.5 text-white/50" />
+            <p className="text-xs text-white/50">Keine Links gespeichert</p>
           </div>
         ) : (
           <div className="space-y-3">
             {Array.from(categories.entries()).map(([cat, items]) => (
               <div key={cat}>
                 {categories.size > 1 && (
-                  <span className="text-[9px] text-white/25 uppercase tracking-wider">{cat}</span>
+                  <span className="text-[10px] text-white/50 uppercase tracking-wider">{cat}</span>
                 )}
                 <div className="grid grid-cols-2 gap-1 mt-1">
                   {items.map(bm => {
@@ -119,11 +119,11 @@ export function BookmarksWidget() {
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.04] transition-colors group"
                       >
-                        <Icon className="w-3.5 h-3.5 text-white/30 group-hover:text-accent-light transition-colors flex-shrink-0" />
-                        <span className="text-xs text-white/60 group-hover:text-white/90 truncate transition-colors">{bm.name}</span>
+                        <Icon className="w-3.5 h-3.5 text-white/50 group-hover:text-accent-light transition-colors flex-shrink-0" />
+                        <span className="text-xs text-white/70 group-hover:text-white/90 truncate transition-colors">{bm.name}</span>
                         <button
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteMutation.mutate(bm.id); }}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-all ml-auto flex-shrink-0"
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-500/10 text-white/50 hover:text-red-400 transition-all ml-auto flex-shrink-0"
                         >
                           <X className="w-2.5 h-2.5" />
                         </button>

@@ -68,12 +68,12 @@ export function DiskForecastWidget() {
         )}>
           <HardDrive className={clsx('w-3.5 h-3.5', kritisch.length > 0 ? 'text-red-400' : 'text-cyan-400')} />
         </div>
-        <span className="text-xs font-medium text-white/60">Speicherplatz-Prognose</span>
-        <span className="ml-auto text-[10px] text-white/20">{data?.windowDays ?? 30}-Tage-Trend</span>
+        <span className="text-xs font-medium text-white/70">Platten-Prognose</span>
+        <span className="ml-auto text-[11px] text-white/50">{data?.windowDays ?? 30} Tage</span>
       </div>
 
       {server.length === 0 ? (
-        <p className="text-[12px] text-white/25 py-4 text-center">Noch keine Daten.</p>
+        <p className="text-[12px] text-white/50 py-4 text-center">Noch keine Daten.</p>
       ) : (
         <div className="space-y-2.5">
           {server.map(s => <ServerZeile key={s.serverId} s={s} minDays={data?.minDays ?? 7} />)}
@@ -96,13 +96,13 @@ function ServerZeile({ s, minDays }: { s: DiskForecastServer; minDays: number })
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-[11px] text-white/45 truncate min-w-0">{s.serverName}</span>
-        <span className="text-[11px] text-white/30 tabular-nums flex-shrink-0">
+        <span className="text-[12px] text-white/60 truncate min-w-0">{s.serverName}</span>
+        <span className="text-[12px] text-white/50 tabular-nums flex-shrink-0">
           {prozent ? `${zahl(prozent, 0)} %` : '–'}
         </span>
         <span className={clsx(
-          'ml-auto text-[11px] tabular-nums flex-shrink-0 flex items-center gap-1',
-          stufe === 'kritisch' ? 'text-red-300' : stufe === 'warnung' ? 'text-amber-300' : 'text-white/40',
+          'ml-auto text-[12px] tabular-nums flex-shrink-0 flex items-center gap-1',
+          stufe === 'kritisch' ? 'text-red-300' : stufe === 'warnung' ? 'text-amber-300' : 'text-white/55',
         )}>
           <TrendIcon className="w-3 h-3" />
           {s.daysUntilFull !== null ? `voll ${tageText(s.daysUntilFull)}` : 'keine Prognose'}
@@ -116,7 +116,7 @@ function ServerZeile({ s, minDays }: { s: DiskForecastServer; minDays: number })
         />
       </div>
 
-      <p className="text-[10px] text-white/25 mt-1 truncate">
+      <p className="text-[11px] text-white/50 mt-1 truncate">
         {s.daysUntilFull !== null ? (
           <>
             {bytes(s.usedBytes)} von {bytes(s.totalBytes)} · {bytes(s.bytesPerDay)}/Tag

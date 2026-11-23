@@ -61,10 +61,10 @@ export function GreetingHeader({ containersRunning, cpuPercent }: GreetingHeader
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.15, duration: 0.4 }}
-        className="text-sm text-white/40 mt-1"
+        className="text-sm text-white/55 mt-1"
       >
         {date}
-        {summary && <span className="text-white/25"> — {summary}</span>}
+        {summary && <span className="text-white/50"> — {summary}</span>}
       </motion.p>
     </div>
   );

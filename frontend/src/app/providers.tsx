@@ -15,6 +15,7 @@ import { ThemeApplier } from '@/components/dashboard/ThemeApplier';
 import { CommandPalette } from '@/components/dashboard/CommandPalette';
 import { TimerBar } from '@/components/time/TimerBar';
 import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PwaRegister } from '@/components/layout/PwaRegister';
 import * as api from '@/lib/api';
 
 function WebSocketManager({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,7 @@ function WebSocketManager({ children }: { children: React.ReactNode }) {
         {children}
       </AppShell>
       <ThemeApplier />
+      <PwaRegister />
       <CommandPalette />
       <TimerBar />
     </>

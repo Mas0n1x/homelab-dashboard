@@ -18,7 +18,7 @@ export function HistoryChart({ series, height = 150, max, gridPercent = false }:
 
   const all = series.flatMap(s => s.data);
   if (all.length < 2) {
-    return <div style={{ height }} className="flex items-center justify-center text-xs text-white/25">Sammle Daten…</div>;
+    return <div style={{ height }} className="flex items-center justify-center text-xs text-white/50">Sammle Daten…</div>;
   }
   const hi = max ?? Math.max(...all, 1);
   const yOf = (v: number) => pad + h - (Math.max(0, Math.min(hi, v)) / hi) * h;

@@ -48,10 +48,12 @@ export function NotificationDropdown() {
       <button
         onClick={() => setOpen(!open)}
         className="relative p-2 rounded-lg hover:bg-white/[0.06] transition-colors"
+        aria-label="Benachrichtigungen"
+        aria-expanded={open}
       >
-        <Bell className="w-4.5 h-4.5 text-white/50" />
+        <Bell className="w-4.5 h-4.5 text-white/65" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-accent-danger text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+          <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-accent-danger text-white text-[11px] font-bold rounded-full flex items-center justify-center animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -67,15 +69,17 @@ export function NotificationDropdown() {
                 {notifications.length > 0 && (
                   <button
                     onClick={() => clearAll()}
-                    className="p-1 rounded hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors"
+                    className="p-1 rounded hover:bg-white/[0.06] text-white/50 hover:text-white/70 transition-colors"
                     title="Alle löschen"
+                    aria-label="Alle Benachrichtigungen löschen"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
                 <button
                   onClick={() => setOpen(false)}
-                  className="p-1 rounded hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors"
+                  className="p-1 rounded hover:bg-white/[0.06] text-white/50 hover:text-white/70 transition-colors"
+                  aria-label="Schließen"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -86,8 +90,8 @@ export function NotificationDropdown() {
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
                 <div className="py-8 text-center">
-                  <Bell className="w-8 h-8 mx-auto mb-2 text-white/10" />
-                  <p className="text-xs text-white/30">Keine Benachrichtigungen</p>
+                  <Bell className="w-8 h-8 mx-auto mb-2 text-white/50" />
+                  <p className="text-xs text-white/50">Keine Benachrichtigungen</p>
                 </div>
               ) : (
                 notifications.map(notif => (
@@ -101,16 +105,16 @@ export function NotificationDropdown() {
                     <span className="text-base mt-0.5">{typeIcon[notif.type] || '\uD83D\uDD14'}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className={`text-xs font-medium truncate ${!notif.read ? 'text-white' : 'text-white/60'}`}>
+                        <p className={`text-xs font-medium truncate ${!notif.read ? 'text-white' : 'text-white/70'}`}>
                           {notif.title}
                         </p>
                         {!notif.read && (
                           <span className="w-1.5 h-1.5 rounded-full bg-accent-light flex-shrink-0" />
                         )}
                       </div>
-                      <p className="text-[11px] text-white/40 truncate mt-0.5">{notif.message}</p>
+                      <p className="text-[12px] text-white/55 truncate mt-0.5">{notif.message}</p>
                     </div>
-                    <span className="text-[10px] text-white/20 flex-shrink-0">{timeAgo(notif.timestamp)}</span>
+                    <span className="text-[11px] text-white/50 flex-shrink-0">{timeAgo(notif.timestamp)}</span>
                   </div>
                 ))
               )}

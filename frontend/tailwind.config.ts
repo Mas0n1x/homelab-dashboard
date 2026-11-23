@@ -113,7 +113,7 @@ const config: Config = {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],
         // Emoji-Schriften am Ende: JetBrains Mono hat keine Emoji-Glyphen, ohne
         // Fallback zeigen JSON-Felder leere Kästchen statt ✅ oder 📜.
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],
+        mono: ['var(--font-mono)', 'JetBrains Mono', 'Fira Code', 'monospace', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],
       },
     },
   },

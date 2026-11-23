@@ -62,11 +62,11 @@ export function ImageUpdatesWidget() {
         )}>
           <PackageSearch className={clsx('w-3.5 h-3.5', anzahl > 0 ? 'text-amber-400' : 'text-emerald-400')} />
         </div>
-        <span className="text-xs font-medium text-white/60">Image-Updates</span>
+        <span className="text-xs font-medium text-white/70">Image-Updates</span>
         <button
           onClick={() => pruefen.mutate()}
           disabled={pruefen.isPending}
-          className="ml-auto p-1 rounded-lg text-white/25 hover:text-white/70 hover:bg-white/[0.05] transition-colors disabled:opacity-40"
+          className="ml-auto p-1 rounded-lg text-white/50 hover:text-white/70 hover:bg-white/[0.05] transition-colors disabled:opacity-40"
           title="Jetzt prüfen (fragt die Registries ab)"
         >
           <RefreshCw className={clsx('w-3.5 h-3.5', pruefen.isPending && 'animate-spin')} />
@@ -74,14 +74,14 @@ export function ImageUpdatesWidget() {
       </div>
 
       {wartet && !data?.checkedAt ? (
-        <p className="text-[12px] text-white/25 py-4 text-center">
+        <p className="text-[12px] text-white/50 py-4 text-center">
           {pruefen.isPending ? 'Fragt die Registries ab …' : 'Erste Prüfung läuft nach dem Start.'}
         </p>
       ) : anzahl === 0 ? (
         <div className="flex items-center gap-2.5 py-3">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
           <span className="text-[13px] text-white/70">Alle Images aktuell</span>
-          <span className="ml-auto text-[10px] text-white/25">{data?.counts?.checked ?? 0} geprüft</span>
+          <span className="ml-auto text-[11px] text-white/50">{data?.counts?.checked ?? 0} geprüft</span>
         </div>
       ) : (
         <>
@@ -105,13 +105,13 @@ export function ImageUpdatesWidget() {
                     c.state === 'running' ? 'bg-emerald-400' : 'bg-white/25',
                   )} />
                   <span className="text-[12px] truncate min-w-0">{c.containerName}</span>
-                  <span className="text-[10px] text-white/25 truncate flex-shrink-0 hidden sm:inline font-mono">
+                  <span className="text-[11px] text-white/50 truncate flex-shrink-0 hidden sm:inline font-mono">
                     {c.image}
                   </span>
                 </div>
               ))}
               {veraltet.length > 10 && (
-                <p className="text-[10px] text-white/25 pl-4">und {veraltet.length - 10} weitere</p>
+                <p className="text-[11px] text-white/50 pl-4">und {veraltet.length - 10} weitere</p>
               )}
             </div>
           )}
@@ -121,12 +121,12 @@ export function ImageUpdatesWidget() {
       {/* Ein erreichtes Abruf-Limit MUSS sichtbar sein — sonst hält man ein
           unvollständiges Ergebnis für ein sauberes „alles aktuell". */}
       {data?.rateLimited && (
-        <p className="text-[10px] text-amber-300/70 mt-1">
+        <p className="text-[11px] text-amber-300/70 mt-1">
           Abruf-Limit der Registry erreicht — Ergebnis unvollständig.
         </p>
       )}
 
-      <p className="text-[10px] text-white/20 mt-2">
+      <p className="text-[11px] text-white/50 mt-2">
         Geprüft {vorZeit(data?.checkedAt ?? null)}
         {/* Selbst gebaute Images sind kein Fehler — sie liegen in keiner
             Registry, also gibt es nichts zu vergleichen. */}

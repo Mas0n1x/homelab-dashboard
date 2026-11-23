@@ -88,10 +88,10 @@ export function EtsyConnection() {
         </div>
         <div className="min-w-0">
           <p className="text-sm font-medium">Etsy — PrintOasis3D</p>
-          <p className="text-xs text-white/40">Offene Bestellungen auf der Startseite</p>
+          <p className="text-xs text-white/55">Offene Bestellungen auf der Startseite</p>
         </div>
         {status?.connected && (
-          <span className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/12 border border-emerald-400/25 text-[11px] text-emerald-300 flex-shrink-0">
+          <span className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/12 border border-emerald-400/25 text-[12px] text-emerald-300 flex-shrink-0">
             <CheckCircle2 className="w-3 h-3" />
             Verbunden
           </span>
@@ -125,7 +125,7 @@ export function EtsyConnection() {
             </p>
           </div>
 
-          <ol className="text-[12px] text-white/50 space-y-2 list-decimal pl-4">
+          <ol className="text-[12px] text-white/65 space-y-2 list-decimal pl-4">
             <li>
               Auf{' '}
               <a href="https://www.etsy.com/developers/your-apps" target="_blank" rel="noreferrer" className="text-accent-light hover:underline">
@@ -148,7 +148,7 @@ export function EtsyConnection() {
       ) : (
         <div className="space-y-4">
           <div>
-            <label className="text-xs text-white/40 block mb-1.5">Rückruf-Adresse (muss in der Etsy-App stehen)</label>
+            <label className="text-xs text-white/55 block mb-1.5">Rückruf-Adresse (muss in der Etsy-App stehen)</label>
             <div className="flex items-center gap-2">
               <input className="glass-input flex-1 min-w-0 font-mono text-[12px]" value={status.redirectUri || ''} readOnly />
               <button
@@ -162,9 +162,9 @@ export function EtsyConnection() {
           </div>
 
           {status.connected && status.shopName && (
-            <p className="text-[12px] text-white/50">
+            <p className="text-[12px] text-white/65">
               Shop: <span className="text-white/80">{status.shopName}</span>
-              {status.shopId && <span className="text-white/30"> (#{status.shopId})</span>}
+              {status.shopId && <span className="text-white/50"> (#{status.shopId})</span>}
             </p>
           )}
 
@@ -190,7 +190,7 @@ export function EtsyConnection() {
             )}
           </div>
 
-          <p className="text-[11px] text-white/25">
+          <p className="text-[12px] text-white/50">
             Gelesen werden nur Bestellungen und Shop-Daten ({status.scopes.join(', ')}). Das Zugriffs-Token
             hält eine Stunde und wird selbstständig aufgefrischt; nach 90 Tagen ohne Nutzung ist eine neue
             Verbindung nötig.

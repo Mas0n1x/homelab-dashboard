@@ -14,7 +14,7 @@ const lineColor = (l: string) =>
   /ERROR|SEVERE|Exception|\bFAILED\b|\bFAIL\b|Fehler/i.test(l) ? 'text-red-400/90'
     : /WARN/i.test(l) ? 'text-amber-300/85'
     : /^>/.test(l) ? 'text-orange-300/90'
-    : /\bINFO\b/.test(l) ? 'text-white/55' : 'text-white/45';
+    : /\bINFO\b/.test(l) ? 'text-white/55' : 'text-white/60';
 
 export function ConsolePanel({ serverId, api, running }: { serverId: string; api: Api; running: boolean }) {
   const [logs, setLogs] = useState('');
@@ -80,25 +80,25 @@ export function ConsolePanel({ serverId, api, running }: { serverId: string; api
   return (
     <div className="glass-card rounded-2xl overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.06] bg-white/[0.02]">
-        <div className="flex items-center gap-2 text-xs text-white/40"><TerminalSquare className="w-3.5 h-3.5" /> Live-Konsole</div>
-        <div className="flex items-center gap-3 text-[11px]">
+        <div className="flex items-center gap-2 text-xs text-white/55"><TerminalSquare className="w-3.5 h-3.5" /> Live-Konsole</div>
+        <div className="flex items-center gap-3 text-[12px]">
           <span className={`flex items-center gap-1 ${live ? 'text-emerald-400' : 'text-amber-400/80'}`}>
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: live ? '#10b981' : '#f59e0b' }} />{live ? 'Live' : 'Polling'}
           </span>
-          <button onClick={() => setLogs('')} className="text-white/30 hover:text-white/60 transition">leeren</button>
+          <button onClick={() => setLogs('')} className="text-white/50 hover:text-white/70 transition">leeren</button>
         </div>
       </div>
       <div ref={logRef}
         onScroll={e => { const el = e.currentTarget; stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40; }}
         className="h-[52vh] overflow-y-auto p-4 font-mono text-[12px] leading-[1.55] bg-black/25">
         {logs ? logs.split('\n').map((l, i) => <div key={i} className={`${lineColor(l)} whitespace-pre-wrap break-all`}>{l || ' '}</div>)
-          : <p className="text-white/25">{running ? 'Warte auf Ausgabe…' : 'Server gestoppt — noch keine Ausgabe.'}</p>}
+          : <p className="text-white/50">{running ? 'Warte auf Ausgabe…' : 'Server gestoppt — noch keine Ausgabe.'}</p>}
       </div>
       <form onSubmit={send} className="flex items-center gap-2 p-3 border-t border-white/[0.06]">
         <span className="text-orange-400/70 font-mono text-sm pl-1">/</span>
         <input value={command} onChange={e => setCommand(e.target.value)} onKeyDown={onKey} disabled={!running}
           placeholder={running ? 'Befehl (↑/↓ für Verlauf) …' : 'Server ist gestoppt'}
-          className="flex-1 bg-transparent outline-none text-sm font-mono text-white/80 placeholder:text-white/25 disabled:opacity-40" />
+          className="flex-1 bg-transparent outline-none text-sm font-mono text-white/80 placeholder:text-white/45 disabled:opacity-40" />
         <button type="submit" disabled={!running || !command.trim()}
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] bg-orange-500/15 border border-orange-500/25 text-orange-300 hover:bg-orange-500/25 disabled:opacity-30 transition">
           <Send className="w-3.5 h-3.5" /> Senden

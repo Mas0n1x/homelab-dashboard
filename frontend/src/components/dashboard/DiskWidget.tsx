@@ -35,20 +35,20 @@ export function DiskWidget({ disks }: { disks: DiskInfo[] }) {
     <GlassCard delay={0.2}>
       <div className="relative z-10">
         <div className="flex items-center gap-2 mb-3">
-          <HardDrive className="w-4 h-4 text-white/40" />
+          <HardDrive className="w-4 h-4 text-white/55" />
           <span className="stat-label">Speicher</span>
         </div>
         <div className="space-y-2.5">
           {disks.map((d) => (
             <div key={d.mountPoint}>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-white/50 truncate max-w-[120px]" title={d.mountPoint}>{d.mountPoint}</span>
+                <span className="text-xs text-white/65 truncate max-w-[120px]" title={d.mountPoint}>{d.mountPoint}</span>
                 <span className={`text-xs font-medium ${getTextColor(d.percent)}`}>{zahl(d.percent, 0)}%</span>
               </div>
               <div className="w-full h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all ${getColor(d.percent)}`} style={{ width: `${d.percent}%` }} />
               </div>
-              <p className="text-[10px] text-white/30 mt-0.5">{formatBytes(d.used)} / {formatBytes(d.total)}</p>
+              <p className="text-[11px] text-white/50 mt-0.5">{formatBytes(d.used)} / {formatBytes(d.total)}</p>
             </div>
           ))}
         </div>

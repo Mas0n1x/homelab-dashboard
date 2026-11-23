@@ -182,7 +182,7 @@ export default function LogsPage() {
               <FileText className="w-5 h-5 text-emerald-400" />
               Log Viewer
             </h1>
-            <p className="text-sm text-white/40 mt-0.5 flex items-center gap-2">
+            <p className="text-sm text-white/55 mt-0.5 flex items-center gap-2">
               Live-Streaming Container Logs
               {wsConnected ? (
                 <span className="flex items-center gap-1 text-emerald-400">
@@ -207,13 +207,13 @@ export default function LogsPage() {
               <span className="truncate text-sm">
                 {selectedContainers.size === 0 ? 'Container wählen...' : `${selectedContainers.size} ausgewählt`}
               </span>
-              <ChevronDown className="w-4 h-4 text-white/30 absolute right-2" />
+              <ChevronDown className="w-4 h-4 text-white/50 absolute right-2" />
             </button>
 
             {showSelector && (
               <div className="absolute right-0 top-full mt-1 w-72 glass-card p-1 z-50 max-h-80 overflow-y-auto">
                 {runningContainers.length === 0 ? (
-                  <p className="px-3 py-2 text-sm text-white/40">Keine laufenden Container</p>
+                  <p className="px-3 py-2 text-sm text-white/55">Keine laufenden Container</p>
                 ) : (
                   runningContainers.map(c => (
                     <button
@@ -224,7 +224,7 @@ export default function LogsPage() {
                       <div className={`w-3 h-3 rounded border ${selectedContainers.has(c.id) ? 'bg-accent border-accent' : 'border-white/20'}`} />
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">{c.name}</p>
-                        <p className="text-xs text-white/30 font-mono truncate">{c.image}</p>
+                        <p className="text-xs text-white/50 font-mono truncate">{c.image}</p>
                       </div>
                     </button>
                   ))
@@ -235,7 +235,7 @@ export default function LogsPage() {
 
           {/* Filter */}
           <div className="relative w-full sm:w-48">
-            <Search className="w-4 h-4 text-white/30 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-white/50 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={filter}
@@ -253,7 +253,7 @@ export default function LogsPage() {
             {paused ? 'Fortsetzen' : 'Pause'}
           </button>
 
-          <button onClick={() => setLogs([])} className="btn-glass text-white/40">
+          <button onClick={() => setLogs([])} className="btn-glass text-white/55">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
@@ -265,7 +265,7 @@ export default function LogsPage() {
           className="relative z-10 h-full overflow-y-auto p-3 font-mono text-xs leading-5"
         >
           {filteredLogs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-white/20 gap-3">
+            <div className="flex flex-col items-center justify-center h-full text-white/50 gap-3">
               <FileText className="w-12 h-12" />
               <p className="text-sm">Wähle Container um Logs zu streamen</p>
             </div>

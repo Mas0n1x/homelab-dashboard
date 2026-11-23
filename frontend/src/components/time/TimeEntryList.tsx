@@ -77,7 +77,7 @@ export function TimeEntryList({ von, bis }: { von: string; bis: string }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs text-white/35">
+        <p className="text-xs text-white/50">
           {entries.length} {entries.length === 1 ? 'Eintrag' : 'Einträge'} ·{' '}
           {formatHours(entries.reduce((s, e) => s + e.seconds, 0))}
         </p>
@@ -105,7 +105,7 @@ export function TimeEntryList({ von, bis }: { von: string; bis: string }) {
         </div>
       ) : entries.length === 0 ? (
         <GlassCard>
-          <p className="text-sm text-white/30 py-8 text-center">
+          <p className="text-sm text-white/50 py-8 text-center">
             Keine Zeiten in diesem Zeitraum. Starte die Uhr auf einer Aufgabe oder trag Zeit nach.
           </p>
         </GlassCard>
@@ -114,7 +114,7 @@ export function TimeEntryList({ von, bis }: { von: string; bis: string }) {
           <div key={tag}>
             <div className="flex items-center gap-2 mb-2 px-1">
               <h3 className="text-[13px] font-semibold text-white/70">{tagLabel(tag)}</h3>
-              <span className="text-[11px] text-white/25 tabular-nums">
+              <span className="text-[12px] text-white/50 tabular-nums">
                 {formatHours(liste.reduce((s, e) => s + e.seconds, 0))}
               </span>
             </div>
@@ -136,24 +136,24 @@ export function TimeEntryList({ von, bis }: { von: string; bis: string }) {
                           {e.description || e.taskTitle || 'Ohne Bezeichnung'}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          <span className="text-[10px] text-white/30 tabular-nums">
+                          <span className="text-[11px] text-white/50 tabular-nums">
                             {uhrzeit(e.startedAt)}{e.endedAt ? ` – ${uhrzeit(e.endedAt)}` : ' – läuft'}
                           </span>
                           {e.project && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.07] text-white/45 truncate max-w-[8rem]">
+                            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.07] text-white/60 truncate max-w-[8rem]">
                               {e.project}
                             </span>
                           )}
                           {e.source === 'manual' && (
-                            <span className="text-[10px] text-white/25">nachgetragen</span>
+                            <span className="text-[11px] text-white/50">nachgetragen</span>
                           )}
                           {!e.billable && (
-                            <span className="flex items-center gap-1 text-[10px] text-white/30">
+                            <span className="flex items-center gap-1 text-[11px] text-white/50">
                               <Ban className="w-2.5 h-2.5" /> nicht abrechenbar
                             </span>
                           )}
                           {e.invoicedAt && (
-                            <span className="flex items-center gap-1 text-[10px] text-emerald-300/70">
+                            <span className="flex items-center gap-1 text-[11px] text-emerald-300/70">
                               <Receipt className="w-2.5 h-2.5" /> abgerechnet
                             </span>
                           )}
@@ -173,7 +173,7 @@ export function TimeEntryList({ von, bis }: { von: string; bis: string }) {
                           title={e.billable ? 'Als nicht abrechenbar markieren' : 'Als abrechenbar markieren'}
                           className={clsx(
                             'p-1.5 rounded-lg transition-colors',
-                            e.billable ? 'text-emerald-400/60 hover:bg-emerald-500/10' : 'text-white/20 hover:text-white/50',
+                            e.billable ? 'text-emerald-400/60 hover:bg-emerald-500/10' : 'text-white/50 hover:text-white/65',
                           )}
                         >
                           <Receipt className="w-3.5 h-3.5" />
@@ -181,14 +181,14 @@ export function TimeEntryList({ von, bis }: { von: string; bis: string }) {
                         <button
                           onClick={() => setBearbeite(e.id)}
                           title="Bearbeiten"
-                          className="p-1.5 rounded-lg text-white/25 hover:text-accent-light hover:bg-accent/10 transition-colors"
+                          className="p-1.5 rounded-lg text-white/50 hover:text-accent-light hover:bg-accent/10 transition-colors"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => { if (confirm('Diesen Zeiteintrag löschen?')) loeschen.mutate(e.id); }}
                           title="Löschen"
-                          className="p-1.5 rounded-lg text-white/25 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -220,11 +220,11 @@ function NachtragFormular({ projekte, onAbbrechen, onSpeichern, laeuft }: {
     <GlassCard>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <label className="block lg:col-span-2">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Beschreibung</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Beschreibung</span>
           <input className="glass-input py-2 w-full" value={text} onChange={e => setText(e.target.value)} placeholder="Woran gearbeitet?" />
         </label>
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Projekt</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Projekt</span>
           <input
             className="glass-input py-2 w-full"
             value={projekt}
@@ -237,11 +237,11 @@ function NachtragFormular({ projekte, onAbbrechen, onSpeichern, laeuft }: {
           </datalist>
         </label>
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Beginn</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Beginn</span>
           <input type="datetime-local" className="glass-input py-2 w-full" value={start} onChange={e => setStart(e.target.value)} />
         </label>
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Dauer (Minuten)</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Dauer (Minuten)</span>
           <input
             type="number"
             min={1}

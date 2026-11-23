@@ -44,10 +44,10 @@ function BarChart({ series, color }: { series: { t: string; requests: number }[]
 function Stat({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="text-white/40">{icon}</div>
+      <div className="text-white/55">{icon}</div>
       <div className="min-w-0">
-        <p className="text-[11px] text-white/40 leading-none">{label}</p>
-        <p className="text-sm font-semibold text-white/85 tabular-nums leading-tight mt-0.5">{value}{sub && <span className="text-[11px] font-normal text-white/30 ml-1">{sub}</span>}</p>
+        <p className="text-[12px] text-white/55 leading-none">{label}</p>
+        <p className="text-sm font-semibold text-white/85 tabular-nums leading-tight mt-0.5">{value}{sub && <span className="text-[12px] font-normal text-white/50 ml-1">{sub}</span>}</p>
       </div>
     </div>
   );
@@ -85,17 +85,17 @@ export default function TrafficPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2.5"><Globe className="w-6 h-6 text-cyan-400" /> Traffic</h1>
-            <p className="text-sm text-white/40 mt-1">Cloudflare-Analytics deiner Domains</p>
+            <p className="text-sm text-white/55 mt-1">Cloudflare-Analytics deiner Domains</p>
           </div>
           <div className="flex items-center gap-1 bg-white/[0.03] rounded-xl p-1">
             {RANGES.map(([r, label]) => (
               <button key={r} onClick={() => setRange(r)}
-                className={`px-3 py-1.5 rounded-lg text-[13px] transition ${range === r ? 'bg-white/[0.08] text-white' : 'text-white/40 hover:text-white/70'}`}>{label}</button>
+                className={`px-3 py-1.5 rounded-lg text-[13px] transition ${range === r ? 'bg-white/[0.08] text-white' : 'text-white/55 hover:text-white/70'}`}>{label}</button>
             ))}
           </div>
         </div>
 
-        {loading && <div className="glass-card rounded-2xl p-12 flex items-center justify-center text-white/40"><RotateCw className="w-5 h-5 animate-spin mr-2" /> Lade Analytics…</div>}
+        {loading && <div className="glass-card rounded-2xl p-12 flex items-center justify-center text-white/55"><RotateCw className="w-5 h-5 animate-spin mr-2" /> Lade Analytics…</div>}
 
         {!loading && err && (
           <div className="glass-card rounded-2xl p-6 border border-amber-500/15">
@@ -104,9 +104,9 @@ export default function TrafficPage() {
               <div>
                 <h3 className="text-sm font-semibold text-white/85">Analytics noch nicht verfügbar</h3>
                 {err.error === 'ANALYTICS_PERMISSION' ? (
-                  <p className="text-[13px] text-white/50 mt-1.5 leading-relaxed">Dem Cloudflare-Token fehlt die Berechtigung <span className="font-mono text-white/70">Zone · Analytics · Read</span>. Ergänze sie im Cloudflare-Dashboard (My Profile → API Tokens → Token bearbeiten), dann lädt diese Seite automatisch.</p>
+                  <p className="text-[13px] text-white/65 mt-1.5 leading-relaxed">Dem Cloudflare-Token fehlt die Berechtigung <span className="font-mono text-white/70">Zone · Analytics · Read</span>. Ergänze sie im Cloudflare-Dashboard (My Profile → API Tokens → Token bearbeiten), dann lädt diese Seite automatisch.</p>
                 ) : (
-                  <p className="text-[13px] text-white/50 mt-1.5">{err.message || err.error || 'Unbekannter Fehler'}</p>
+                  <p className="text-[13px] text-white/65 mt-1.5">{err.message || err.error || 'Unbekannter Fehler'}</p>
                 )}
               </div>
             </div>
@@ -130,7 +130,7 @@ export default function TrafficPage() {
                   className="glass-card rounded-2xl p-5">
                   <div className="flex items-center justify-between gap-2 mb-4">
                     <h3 className="text-sm font-semibold text-white/85 flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />{d.name}</h3>
-                    <a href={`https://${d.name}`} target="_blank" rel="noreferrer" className="text-white/25 hover:text-cyan-400 transition"><ExternalLink className="w-3.5 h-3.5" /></a>
+                    <a href={`https://${d.name}`} target="_blank" rel="noreferrer" className="text-white/50 hover:text-cyan-400 transition"><ExternalLink className="w-3.5 h-3.5" /></a>
                   </div>
                   <BarChart series={d.series} color={COLORS[i % COLORS.length]} />
                   <div className="grid grid-cols-2 gap-y-3 gap-x-2 mt-4 pt-4 border-t border-white/[0.05]">
@@ -139,11 +139,11 @@ export default function TrafficPage() {
                     <Stat icon={<Users className="w-4 h-4" />} label="Besucher" value={fmtNum(d.uniques)} />
                     <Stat icon={<Zap className="w-4 h-4" />} label="Cache" value={`${d.cacheRate}%`} />
                   </div>
-                  {d.threats > 0 && <p className="text-[11px] text-red-400/70 mt-3 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> {fmtNum(d.threats)} Bedrohungen abgewehrt</p>}
+                  {d.threats > 0 && <p className="text-[12px] text-red-400/70 mt-3 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> {fmtNum(d.threats)} Bedrohungen abgewehrt</p>}
                 </motion.div>
               ))}
             </div>
-            <p className="text-[11px] text-white/25">Quelle: Cloudflare GraphQL Analytics · Besucher = Summe eindeutiger Besucher pro Intervall (Näherung).</p>
+            <p className="text-[12px] text-white/50">Quelle: Cloudflare GraphQL Analytics · Besucher = Summe eindeutiger Besucher pro Intervall (Näherung).</p>
           </>
         )}
       </div>

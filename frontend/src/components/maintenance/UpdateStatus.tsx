@@ -43,7 +43,7 @@ export function UpdateStatus({ serverId }: UpdateStatusProps) {
       </div>
 
       {isLoading ? (
-        <div className="py-6 text-center text-white/20 text-xs">Prüfe Updates...</div>
+        <div className="py-6 text-center text-white/50 text-xs">Prüfe Updates...</div>
       ) : error ? (
         <div className="py-6 text-center text-red-400/60 text-xs">Fehler: {(error as Error).message}</div>
       ) : data?.error ? (
@@ -52,7 +52,7 @@ export function UpdateStatus({ serverId }: UpdateStatusProps) {
           <div>
             <p className="text-xs text-amber-400/80">{data.error}</p>
             {data.lastCheck && (
-              <p className="text-[10px] text-white/20 mt-1">
+              <p className="text-[11px] text-white/50 mt-1">
                 Letzter Check: {new Date(data.lastCheck).toLocaleString('de-DE')}
               </p>
             )}
@@ -67,8 +67,8 @@ export function UpdateStatus({ serverId }: UpdateStatusProps) {
           <div className="max-h-48 overflow-y-auto space-y-1 scrollbar-hide">
             {data.packages.map((pkg, i) => (
               <div key={i} className="flex items-center justify-between py-1 px-2 rounded-lg hover:bg-white/[0.02] text-xs">
-                <span className="text-white/60 font-mono">{pkg.name}</span>
-                <span className="text-white/25 text-[10px] font-mono">{pkg.version}</span>
+                <span className="text-white/70 font-mono">{pkg.name}</span>
+                <span className="text-white/50 text-[11px] font-mono">{pkg.version}</span>
               </div>
             ))}
           </div>

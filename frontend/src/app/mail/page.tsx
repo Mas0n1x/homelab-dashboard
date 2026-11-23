@@ -98,7 +98,7 @@ export default function MailPage() {
             </div>
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold leading-none">Mail</h1>
-              <p className="text-xs text-white/40 mt-1 truncate">
+              <p className="text-xs text-white/55 mt-1 truncate">
                 {overview?.accounts.length ?? 0} Postfächer
                 {totalUnread > 0 && ` · ${totalUnread} ungelesen`}
               </p>

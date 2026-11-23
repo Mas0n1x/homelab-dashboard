@@ -36,7 +36,7 @@ function getBarColor(uptime: number | null): string {
 }
 
 function getUptimeColor(uptime: number | null): string {
-  if (uptime === null) return 'text-white/30';
+  if (uptime === null) return 'text-white/50';
   if (uptime >= 99) return 'text-emerald-400';
   if (uptime >= 90) return 'text-amber-400';
   return 'text-red-400';
@@ -72,15 +72,15 @@ export function UptimeTimeline({ serviceId, serviceName }: { serviceId: string; 
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-white/30" />
+              <Activity className="w-3.5 h-3.5 text-white/50" />
               <span className={`text-sm font-mono font-semibold ${getUptimeColor(timeline.overallUptime)}`}>
                 {timeline.overallUptime !== null ? `${timeline.overallUptime}%` : 'n. v.'}
               </span>
-              <span className="text-xs text-white/30">30 Tage</span>
+              <span className="text-xs text-white/50">30 Tage</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-white/30" />
-              <span className="text-xs text-white/40">{timeline.totalChecks} Checks</span>
+              <Zap className="w-3.5 h-3.5 text-white/50" />
+              <span className="text-xs text-white/55">{timeline.totalChecks} Checks</span>
             </div>
           </div>
 
@@ -93,15 +93,15 @@ export function UptimeTimeline({ serviceId, serviceName }: { serviceId: string; 
                 exit={{ opacity: 0 }}
                 className="text-xs text-right"
               >
-                <span className="text-white/50">{formatDate(hoveredDay.date)}</span>
-                <span className="mx-1.5 text-white/20">|</span>
+                <span className="text-white/65">{formatDate(hoveredDay.date)}</span>
+                <span className="mx-1.5 text-white/50">|</span>
                 <span className={getUptimeColor(hoveredDay.uptime)}>
                   {hoveredDay.uptime !== null ? `${hoveredDay.uptime}%` : 'Keine Daten'}
                 </span>
                 {hoveredDay.avgResponseTime > 0 && (
                   <>
-                    <span className="mx-1.5 text-white/20">|</span>
-                    <span className="text-white/40">{hoveredDay.avgResponseTime}ms</span>
+                    <span className="mx-1.5 text-white/50">|</span>
+                    <span className="text-white/55">{hoveredDay.avgResponseTime}ms</span>
                   </>
                 )}
               </motion.div>
@@ -136,8 +136,8 @@ export function UptimeTimeline({ serviceId, serviceName }: { serviceId: string; 
 
         {/* Date labels */}
         <div className="flex justify-between mt-1.5 px-1">
-          <span className="text-[10px] text-white/20">30 Tage</span>
-          <span className="text-[10px] text-white/20">Heute</span>
+          <span className="text-[11px] text-white/50">30 Tage</span>
+          <span className="text-[11px] text-white/50">Heute</span>
         </div>
       </div>
     </motion.div>

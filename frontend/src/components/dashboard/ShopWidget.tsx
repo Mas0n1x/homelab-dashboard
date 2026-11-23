@@ -61,14 +61,14 @@ export function ShopWidget() {
           <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
             <Package className="w-3.5 h-3.5 text-orange-400" />
           </div>
-          <span className="text-xs font-medium text-white/60">PrintOasis3D</span>
+          <span className="text-xs font-medium text-white/70">PrintOasis3D</span>
         </div>
-        <p className="text-[12px] text-white/35 mb-3">
+        <p className="text-[12px] text-white/50 mb-3">
           Etsy ist eingerichtet, aber noch nicht verbunden.
         </p>
         <Link
           href="/settings"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[12px] text-white/60 hover:text-white/90 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[12px] text-white/70 hover:text-white/90 transition-colors"
         >
           <PlugZap className="w-3.5 h-3.5" />
           Mit Etsy verbinden
@@ -87,16 +87,16 @@ export function ShopWidget() {
           'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0',
           anzahl > 0 ? 'bg-orange-500/15' : 'bg-white/[0.04]',
         )}>
-          <Package className={clsx('w-3.5 h-3.5', anzahl > 0 ? 'text-orange-400' : 'text-white/40')} />
+          <Package className={clsx('w-3.5 h-3.5', anzahl > 0 ? 'text-orange-400' : 'text-white/55')} />
         </div>
-        <span className="text-xs font-medium text-white/60 truncate">
+        <span className="text-xs font-medium text-white/70 truncate">
           {data?.shopName || 'PrintOasis3D'}
         </span>
         <a
           href="https://www.etsy.com/your/shops/me/orders"
           target="_blank"
           rel="noreferrer"
-          className="ml-auto text-white/20 hover:text-white/60 transition-colors flex-shrink-0"
+          className="ml-auto text-white/50 hover:text-white/70 transition-colors flex-shrink-0"
           title="Bei Etsy öffnen"
         >
           <ExternalLink className="w-3.5 h-3.5" />
@@ -106,7 +106,7 @@ export function ShopWidget() {
       {data?.error ? (
         <div className="flex items-start gap-2 py-2">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
-          <p className="text-[11px] text-amber-200/70">{data.error}</p>
+          <p className="text-[12px] text-amber-200/70">{data.error}</p>
         </div>
       ) : (
         <>
@@ -114,20 +114,20 @@ export function ShopWidget() {
           <div className="grid grid-cols-2 gap-2 mb-3">
             <div className="rounded-xl bg-white/[0.02] border border-white/[0.05] p-2.5">
               <p className="text-lg font-semibold tabular-nums leading-none">{anzahl}</p>
-              <p className="text-[10px] text-white/30 mt-1">zu verschicken</p>
+              <p className="text-[11px] text-white/50 mt-1">zu verschicken</p>
             </div>
             <div className="rounded-xl bg-white/[0.02] border border-white/[0.05] p-2.5">
               <p className="text-lg font-semibold tabular-nums leading-none text-emerald-300">
                 {formatMoney(data?.revenue30d ?? 0, data?.currency || 'EUR')}
               </p>
-              <p className="text-[10px] text-white/30 mt-1">
+              <p className="text-[11px] text-white/50 mt-1">
                 30 Tage · {data?.orders30d ?? 0} Bestellungen
               </p>
             </div>
           </div>
 
           {offen.length === 0 ? (
-            <p className="text-[12px] text-white/25 py-2 text-center">
+            <p className="text-[12px] text-white/50 py-2 text-center">
               Nichts offen — alles verschickt.
             </p>
           ) : (
@@ -137,18 +137,18 @@ export function ShopWidget() {
                   <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" />
                   <span className="text-[12px] truncate min-w-0">{o.buyer}</span>
                   {o.itemCount > 1 && (
-                    <span className="text-[10px] text-white/25 flex-shrink-0">{o.itemCount}×</span>
+                    <span className="text-[11px] text-white/50 flex-shrink-0">{o.itemCount}×</span>
                   )}
-                  <span className="text-[10px] text-white/20 flex-shrink-0 hidden sm:inline">
+                  <span className="text-[11px] text-white/50 flex-shrink-0 hidden sm:inline">
                     {vorZeit(o.createdAt)}
                   </span>
-                  <span className="ml-auto text-[11px] tabular-nums text-white/50 flex-shrink-0">
+                  <span className="ml-auto text-[12px] tabular-nums text-white/65 flex-shrink-0">
                     {formatMoney(o.total, o.currency)}
                   </span>
                 </div>
               ))}
               {offen.length > 5 && (
-                <p className="text-[10px] text-white/25 pl-4">und {offen.length - 5} weitere</p>
+                <p className="text-[11px] text-white/50 pl-4">und {offen.length - 5} weitere</p>
               )}
             </div>
           )}

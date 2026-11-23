@@ -67,15 +67,15 @@ export function FolderSidebar({ folders, layout = 'sidebar' }: FolderSidebarProp
                   'flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] border transition-colors flex-shrink-0',
                   isActive
                     ? 'bg-white/[0.08] border-white/[0.12] text-white'
-                    : 'bg-white/[0.02] border-white/[0.06] text-white/50'
+                    : 'bg-white/[0.02] border-white/[0.06] text-white/65'
                 )}
               >
                 <Icon className="w-3.5 h-3.5" />
                 {label}
                 {folder.unreadEmails > 0 && (
                   <span className={clsx(
-                    'text-[10px] px-1.5 py-0.5 rounded-full font-medium',
-                    isActive ? 'bg-accent/20 text-accent-light' : 'bg-white/[0.08] text-white/50'
+                    'text-[11px] px-1.5 py-0.5 rounded-full font-medium',
+                    isActive ? 'bg-accent/20 text-accent-light' : 'bg-white/[0.08] text-white/65'
                   )}>
                     {folder.unreadEmails}
                   </span>
@@ -113,15 +113,15 @@ export function FolderSidebar({ folders, layout = 'sidebar' }: FolderSidebarProp
                 'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all text-left',
                 isActive
                   ? 'bg-white/[0.08] text-white'
-                  : 'text-white/60 hover:text-white/80 hover:bg-white/[0.04]'
+                  : 'text-white/70 hover:text-white/80 hover:bg-white/[0.04]'
               )}
             >
               <Icon className="w-4 h-4 shrink-0" />
               <span className="flex-1 truncate">{label}</span>
               {folder.unreadEmails > 0 && (
                 <span className={clsx(
-                  'text-[10px] px-1.5 py-0.5 rounded-full font-medium',
-                  isActive ? 'bg-accent/20 text-accent-light' : 'bg-white/[0.08] text-white/50'
+                  'text-[11px] px-1.5 py-0.5 rounded-full font-medium',
+                  isActive ? 'bg-accent/20 text-accent-light' : 'bg-white/[0.08] text-white/65'
                 )}>
                   {folder.unreadEmails}
                 </span>

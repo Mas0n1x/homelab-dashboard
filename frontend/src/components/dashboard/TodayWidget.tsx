@@ -86,7 +86,7 @@ export function TodayWidget() {
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="min-w-0">
           <h2 className="text-base font-semibold truncate">{begruessung}, Mas0n1x</h2>
-          <p className="text-[11px] text-white/35 mt-0.5">
+          <p className="text-[12px] text-white/50 mt-0.5">
             {new Date().toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long' })}
           </p>
         </div>
@@ -100,7 +100,7 @@ export function TodayWidget() {
         ) : (
           <Link
             href="/tasks"
-            className="flex items-center gap-1.5 flex-shrink-0 px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.07] text-[12px] text-white/45 hover:text-white/80 transition-colors"
+            className="flex items-center gap-1.5 flex-shrink-0 px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.07] text-[12px] text-white/60 hover:text-white/80 transition-colors"
           >
             <Timer className="w-3.5 h-3.5" />
             Uhr starten
@@ -186,10 +186,10 @@ function Kachel({ href, icon, ton, wert, label, zusatz, hervorheben }: {
         <div className={clsx('w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0', ton)}>
           {icon}
         </div>
-        <span className="text-[10px] text-white/40 truncate">{label}</span>
+        <span className="text-[11px] text-white/55 truncate">{label}</span>
       </div>
       <p className="text-lg font-semibold tabular-nums leading-none truncate">{wert}</p>
-      <p className="text-[10px] text-white/25 mt-1 truncate">{zusatz}</p>
+      <p className="text-[11px] text-white/50 mt-1 truncate">{zusatz}</p>
     </Link>
   );
 }

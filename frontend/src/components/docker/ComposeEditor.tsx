@@ -57,7 +57,7 @@ export function ComposeEditor() {
       <GlassCard>
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-3">
-            <FileCode className="w-4 h-4 text-white/40" />
+            <FileCode className="w-4 h-4 text-white/55" />
             <span className="text-sm font-medium">Compose Datei bearbeiten</span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -71,14 +71,14 @@ export function ComposeEditor() {
                 className={`px-3 py-1.5 text-xs rounded-lg transition-all ${
                   selectedProject === p.name
                     ? 'bg-accent/20 border border-accent/30 text-accent-light'
-                    : 'bg-white/[0.04] border border-white/10 text-white/50 hover:bg-white/[0.06]'
+                    : 'bg-white/[0.04] border border-white/10 text-white/65 hover:bg-white/[0.06]'
                 }`}
               >
                 {p.name}
               </button>
             ))}
             {(!projects || projects.length === 0) && (
-              <p className="text-sm text-white/30">Keine Compose-Projekte gefunden</p>
+              <p className="text-sm text-white/50">Keine Compose-Projekte gefunden</p>
             )}
           </div>
         </div>
@@ -93,14 +93,14 @@ export function ComposeEditor() {
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium">{selectedProject}</p>
                   {fileData?.remote && (
-                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-medium">
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[11px] font-medium">
                       <Wifi className="w-2.5 h-2.5" />
                       Remote (SSH)
                     </span>
                   )}
                 </div>
                 {fileData?.path && (
-                  <p className="text-[10px] text-white/25 font-mono mt-0.5">{fileData.path}</p>
+                  <p className="text-[11px] text-white/50 font-mono mt-0.5">{fileData.path}</p>
                 )}
               </div>
               <button
@@ -115,7 +115,7 @@ export function ComposeEditor() {
 
             {fileLoading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-white/30" />
+                <Loader2 className="w-6 h-6 animate-spin text-white/50" />
               </div>
             ) : fileData ? (
               <textarea
@@ -125,7 +125,7 @@ export function ComposeEditor() {
                 spellCheck={false}
               />
             ) : (
-              <p className="text-sm text-white/30 text-center py-8">
+              <p className="text-sm text-white/50 text-center py-8">
                 Compose-Datei konnte nicht geladen werden. Beim lokalen Server muss das Host-Verzeichnis gemountet sein; bei Remote-Servern braucht der SSH-Nutzer Leserechte auf die Datei.
               </p>
             )}
@@ -141,13 +141,13 @@ export function ComposeEditor() {
             <p className="text-sm text-white/70">
               Möchtest du die Compose-Datei von <span className="font-semibold text-white">{selectedProject}</span> wirklich überschreiben?
             </p>
-            <p className="text-xs text-white/30 mt-1">Ein Backup (.bak) wird automatisch erstellt.</p>
+            <p className="text-xs text-white/50 mt-1">Ein Backup (.bak) wird automatisch erstellt.</p>
           </div>
         </div>
         <div className="flex justify-end gap-3">
           <button
             onClick={() => setConfirmSave(false)}
-            className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/60 transition-colors"
+            className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/70 transition-colors"
           >
             Abbrechen
           </button>

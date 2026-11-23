@@ -28,8 +28,8 @@ export function ContainerComparison() {
     return (
       <GlassCard>
         <div className="relative z-10 py-6 text-center">
-          <BarChart3 className="w-8 h-8 mx-auto mb-2 text-white/10" />
-          <p className="text-xs text-white/30">Keine Container-Stats verfügbar</p>
+          <BarChart3 className="w-8 h-8 mx-auto mb-2 text-white/50" />
+          <p className="text-xs text-white/50">Keine Container-Stats verfügbar</p>
         </div>
       </GlassCard>
     );
@@ -44,17 +44,17 @@ export function ContainerComparison() {
     <GlassCard>
       <div className="relative z-10">
         <div className="flex items-center gap-2 mb-4">
-          <BarChart3 className="w-4 h-4 text-white/30" />
+          <BarChart3 className="w-4 h-4 text-white/50" />
           <span className="text-sm font-medium">Container-Vergleich</span>
-          <span className="text-[10px] text-white/20">{stats.length} Container</span>
+          <span className="text-[11px] text-white/50">{stats.length} Container</span>
         </div>
 
         {/* Legend */}
         <div className="flex items-center gap-4 mb-3">
-          <span className="flex items-center gap-1.5 text-[10px] text-white/40">
+          <span className="flex items-center gap-1.5 text-[11px] text-white/55">
             <span className="w-2 h-2 rounded-full bg-indigo-500" /> CPU %
           </span>
-          <span className="flex items-center gap-1.5 text-[10px] text-white/40">
+          <span className="flex items-center gap-1.5 text-[11px] text-white/55">
             <span className="w-2 h-2 rounded-full bg-emerald-500" /> RAM (MB)
           </span>
         </div>
@@ -64,8 +64,8 @@ export function ContainerComparison() {
           {sorted.map(container => (
             <div key={container.id} className="group">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-white/60 truncate max-w-[150px]">{container.name.replace(/^\//, '')}</span>
-                <div className="flex items-center gap-3 text-[10px] font-mono">
+                <span className="text-xs text-white/70 truncate max-w-[150px]">{container.name.replace(/^\//, '')}</span>
+                <div className="flex items-center gap-3 text-[11px] font-mono">
                   <span className="text-indigo-400">{zahl(container.cpu, 1)}%</span>
                   <span className="text-emerald-400">{formatMB(container.memUsage)} MB</span>
                 </div>
@@ -96,19 +96,19 @@ export function ContainerComparison() {
             <span className="text-xs font-bold text-indigo-400 block">
               {zahl(sorted.reduce((s, c) => s + c.cpu, 0), 1)}%
             </span>
-            <span className="text-[9px] text-white/30">CPU Gesamt</span>
+            <span className="text-[10px] text-white/50">CPU Gesamt</span>
           </div>
           <div>
             <span className="text-xs font-bold text-emerald-400 block">
               {formatMB(sorted.reduce((s, c) => s + c.memUsage, 0))} MB
             </span>
-            <span className="text-[9px] text-white/30">RAM Gesamt</span>
+            <span className="text-[10px] text-white/50">RAM Gesamt</span>
           </div>
           <div>
-            <span className="text-xs font-bold text-white/60 block">
+            <span className="text-xs font-bold text-white/70 block">
               {sorted.length}
             </span>
-            <span className="text-[9px] text-white/30">Container</span>
+            <span className="text-[10px] text-white/50">Container</span>
           </div>
         </div>
       </div>

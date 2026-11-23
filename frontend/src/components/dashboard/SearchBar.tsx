@@ -39,7 +39,7 @@ export function SearchBar() {
           ? 'bg-white/[0.06] border border-white/[0.12] shadow-lg shadow-accent/5'
           : 'bg-white/[0.03] border border-white/[0.06]'
       }`}>
-        <Search className={`w-4 h-4 flex-shrink-0 transition-colors ${focused ? 'text-accent-light' : 'text-white/30'}`} />
+        <Search className={`w-4 h-4 flex-shrink-0 transition-colors ${focused ? 'text-accent-light' : 'text-white/50'}`} />
         <input
           ref={inputRef}
           type="text"
@@ -48,9 +48,9 @@ export function SearchBar() {
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder="Google durchsuchen..."
-          className="bg-transparent text-sm text-white/80 placeholder:text-white/25 outline-none flex-1 min-w-0"
+          className="bg-transparent text-sm text-white/80 placeholder:text-white/45 outline-none flex-1 min-w-0"
         />
-        <kbd className="hidden sm:flex items-center gap-0.5 text-[10px] text-white/20 bg-white/[0.04] px-1.5 py-0.5 rounded">
+        <kbd className="hidden sm:flex items-center gap-0.5 text-[11px] text-white/50 bg-white/[0.04] px-1.5 py-0.5 rounded">
           <span>Ctrl</span>+<span>K</span>
         </kbd>
       </div>

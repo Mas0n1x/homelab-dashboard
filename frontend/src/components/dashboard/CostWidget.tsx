@@ -35,26 +35,26 @@ export function CostWidget() {
       <GlassCard delay={0.22} hover className="h-full">
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">
-            <Wallet className="w-3.5 h-3.5 text-white/40" />
+            <Wallet className="w-3.5 h-3.5 text-white/55" />
             <span className="stat-label">Kosten / Monat</span>
           </div>
           {withCost.length === 0 ? (
             <div>
-              <p className="text-lg font-semibold text-white/40">–</p>
-              <p className="text-[11px] text-white/30 mt-1">Kosten je Server in den Einstellungen hinterlegen</p>
+              <p className="text-lg font-semibold text-white/55">–</p>
+              <p className="text-[12px] text-white/50 mt-1">Kosten je Server in den Einstellungen hinterlegen</p>
             </div>
           ) : (
             <>
               <div className="flex items-baseline gap-1">
                 <span className="stat-value">{zahl(totalEur, 2)}</span>
-                <span className="text-white/40 text-sm">€</span>
+                <span className="text-white/55 text-sm">€</span>
               </div>
-              <p className="text-[11px] text-white/30 mt-1">{withCost.length} von {servers.length} Servern erfasst · {zahl(totalEur * 12, 0)} €/Jahr</p>
+              <p className="text-[12px] text-white/50 mt-1">{withCost.length} von {servers.length} Servern erfasst · {zahl(totalEur * 12, 0)} €/Jahr</p>
               {/* In der schmalen Mobil-Kachel klebten Label und Wert aneinander */}
               {next && next.days != null && (
                 <div className="mt-2 pt-2 border-t border-white/[0.06] flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-1 text-[11px] text-white/40 min-w-0"><CalendarClock className="w-3 h-3 flex-shrink-0" /> <span className="truncate">Nächste Verlängerung</span></span>
-                  <span className={`text-[11px] font-medium flex-shrink-0 ${next.days <= 14 ? 'text-amber-400' : 'text-white/50'}`}>{next.days <= 0 ? 'fällig' : `${next.days} T`}</span>
+                  <span className="flex items-center gap-1 text-[12px] text-white/55 min-w-0"><CalendarClock className="w-3 h-3 flex-shrink-0" /> <span className="truncate">Nächste Verlängerung</span></span>
+                  <span className={`text-[12px] font-medium flex-shrink-0 ${next.days <= 14 ? 'text-amber-400' : 'text-white/65'}`}>{next.days <= 0 ? 'fällig' : `${next.days} T`}</span>
                 </div>
               )}
             </>

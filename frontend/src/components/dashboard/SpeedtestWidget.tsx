@@ -69,30 +69,30 @@ export function SpeedtestWidget() {
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <ArrowDown className="w-3 h-3 text-emerald-400" />
-                <span className="text-xs text-white/40">Download</span>
+                <span className="text-xs text-white/55">Download</span>
               </div>
               <span className="text-lg font-bold text-emerald-400 font-mono">{zahl(latest.download, 1)}</span>
-              <span className="text-xs text-white/30 ml-1">Mbps</span>
+              <span className="text-xs text-white/50 ml-1">Mbps</span>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <ArrowUp className="w-3 h-3 text-blue-400" />
-                <span className="text-xs text-white/40">Upload</span>
+                <span className="text-xs text-white/55">Upload</span>
               </div>
               <span className="text-lg font-bold text-blue-400 font-mono">{zahl(latest.upload, 1)}</span>
-              <span className="text-xs text-white/30 ml-1">Mbps</span>
+              <span className="text-xs text-white/50 ml-1">Mbps</span>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Activity className="w-3 h-3 text-amber-400" />
-                <span className="text-xs text-white/40">Ping</span>
+                <span className="text-xs text-white/55">Ping</span>
               </div>
               <span className="text-lg font-bold text-amber-400 font-mono">{zahl(latest.ping, 0)}</span>
-              <span className="text-xs text-white/30 ml-1">ms</span>
+              <span className="text-xs text-white/50 ml-1">ms</span>
             </div>
           </div>
         ) : (
-          <p className="text-sm text-white/30 text-center mb-4">Noch kein Test durchgeführt</p>
+          <p className="text-sm text-white/50 text-center mb-4">Noch kein Test durchgeführt</p>
         )}
 
         {chartData.length > 1 && (

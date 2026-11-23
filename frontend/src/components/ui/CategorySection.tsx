@@ -44,12 +44,12 @@ export function CategorySection({ name, detail, running, total, open, onToggle, 
         className="relative z-10 w-full flex items-center justify-between gap-3 px-4 py-3.5 hover:bg-white/[0.03] transition-colors"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <ChevronDown className={clsx('w-4 h-4 text-white/40 flex-shrink-0 transition-transform', !open && '-rotate-90')} />
+          <ChevronDown className={clsx('w-4 h-4 text-white/55 flex-shrink-0 transition-transform', !open && '-rotate-90')} />
           <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
             <Icon className="w-4 h-4 text-accent-light" />
           </div>
           <span className="font-semibold truncate">{name}</span>
-          {detail && <span className="text-xs text-white/30 hidden sm:inline">{detail}</span>}
+          {detail && <span className="text-xs text-white/50 hidden sm:inline">{detail}</span>}
         </div>
         {running !== undefined && total !== undefined && (
           <span className={clsx('text-xs tabular-nums flex-shrink-0', allUp ? 'text-emerald-400' : 'text-amber-400')}>

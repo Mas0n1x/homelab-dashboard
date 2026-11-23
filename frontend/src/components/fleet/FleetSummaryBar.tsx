@@ -11,6 +11,7 @@ import { useFleetStore } from '@/stores/fleetStore';
 import { useServerStore } from '@/stores/serverStore';
 
 import { istErreichbar, zahl } from '@/lib/formatters';
+import { DEFAULT_LIMITS, LEVEL_TEXT, level } from '@/lib/health';
 function formatBytes(bytes: number): string {
   const gb = bytes / (1024 * 1024 * 1024);
   if (gb >= 1) return `${zahl(gb, 1)} GB`;
@@ -53,21 +54,22 @@ export function FleetSummaryBar() {
   const stats = [
     {
       icon: <Wifi className="w-4 h-4" />,
-      label: 'Server Online',
+      label: 'Server online',
       value: `${onlineCount}/${servers.length}`,
       color: onlineCount === servers.length ? 'text-emerald-400' : 'text-amber-400',
       bg: onlineCount === servers.length ? 'bg-emerald-500/10' : 'bg-amber-500/10',
     },
     {
       icon: <Cpu className="w-4 h-4" />,
-      label: 'Avg CPU',
-      value: `${zahl(avgCpu, 1)}%`,
-      color: avgCpu > 80 ? 'text-red-400' : avgCpu > 50 ? 'text-amber-400' : 'text-emerald-400',
-      bg: avgCpu > 80 ? 'bg-red-500/10' : avgCpu > 50 ? 'bg-amber-500/10' : 'bg-emerald-500/10',
+      label: 'Ø CPU',
+      value: `${zahl(avgCpu, 1)} %`,
+      // gleiche Stufen wie Karten und Alarme (Schwelle − 15 Punkte = Warnung)
+      color: LEVEL_TEXT[level(avgCpu, DEFAULT_LIMITS.cpu)],
+      bg: { ok: 'bg-emerald-500/10', warn: 'bg-amber-500/10', crit: 'bg-red-500/10' }[level(avgCpu, DEFAULT_LIMITS.cpu)],
     },
     {
       icon: <MemoryStick className="w-4 h-4" />,
-      label: 'Gesamt RAM',
+      label: 'RAM gesamt',
       // Einheit nur einmal — „9.4 GB / 19.8 GB" wurde in der Mobil-Kachel abgeschnitten.
       value: totalMem > 0
         ? `${zahl(usedMem / 1024 ** 3, 1)} / ${zahl(totalMem / 1024 ** 3, 1)} GB`
@@ -98,7 +100,7 @@ export function FleetSummaryBar() {
             <span className={stat.color}>{stat.icon}</span>
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-white/30 truncate">{stat.label}</p>
+            <p className="text-[11px] uppercase tracking-wider text-white/50 truncate">{stat.label}</p>
             <p className={`text-sm font-semibold tabular-nums truncate ${stat.color}`}>{stat.value}</p>
           </div>
         </motion.div>

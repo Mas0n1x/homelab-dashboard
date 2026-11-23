@@ -90,7 +90,7 @@ export function TimeTracking() {
                   'flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-[13px] transition-colors',
                   aktiv
                     ? 'bg-white/[0.08] border-white/[0.14] text-white'
-                    : 'bg-white/[0.02] border-white/[0.06] text-white/45 hover:text-white/75',
+                    : 'bg-white/[0.02] border-white/[0.06] text-white/60 hover:text-white/75',
                 )}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -154,13 +154,13 @@ export function TimeTracking() {
                 <p className="text-[13px] text-amber-200 font-medium">
                   {ohneSatz.length} {ohneSatz.length === 1 ? 'Projekt hat' : 'Projekte haben'} keinen Stundensatz
                 </p>
-                <p className="text-[11px] text-amber-200/60 mt-0.5">
+                <p className="text-[12px] text-amber-200/60 mt-0.5">
                   {ohneSatz.map(p => p.project || 'ohne Projekt').join(', ')} — die Zeit zählt, taucht aber mit 0 € in der Abrechnung auf.
                 </p>
               </div>
               <button
                 onClick={() => setBereich('saetze')}
-                className="ml-auto flex-shrink-0 text-[11px] px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-400/25 text-amber-200 hover:bg-amber-500/25 transition-colors"
+                className="ml-auto flex-shrink-0 text-[12px] px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-400/25 text-amber-200 hover:bg-amber-500/25 transition-colors"
               >
                 Setzen
               </button>
@@ -172,13 +172,13 @@ export function TimeTracking() {
 
           {/* Je Projekt */}
           <GlassCard>
-            <h3 className="text-xs uppercase tracking-widest text-white/25 font-medium mb-3">Nach Projekt</h3>
+            <h3 className="text-xs uppercase tracking-widest text-white/50 font-medium mb-3">Nach Projekt</h3>
             {isLoading ? (
               <div className="space-y-2">
                 {[0, 1, 2].map(i => <div key={i} className="h-12 rounded-xl bg-white/[0.03] animate-pulse" />)}
               </div>
             ) : (summary?.projects.length ?? 0) === 0 ? (
-              <p className="text-sm text-white/30 py-6 text-center">
+              <p className="text-sm text-white/50 py-6 text-center">
                 In diesem Zeitraum wurde noch keine Zeit erfasst.
               </p>
             ) : (
@@ -190,7 +190,7 @@ export function TimeTracking() {
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-[13px] font-medium truncate">{p.project || 'Ohne Projekt'}</span>
                         {p.customer && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/[0.08] text-white/45 truncate max-w-[9rem]">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/[0.08] text-white/60 truncate max-w-[9rem]">
                             {p.customer}
                           </span>
                         )}
@@ -207,7 +207,7 @@ export function TimeTracking() {
                           style={{ width: `${anteil}%` }}
                         />
                       </div>
-                      <div className="flex items-center gap-3 mt-1.5 text-[10px] text-white/30">
+                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-white/50">
                         <span>{p.entries} Einträge</span>
                         <span>{p.hourlyRate > 0 ? `${formatMoney(p.hourlyRate, p.currency)}/Std.` : 'kein Satz'}</span>
                         {p.roundingMinutes > 0 && <span>gerundet auf {p.roundingMinutes} Min.</span>}
@@ -240,10 +240,10 @@ function Kennzahl({ label, wert, hinweis, icon, tonung }: {
         <div className={clsx('w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0', tonung)}>
           {icon}
         </div>
-        <span className="text-xs font-medium text-white/60 truncate">{label}</span>
+        <span className="text-xs font-medium text-white/70 truncate">{label}</span>
       </div>
       <p className="text-xl font-semibold tabular-nums leading-none">{wert}</p>
-      <p className="text-[10px] text-white/30 mt-1.5 truncate">{hinweis}</p>
+      <p className="text-[11px] text-white/50 mt-1.5 truncate">{hinweis}</p>
     </GlassCard>
   );
 }
@@ -254,7 +254,7 @@ function Tagesverlauf({ days }: { days: { date: string; seconds: number }[] }) {
 
   return (
     <GlassCard>
-      <h3 className="text-xs uppercase tracking-widest text-white/25 font-medium mb-3">Verlauf</h3>
+      <h3 className="text-xs uppercase tracking-widest text-white/50 font-medium mb-3">Verlauf</h3>
       <div className="flex items-end gap-[3px] h-24 overflow-x-auto scrollbar-hide">
         {days.map(d => {
           const hoehe = Math.max(4, (d.seconds / max) * 100);
@@ -273,7 +273,7 @@ function Tagesverlauf({ days }: { days: { date: string; seconds: number }[] }) {
           );
         })}
       </div>
-      <div className="flex justify-between text-[10px] text-white/25 mt-2">
+      <div className="flex justify-between text-[11px] text-white/50 mt-2">
         <span>{new Date(days[0].date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>
         <span>{new Date(days[days.length - 1].date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>
       </div>

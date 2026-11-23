@@ -39,6 +39,7 @@ const EVENT_OPTIONS = [
   { id: 'backup_failed', label: 'Backup fehlgeschlagen', icon: '⚠️' },
   { id: 'disk_forecast', label: 'Speicher-Prognose (voll in ≤ 30 Tagen)', icon: '📉' },
   { id: 'image_updates', label: 'Veraltete Container-Images', icon: '🐳' },
+  { id: 'ram_trend', label: 'RAM-Trend (Speicherleck-Verdacht)', icon: '📈' },
 ];
 
 const SETTINGS_TABS = [
@@ -67,7 +68,7 @@ function SectionHeader({ icon: Icon, tint, title, desc, action }: { icon: Lucide
         </div>
         <div className="min-w-0">
           <h2 className="text-sm font-semibold leading-tight">{title}</h2>
-          {desc && <p className="text-xs text-white/35 mt-0.5">{desc}</p>}
+          {desc && <p className="text-xs text-white/50 mt-0.5">{desc}</p>}
         </div>
       </div>
       {action && <div className="flex-shrink-0 [&>button]:w-full sm:[&>button]:w-auto [&>button]:justify-center">{action}</div>}
@@ -81,7 +82,7 @@ function SettingRow({ title, desc, children, last }: { title: string; desc?: str
     <div className={clsx('flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5', !last && 'border-b border-white/[0.05]')}>
       <div className="min-w-0">
         <p className="text-sm font-medium">{title}</p>
-        {desc && <p className="text-xs text-white/35 mt-0.5">{desc}</p>}
+        {desc && <p className="text-xs text-white/50 mt-0.5">{desc}</p>}
       </div>
       <div className="flex-shrink-0">{children}</div>
     </div>
@@ -408,10 +409,10 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold flex items-center gap-2">
-          <Settings className="w-5 h-5 text-white/50" />
+          <Settings className="w-5 h-5 text-white/65" />
           Einstellungen
         </h1>
-        <p className="text-sm text-white/40 mt-0.5">Fleet, Alerts, Backups & Account</p>
+        <p className="text-sm text-white/55 mt-0.5">Fleet, Alerts, Backups & Account</p>
       </div>
 
       {/* Default Password Warning */}
@@ -445,15 +446,15 @@ export default function SettingsPage() {
                   'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all whitespace-nowrap lg:whitespace-normal border',
                   isActive
                     ? 'bg-accent/[0.12] border-accent/25 text-white'
-                    : 'border-transparent text-white/45 hover:text-white/80 hover:bg-white/[0.03]'
+                    : 'border-transparent text-white/60 hover:text-white/80 hover:bg-white/[0.03]'
                 )}
               >
-                <div className={clsx('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors', isActive ? 'bg-accent/20 text-accent-light' : 'bg-white/[0.04] text-white/40 group-hover:text-white/70')}>
+                <div className={clsx('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors', isActive ? 'bg-accent/20 text-accent-light' : 'bg-white/[0.04] text-white/55 group-hover:text-white/70')}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="min-w-0 hidden lg:block">
                   <p className="text-sm font-medium leading-tight">{tab.label}</p>
-                  <p className="text-[11px] text-white/30 mt-0.5 truncate">{tab.desc}</p>
+                  <p className="text-[12px] text-white/50 mt-0.5 truncate">{tab.desc}</p>
                 </div>
                 <span className="text-sm font-medium lg:hidden">{tab.label}</span>
                 {isActive && <ChevronRight className="w-4 h-4 text-accent-light/60 ml-auto hidden lg:block" />}
@@ -466,7 +467,7 @@ export default function SettingsPage() {
         <div className="flex-1 min-w-0 space-y-6">
           <div className="lg:hidden">
             <h2 className="text-base font-semibold">{activeMeta.label}</h2>
-            <p className="text-xs text-white/35">{activeMeta.desc}</p>
+            <p className="text-xs text-white/50">{activeMeta.desc}</p>
           </div>
 
           {/* Fleet Tab */}
@@ -495,13 +496,13 @@ export default function SettingsPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium truncate">{server.name}</p>
-                            {server.is_local ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-white/40">Lokal</span> : null}
+                            {server.is_local ? <span className="text-[11px] px-1.5 py-0.5 rounded bg-white/[0.05] text-white/55">Lokal</span> : null}
                           </div>
-                          <p className="text-xs text-white/30 font-mono truncate">{server.host}</p>
+                          <p className="text-xs text-white/50 font-mono truncate">{server.host}</p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           {server.glances_url && (
-                            <span className="hidden sm:inline text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/15">Glances</span>
+                            <span className="hidden sm:inline text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/15">Glances</span>
                           )}
                           {/* Mobil nur der Statuspunkt — die Textpille fraß die
                               Breite, sodass Servernamen abgeschnitten wurden. */}
@@ -509,11 +510,11 @@ export default function SettingsPage() {
                             <span className={clsx('w-1.5 h-1.5 rounded-full', m.dot)} />
                             <span className="hidden sm:inline">{m.label}</span>
                           </span>
-                          <button onClick={() => openEditServer(server)} className="p-1.5 rounded-lg text-white/25 hover:text-white/80 hover:bg-white/[0.06] transition-all" title="Bearbeiten">
+                          <button onClick={() => openEditServer(server)} className="p-1.5 rounded-lg text-white/50 hover:text-white/80 hover:bg-white/[0.06] transition-all" title="Bearbeiten">
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           {!server.is_local && (
-                            <button onClick={() => setConfirmDeleteServer(server.id)} className="p-1.5 rounded-lg text-white/25 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Entfernen">
+                            <button onClick={() => setConfirmDeleteServer(server.id)} className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Entfernen">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           )}
@@ -548,7 +549,7 @@ export default function SettingsPage() {
                 />
                 <div className="space-y-1.5 max-h-[560px] overflow-y-auto">
                   {(managedServices ?? []).length === 0 && (
-                    <p className="text-sm text-white/30 text-center py-8">Keine Dienste gefunden</p>
+                    <p className="text-sm text-white/50 text-center py-8">Keine Dienste gefunden</p>
                   )}
                   {(managedServices ?? []).map((svc: any) => {
                     const isManual = svc.source === 'manual';
@@ -559,20 +560,20 @@ export default function SettingsPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium truncate">{svc.name}</p>
-                            <span className={clsx('text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider flex-shrink-0', isManual ? 'bg-blue-500/10 text-blue-400' : 'bg-white/[0.05] text-white/40')}>{isManual ? 'Extern' : 'Docker'}</span>
-                            {svc.category && <span className="text-[10px] text-white/30 truncate">{svc.category}</span>}
+                            <span className={clsx('text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wider flex-shrink-0', isManual ? 'bg-blue-500/10 text-blue-400' : 'bg-white/[0.05] text-white/55')}>{isManual ? 'Extern' : 'Docker'}</span>
+                            {svc.category && <span className="text-[11px] text-white/50 truncate">{svc.category}</span>}
                           </div>
-                          {svc.url && <p className="text-[11px] text-white/25 font-mono truncate">{svc.url}</p>}
+                          {svc.url && <p className="text-[12px] text-white/50 font-mono truncate">{svc.url}</p>}
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
-                          {svc.url && <a href={svc.url} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg text-white/25 hover:text-white/70 hover:bg-white/[0.06] transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>}
+                          {svc.url && <a href={svc.url} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg text-white/50 hover:text-white/70 hover:bg-white/[0.06] transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>}
                           {!isManual && (
-                            <button onClick={() => serviceHideMutation.mutate(svc)} disabled={serviceHideMutation.isPending} title={svc.hidden ? 'Einblenden' : 'Verstecken'} className="p-1.5 rounded-lg text-white/25 hover:text-white/80 hover:bg-white/[0.06] transition-all">
+                            <button onClick={() => serviceHideMutation.mutate(svc)} disabled={serviceHideMutation.isPending} title={svc.hidden ? 'Einblenden' : 'Verstecken'} className="p-1.5 rounded-lg text-white/50 hover:text-white/80 hover:bg-white/[0.06] transition-all">
                               {svc.hidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                             </button>
                           )}
                           {isManual && (
-                            <button onClick={() => serviceDeleteMutation.mutate(svc.id)} className="p-1.5 rounded-lg text-white/25 hover:text-red-400 hover:bg-red-500/10 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => serviceDeleteMutation.mutate(svc.id)} className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
                           )}
                         </div>
                       </div>
@@ -599,12 +600,12 @@ export default function SettingsPage() {
                   }
                 />
                 <div className="mb-5">
-                  <p className="text-xs text-white/40 mb-2">Akzentfarbe</p>
+                  <p className="text-xs text-white/55 mb-2">Akzentfarbe</p>
                   <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
                     {ACCENT_PRESETS.map(p => (
                       <button key={p.name} onClick={() => updateTheme({ accentColor: p.color })} className={clsx('flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all border', theme.accentColor === p.color ? 'border-white/20 bg-white/[0.06]' : 'border-transparent hover:bg-white/[0.03]')}>
                         <span className={clsx('w-6 h-6 rounded-full', p.bg)} style={{ boxShadow: theme.accentColor === p.color ? `0 0 10px ${p.color}80` : 'none' }} />
-                        <span className="text-[9px] text-white/40">{p.name}</span>
+                        <span className="text-[10px] text-white/55">{p.name}</span>
                       </button>
                     ))}
                   </div>
@@ -648,7 +649,7 @@ export default function SettingsPage() {
                       { key: 'temp', label: 'Temperatur', unit: '°C' },
                     ].map(f => (
                       <div key={f.key}>
-                        <label className="text-xs text-white/40 block mb-1.5">{f.label} <span className="text-white/25">&gt; {f.unit}</span></label>
+                        <label className="text-xs text-white/55 block mb-1.5">{f.label} <span className="text-white/50">&gt; {f.unit}</span></label>
                         <input type="number" className="glass-input w-full" value={(th as any)[f.key]} onChange={e => setThForm({ ...th, [f.key]: Number(e.target.value) })} />
                       </div>
                     ))}
@@ -670,7 +671,7 @@ export default function SettingsPage() {
                     }
                   />
                   {(!channels || channels.length === 0) ? (
-                    <div className="text-center py-10 text-white/30">
+                    <div className="text-center py-10 text-white/50">
                       <Bell className="w-10 h-10 mx-auto mb-2 opacity-30" />
                       <p className="text-sm">Noch keine Benachrichtigungs-Kanäle konfiguriert</p>
                       <p className="text-xs mt-1">Füge einen Discord- oder Telegram-Webhook hinzu</p>
@@ -680,18 +681,18 @@ export default function SettingsPage() {
                       {channels.map(channel => (
                         <div key={channel.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-white/[0.05] bg-white/[0.015] px-3 py-2.5">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className={clsx('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0', channel.type === 'discord' ? 'bg-indigo-500/10' : 'bg-blue-500/10')}>
-                              <span className="text-lg">{channel.type === 'discord' ? '💬' : '📨'}</span>
+                            <div className={clsx('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0', channel.type === 'discord' ? 'bg-indigo-500/10' : (channel.type as string) === 'webpush' ? 'bg-emerald-500/10' : 'bg-blue-500/10')}>
+                              <span className="text-lg">{channel.type === 'discord' ? '💬' : (channel.type as string) === 'webpush' ? '📱' : '📨'}</span>
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate">{channel.name}</p>
                               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                 {channel.events.slice(0, 4).map(e => (
-                                  <span key={e} className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-white/40">
+                                  <span key={e} className="text-[11px] px-1.5 py-0.5 rounded bg-white/[0.04] text-white/55">
                                     {EVENT_OPTIONS.find(o => o.id === e)?.icon} {EVENT_OPTIONS.find(o => o.id === e)?.label || e}
                                   </span>
                                 ))}
-                                {channel.events.length > 4 && <span className="text-[10px] text-white/25">+{channel.events.length - 4}</span>}
+                                {channel.events.length > 4 && <span className="text-[11px] text-white/50">+{channel.events.length - 4}</span>}
                               </div>
                             </div>
                           </div>
@@ -700,7 +701,7 @@ export default function SettingsPage() {
                             <button onClick={() => testMutation.mutate(channel.id)} disabled={testingId === channel.id} className="btn-glass text-xs px-2.5 py-1.5 flex items-center gap-1">
                               {testingId === channel.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <TestTube className="w-3 h-3" />} Test
                             </button>
-                            <button onClick={() => deleteMutation.mutate(channel.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-all">
+                            <button onClick={() => deleteMutation.mutate(channel.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/50 hover:text-red-400 transition-all">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
@@ -714,17 +715,17 @@ export default function SettingsPage() {
               {history && history.length > 0 && (
                 <GlassCard>
                   <div className="relative z-10">
-                    <SectionHeader icon={ScrollText} tint="bg-white/[0.05] border-white/10 text-white/50" title="Letzte Benachrichtigungen" desc="Verlauf gesendeter Alarme" />
+                    <SectionHeader icon={ScrollText} tint="bg-white/[0.05] border-white/10 text-white/65" title="Letzte Benachrichtigungen" desc="Verlauf gesendeter Alarme" />
                     <div className="space-y-1">
                       {history.map((h: any, i: number) => (
                         <div key={h.id || i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2 px-2 rounded-lg hover:bg-white/[0.02] text-xs gap-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-white/25">{h.channel_name}</span>
-                            <span className="text-white/45 font-mono">{h.event_type}</span>
+                            <span className="text-white/50">{h.channel_name}</span>
+                            <span className="text-white/60 font-mono">{h.event_type}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-white/50 truncate max-w-[200px]">{h.message}</span>
-                            <span className="text-white/20 flex-shrink-0">{new Date(h.sent_at + 'Z').toLocaleString('de-DE')}</span>
+                            <span className="text-white/65 truncate max-w-[200px]">{h.message}</span>
+                            <span className="text-white/50 flex-shrink-0">{new Date(h.sent_at + 'Z').toLocaleString('de-DE')}</span>
                           </div>
                         </div>
                       ))}
@@ -748,7 +749,7 @@ export default function SettingsPage() {
                     <div className="flex gap-2">
                       {(['database', 'full'] as const).map(t => (
                         <button key={t} onClick={() => scheduleMutation.mutate({ type: t })} disabled={!schedule}
-                          className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium transition-all', schedule?.type === t ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/40')}>
+                          className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium transition-all', schedule?.type === t ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/55')}>
                           {t === 'database' ? 'Datenbank' : 'Vollständig'}
                         </button>
                       ))}
@@ -758,7 +759,7 @@ export default function SettingsPage() {
                     <div className="flex gap-2 flex-wrap">
                       {[6, 12, 24, 168].map(h => (
                         <button key={h} onClick={() => scheduleMutation.mutate({ intervalHours: h })} disabled={!schedule}
-                          className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium transition-all', schedule?.intervalHours === h ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/40')}>
+                          className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium transition-all', schedule?.intervalHours === h ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/55')}>
                           {h === 168 ? '7 Tage' : `${h} h`}
                         </button>
                       ))}
@@ -771,7 +772,7 @@ export default function SettingsPage() {
                     <div className="flex gap-2 flex-wrap">
                       {[0, 7, 14, 30, 90].map(d => (
                         <button key={d} onClick={() => scheduleMutation.mutate({ retentionDays: d })} disabled={!schedule}
-                          className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium transition-all', (schedule?.retentionDays ?? 0) === d ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/40')}>
+                          className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium transition-all', (schedule?.retentionDays ?? 0) === d ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/55')}>
                           {d === 0 ? 'unbegrenzt' : `${d} Tage`}
                         </button>
                       ))}
@@ -796,7 +797,7 @@ export default function SettingsPage() {
                     }
                   />
                   {(!backups || backups.length === 0) ? (
-                    <p className="text-sm text-white/30 text-center py-8">Noch keine Backups erstellt</p>
+                    <p className="text-sm text-white/50 text-center py-8">Noch keine Backups erstellt</p>
                   ) : (
                     <div className="space-y-1 max-h-[320px] overflow-y-auto">
                       {backups.map((b: any) => (
@@ -805,24 +806,24 @@ export default function SettingsPage() {
                             <span className={clsx('px-2 py-0.5 rounded flex-shrink-0', b.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : b.status === 'running' ? 'bg-amber-500/10 text-amber-400' : 'bg-red-500/10 text-red-400')}>
                               {b.status === 'completed' ? 'OK' : b.status === 'running' ? 'Läuft...' : 'Fehler'}
                             </span>
-                            <span className="text-white/50">{b.type === 'full' ? 'Vollständig' : 'Datenbank'}</span>
-                            {b.size && <span className="text-white/25">{zahl(b.size / 1024 / 1024, 1)} MB</span>}
+                            <span className="text-white/65">{b.type === 'full' ? 'Vollständig' : 'Datenbank'}</span>
+                            {b.size && <span className="text-white/50">{zahl(b.size / 1024 / 1024, 1)} MB</span>}
                             {b.error && <span className="text-red-400 truncate">{b.error}</span>}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="text-white/20">{new Date(b.started_at + 'Z').toLocaleString('de-DE')}</span>
+                            <span className="text-white/50">{new Date(b.started_at + 'Z').toLocaleString('de-DE')}</span>
                             {b.status === 'completed' && (
-                              <button onClick={() => setConfirmRestore(b)} className="p-1.5 rounded-lg hover:bg-amber-500/10 text-white/30 hover:text-amber-400 transition-all" title="Wiederherstellen">
+                              <button onClick={() => setConfirmRestore(b)} className="p-1.5 rounded-lg hover:bg-amber-500/10 text-white/50 hover:text-amber-400 transition-all" title="Wiederherstellen">
                                 <RotateCcw className="w-3.5 h-3.5" />
                               </button>
                             )}
                             {b.status === 'completed' && (
-                              <button onClick={() => handleDownloadBackup(b.id)} disabled={downloadingId === b.id} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-emerald-400 transition-all" title="Herunterladen">
+                              <button onClick={() => handleDownloadBackup(b.id)} disabled={downloadingId === b.id} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/50 hover:text-emerald-400 transition-all" title="Herunterladen">
                                 {downloadingId === b.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                               </button>
                             )}
                             {b.status !== 'running' && (
-                              <button onClick={() => deleteBackupMutation.mutate(b.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-all" title="Löschen">
+                              <button onClick={() => deleteBackupMutation.mutate(b.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/50 hover:text-red-400 transition-all" title="Löschen">
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             )}
@@ -864,7 +865,7 @@ export default function SettingsPage() {
                 <div className="relative z-10">
                   <SectionHeader icon={ScrollText} tint="bg-cyan-500/10 border-cyan-500/20 text-cyan-400" title="Audit Log" desc="Sicherheitsrelevante Aktionen" />
                   {(!auditLog || auditLog.length === 0) ? (
-                    <p className="text-sm text-white/30 text-center py-8">Noch keine Audit-Einträge</p>
+                    <p className="text-sm text-white/50 text-center py-8">Noch keine Audit-Einträge</p>
                   ) : (
                     <div className="space-y-4 max-h-[440px] overflow-y-auto pr-1">
                       {(() => {
@@ -886,7 +887,7 @@ export default function SettingsPage() {
                         }
                         return groups.map(g => (
                           <div key={g.day}>
-                            <p className="text-[10px] uppercase tracking-widest text-white/25 font-medium mb-1.5 px-1">{g.day}</p>
+                            <p className="text-[11px] uppercase tracking-widest text-white/50 font-medium mb-1.5 px-1">{g.day}</p>
                             <div className="space-y-0.5">
                               {g.items.map((entry: any) => {
                                 const f = formatAudit(entry.action, entry.target, entry.details);
@@ -898,9 +899,9 @@ export default function SettingsPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className="text-xs text-white/80 truncate">{f.label}</p>
-                                      {f.detail && <p className="text-[10px] text-white/30 truncate">{f.detail}</p>}
+                                      {f.detail && <p className="text-[11px] text-white/50 truncate">{f.detail}</p>}
                                     </div>
-                                    <span className="text-[10px] text-white/25 tabular-nums flex-shrink-0" title={new Date(entry.created_at + 'Z').toLocaleString('de-DE')}>
+                                    <span className="text-[11px] text-white/50 tabular-nums flex-shrink-0" title={new Date(entry.created_at + 'Z').toLocaleString('de-DE')}>
                                       {new Date(entry.created_at + 'Z').toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                   </div>
@@ -930,19 +931,19 @@ export default function SettingsPage() {
                 <SectionHeader icon={Shield} tint="bg-indigo-500/10 border-indigo-500/20 text-indigo-400" title="Passwort ändern" desc="Nach der Änderung wirst du neu angemeldet" />
                 <div className="space-y-4 max-w-xl">
                   <div>
-                    <label className="text-xs text-white/40 block mb-1.5">Aktuelles Passwort</label>
+                    <label className="text-xs text-white/55 block mb-1.5">Aktuelles Passwort</label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
                       <input type="password" className="glass-input w-full pl-10" value={pwForm.currentPassword} onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))} placeholder="Aktuelles Passwort" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs text-white/40 block mb-1.5">Neues Passwort</label>
+                      <label className="text-xs text-white/55 block mb-1.5">Neues Passwort</label>
                       <input type="password" className="glass-input w-full" value={pwForm.newPassword} onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))} placeholder="Min. 6 Zeichen" />
                     </div>
                     <div>
-                      <label className="text-xs text-white/40 block mb-1.5">Passwort bestätigen</label>
+                      <label className="text-xs text-white/55 block mb-1.5">Passwort bestätigen</label>
                       <input type="password" className="glass-input w-full" value={pwForm.confirmPassword} onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))} placeholder="Passwort wiederholen" />
                     </div>
                   </div>
@@ -964,58 +965,58 @@ export default function SettingsPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-white/40 block mb-1.5">Name</label>
+              <label className="text-xs text-white/55 block mb-1.5">Name</label>
               <input className="glass-input w-full" placeholder="z.B. Mein VPS" value={serverForm.name} onChange={e => setServerForm(f => ({ ...f, name: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-white/40 block mb-1.5">Host / IP</label>
+              <label className="text-xs text-white/55 block mb-1.5">Host / IP</label>
               <input className="glass-input w-full" placeholder="z.B. 188.34.130.109" value={serverForm.host} onChange={e => setServerForm(f => ({ ...f, host: e.target.value }))} />
             </div>
           </div>
           <div>
-            <label className="text-xs text-white/40 block mb-1.5">Glances-URL <span className="text-white/20">(optional, für Monitoring)</span></label>
+            <label className="text-xs text-white/55 block mb-1.5">Glances-URL <span className="text-white/50">(optional, für Monitoring)</span></label>
             <input className="glass-input w-full" placeholder="http://user:pass@host:61208" value={serverForm.glancesUrl} onChange={e => setServerForm(f => ({ ...f, glancesUrl: e.target.value }))} />
           </div>
           <div className="pt-1 border-t border-white/[0.05]">
-            <p className="text-[11px] uppercase tracking-wider text-white/25 mt-3 mb-2">SSH (für Docker-Fernzugriff, optional)</p>
+            <p className="text-[12px] uppercase tracking-wider text-white/50 mt-3 mb-2">SSH (für Docker-Fernzugriff, optional)</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2">
-                <label className="text-xs text-white/40 block mb-1.5">SSH-Host</label>
+                <label className="text-xs text-white/55 block mb-1.5">SSH-Host</label>
                 <input className="glass-input w-full" placeholder="wie Host/IP" value={serverForm.sshHost} onChange={e => setServerForm(f => ({ ...f, sshHost: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs text-white/40 block mb-1.5">Port</label>
+                <label className="text-xs text-white/55 block mb-1.5">Port</label>
                 <input type="number" className="glass-input w-full" value={serverForm.sshPort} onChange={e => setServerForm(f => ({ ...f, sshPort: parseInt(e.target.value) || 22 }))} />
               </div>
               <div>
-                <label className="text-xs text-white/40 block mb-1.5">User</label>
+                <label className="text-xs text-white/55 block mb-1.5">User</label>
                 <input className="glass-input w-full" placeholder="root" value={serverForm.sshUser} onChange={e => setServerForm(f => ({ ...f, sshUser: e.target.value }))} />
               </div>
               <div className="sm:col-span-2">
-                <label className="text-xs text-white/40 block mb-1.5">Key-Pfad (im Container)</label>
+                <label className="text-xs text-white/55 block mb-1.5">Key-Pfad (im Container)</label>
                 <input className="glass-input w-full" value={serverForm.sshKeyPath} onChange={e => setServerForm(f => ({ ...f, sshKeyPath: e.target.value }))} />
               </div>
             </div>
           </div>
           {editingServerId && (
             <div className="pt-1 border-t border-white/[0.05]">
-              <p className="text-[11px] uppercase tracking-wider text-white/25 mt-3 mb-2">Betrieb & Kosten (optional)</p>
+              <p className="text-[12px] uppercase tracking-wider text-white/50 mt-3 mb-2">Betrieb & Kosten (optional)</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-white/40 block mb-1.5">Anbieter</label>
+                  <label className="text-xs text-white/55 block mb-1.5">Anbieter</label>
                   <input className="glass-input w-full" placeholder="z.B. Hetzner" value={serverForm.provider} onChange={e => setServerForm(f => ({ ...f, provider: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-xs text-white/40 block mb-1.5">Standort</label>
+                  <label className="text-xs text-white/55 block mb-1.5">Standort</label>
                   <input className="glass-input w-full" placeholder="z.B. Falkenstein" value={serverForm.location} onChange={e => setServerForm(f => ({ ...f, location: e.target.value }))} />
                 </div>
                 <div className="flex gap-2">
                   <div className="flex-1">
-                    <label className="text-xs text-white/40 block mb-1.5">Kosten / Monat</label>
+                    <label className="text-xs text-white/55 block mb-1.5">Kosten / Monat</label>
                     <input type="number" step="0.01" className="glass-input w-full" placeholder="0" value={serverForm.monthlyCost} onChange={e => setServerForm(f => ({ ...f, monthlyCost: e.target.value }))} />
                   </div>
                   <div className="w-24">
-                    <label className="text-xs text-white/40 block mb-1.5">Währung</label>
+                    <label className="text-xs text-white/55 block mb-1.5">Währung</label>
                     <select className="glass-input w-full" value={serverForm.currency} onChange={e => setServerForm(f => ({ ...f, currency: e.target.value }))}>
                       <option value="EUR">EUR</option>
                       <option value="USD">USD</option>
@@ -1023,21 +1024,21 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-white/40 block mb-1.5">Ablaufdatum</label>
+                  <label className="text-xs text-white/55 block mb-1.5">Ablaufdatum</label>
                   <input type="date" className="glass-input w-full" value={serverForm.expiresAt} onChange={e => setServerForm(f => ({ ...f, expiresAt: e.target.value }))} />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="text-xs text-white/40 block mb-1.5">Cloudflare-Tunnel-Name <span className="text-white/20">(für Tunnel-Status)</span></label>
+                  <label className="text-xs text-white/55 block mb-1.5">Cloudflare-Tunnel-Name <span className="text-white/50">(für Tunnel-Status)</span></label>
                   <input className="glass-input w-full" placeholder="z.B. masons-vps2" value={serverForm.tunnelName} onChange={e => setServerForm(f => ({ ...f, tunnelName: e.target.value }))} />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="text-xs text-white/40 block mb-1.5">Notizen</label>
+                  <label className="text-xs text-white/55 block mb-1.5">Notizen</label>
                   <input className="glass-input w-full" placeholder="frei" value={serverForm.notes} onChange={e => setServerForm(f => ({ ...f, notes: e.target.value }))} />
                 </div>
               </div>
             </div>
           )}
-          {editingServerId && <p className="text-[11px] text-amber-400/70">Hinweis: Verbindungsänderungen greifen nach einem Neustart des Backends vollständig.</p>}
+          {editingServerId && <p className="text-[12px] text-amber-400/70">Hinweis: Verbindungsänderungen greifen nach einem Neustart des Backends vollständig.</p>}
           <button onClick={() => serverMutation.mutate()} disabled={!serverForm.name || !serverForm.host || serverMutation.isPending} className="btn-primary w-full disabled:opacity-40 flex items-center justify-center gap-2">
             {serverMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             {editingServerId ? 'Speichern' : 'Server hinzufügen'}
@@ -1048,7 +1049,7 @@ export default function SettingsPage() {
       {/* Server löschen Bestätigung */}
       <Modal isOpen={!!confirmDeleteServer} onClose={() => setConfirmDeleteServer(null)} title="Server entfernen?" size="sm">
         <div className="space-y-4">
-          <p className="text-sm text-white/60">Der Server wird aus der Fleet entfernt. Der Server selbst und seine Container bleiben unberührt.</p>
+          <p className="text-sm text-white/70">Der Server wird aus der Fleet entfernt. Der Server selbst und seine Container bleiben unberührt.</p>
           <div className="flex gap-2">
             <button onClick={() => setConfirmDeleteServer(null)} className="btn-glass flex-1">Abbrechen</button>
             <button onClick={() => confirmDeleteServer && serverDeleteMutation.mutate(confirmDeleteServer)} disabled={serverDeleteMutation.isPending} className="flex-1 py-2 rounded-xl text-sm font-medium bg-red-500/15 border border-red-500/25 text-red-400 hover:bg-red-500/25 transition-all disabled:opacity-40 flex items-center justify-center gap-2">
@@ -1062,18 +1063,18 @@ export default function SettingsPage() {
       <Modal isOpen={showServiceModal} onClose={() => setShowServiceModal(false)} title="Externen Dienst überwachen" size="sm">
         <div className="space-y-4">
           <div>
-            <label className="text-xs text-white/40 block mb-1.5">Name</label>
+            <label className="text-xs text-white/55 block mb-1.5">Name</label>
             <input className="glass-input w-full" placeholder="z.B. Meine Webseite" value={serviceForm.name} onChange={e => setServiceForm(f => ({ ...f, name: e.target.value }))} />
           </div>
           <div>
-            <label className="text-xs text-white/40 block mb-1.5">URL</label>
+            <label className="text-xs text-white/55 block mb-1.5">URL</label>
             <input className="glass-input w-full" placeholder="https://..." value={serviceForm.url} onChange={e => setServiceForm(f => ({ ...f, url: e.target.value }))} />
           </div>
           <div>
-            <label className="text-xs text-white/40 block mb-1.5">Kategorie</label>
+            <label className="text-xs text-white/55 block mb-1.5">Kategorie</label>
             <input className="glass-input w-full" placeholder="Extern" value={serviceForm.category} onChange={e => setServiceForm(f => ({ ...f, category: e.target.value }))} />
           </div>
-          <p className="text-[11px] text-white/30">Wird alle 60s per HTTP geprüft und erscheint auf der Status-Seite unter {servers.find(s => s.id === selectedSvcServer)?.name || selectedSvcServer}.</p>
+          <p className="text-[12px] text-white/50">Wird alle 60s per HTTP geprüft und erscheint auf der Status-Seite unter {servers.find(s => s.id === selectedSvcServer)?.name || selectedSvcServer}.</p>
           <button onClick={() => serviceAddMutation.mutate()} disabled={!serviceForm.name || !serviceForm.url || serviceAddMutation.isPending} className="btn-primary w-full disabled:opacity-40 flex items-center justify-center gap-2">
             {serviceAddMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Hinzufügen
           </button>
@@ -1086,11 +1087,11 @@ export default function SettingsPage() {
           <div className="space-y-3 text-center py-3">
             <Loader2 className="w-6 h-6 animate-spin mx-auto text-accent-light" />
             <p className="text-sm text-white/70">Wird wiederhergestellt, das Dashboard startet neu…</p>
-            <p className="text-xs text-white/40">Bitte die Seite in ~20 Sekunden neu laden.</p>
+            <p className="text-xs text-white/55">Bitte die Seite in ~20 Sekunden neu laden.</p>
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-white/60">Der aktuelle Stand wird durch das Backup vom <span className="text-white/90">{confirmRestore && new Date(confirmRestore.started_at + 'Z').toLocaleString('de-DE')}</span> ersetzt.</p>
+            <p className="text-sm text-white/70">Der aktuelle Stand wird durch das Backup vom <span className="text-white/90">{confirmRestore && new Date(confirmRestore.started_at + 'Z').toLocaleString('de-DE')}</span> ersetzt.</p>
             <p className="text-xs text-amber-400/80">Vorher wird automatisch eine Sicherheitskopie angelegt. Das Backend startet danach neu.</p>
             <div className="flex gap-2">
               <button onClick={() => setConfirmRestore(null)} className="btn-glass flex-1">Abbrechen</button>
@@ -1106,28 +1107,28 @@ export default function SettingsPage() {
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Kanal hinzufügen" size="sm">
         <div className="space-y-4">
           <div>
-            <label className="text-xs text-white/40 block mb-1.5">Typ</label>
+            <label className="text-xs text-white/55 block mb-1.5">Typ</label>
             <div className="flex gap-2">
               {(['discord', 'telegram'] as const).map(type => (
-                <button key={type} onClick={() => setForm(f => ({ ...f, type }))} className={clsx('flex-1 py-2 rounded-xl text-sm font-medium transition-all', form.type === type ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/40')}>
+                <button key={type} onClick={() => setForm(f => ({ ...f, type }))} className={clsx('flex-1 py-2 rounded-xl text-sm font-medium transition-all', form.type === type ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/55')}>
                   {type === 'discord' ? '💬 Discord' : '📨 Telegram'}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="text-xs text-white/40 block mb-1.5">Name</label>
+            <label className="text-xs text-white/55 block mb-1.5">Name</label>
             <input className="glass-input w-full" placeholder="z.B. Server Alerts" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           </div>
           <div>
-            <label className="text-xs text-white/40 block mb-1.5">Webhook URL</label>
+            <label className="text-xs text-white/55 block mb-1.5">Webhook URL</label>
             <input className="glass-input w-full" placeholder={form.type === 'discord' ? 'https://discord.com/api/webhooks/...' : 'https://api.telegram.org/bot.../sendMessage'} value={form.webhookUrl} onChange={e => setForm(f => ({ ...f, webhookUrl: e.target.value }))} />
           </div>
           <div>
-            <label className="text-xs text-white/40 block mb-1.5">Events</label>
+            <label className="text-xs text-white/55 block mb-1.5">Events</label>
             <div className="grid grid-cols-2 gap-2 max-h-[240px] overflow-y-auto">
               {EVENT_OPTIONS.map(opt => (
-                <button key={opt.id} onClick={() => toggleEvent(opt.id)} className={clsx('py-2 px-3 rounded-xl text-xs text-left transition-all', form.events.includes(opt.id) ? 'bg-accent/15 border border-accent/25 text-white/80' : 'bg-white/[0.03] border border-white/10 text-white/40')}>
+                <button key={opt.id} onClick={() => toggleEvent(opt.id)} className={clsx('py-2 px-3 rounded-xl text-xs text-left transition-all', form.events.includes(opt.id) ? 'bg-accent/15 border border-accent/25 text-white/80' : 'bg-white/[0.03] border border-white/10 text-white/55')}>
                   {opt.icon} {opt.label}
                 </button>
               ))}

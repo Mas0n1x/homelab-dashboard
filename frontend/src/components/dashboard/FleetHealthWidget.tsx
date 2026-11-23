@@ -49,7 +49,7 @@ export function FleetHealthWidget() {
     <GlassCard delay={0.2} hover className="h-full">
       <div className="relative z-10 flex flex-col items-center text-center">
         <div className="flex items-center gap-2 self-start mb-1">
-          <HeartPulse className="w-3.5 h-3.5 text-white/40" />
+          <HeartPulse className="w-3.5 h-3.5 text-white/55" />
           <span className="stat-label">Fleet Health</span>
         </div>
         <div className="relative my-1" style={{ width: size, height: size }}>
@@ -66,7 +66,7 @@ export function FleetHealthWidget() {
           </div>
         </div>
         <span className="text-xs font-medium" style={{ color: meta.color }}>{meta.label}</span>
-        <span className="text-[11px] text-white/30 mt-0.5">{onlineCount}/{servers.length} Server online</span>
+        <span className="text-[12px] text-white/50 mt-0.5">{onlineCount}/{servers.length} Server online</span>
       </div>
     </GlassCard>
   );

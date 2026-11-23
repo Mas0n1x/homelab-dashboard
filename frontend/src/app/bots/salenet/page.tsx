@@ -58,7 +58,7 @@ function Field({ label, value, onChange, placeholder, type = 'text', mono }: {
 }) {
   return (
     <label className="block">
-      <span className="text-[12px] text-white/45 mb-1.5 block">{label}</span>
+      <span className="text-[12px] text-white/60 mb-1.5 block">{label}</span>
       <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
         className={`w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none focus:border-accent/40 transition-colors ${mono ? 'font-mono text-[12px]' : ''}`} />
     </label>
@@ -157,7 +157,7 @@ export default function SalenetBotPage() {
   return (
     <PageTransition>
       <div className="max-w-5xl mx-auto md:py-2">
-        <Link href="/bots" className="inline-flex items-center gap-1.5 text-[13px] text-white/40 hover:text-white/70 mb-4 transition-colors">
+        <Link href="/bots" className="inline-flex items-center gap-1.5 text-[13px] text-white/55 hover:text-white/70 mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Alle Bots
         </Link>
 
@@ -170,12 +170,12 @@ export default function SalenetBotPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-semibold">SaleNet-Support-Bot</h1>
-                <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[11px] font-medium ${online ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300/80'}`}>
+                <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[12px] font-medium ${online ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300/80'}`}>
                   <Circle className={`w-2 h-2 ${online ? 'fill-emerald-400 text-emerald-400' : 'fill-red-400 text-red-400'}`} />
                   {online ? 'Online' : status?.status === 'disabled' ? 'Kein Token' : 'Offline'}
                 </span>
               </div>
-              <div className="text-[12px] text-white/40 truncate">
+              <div className="text-[12px] text-white/55 truncate">
                 {status?.guild_name ? `${status.guild_name} · ` : ''}
                 {status?.member_count ? `${status.member_count} Mitglieder` : 'LawNet Sales'}
                 {status?.last_error ? ` · ${status.last_error}` : ''}
@@ -192,14 +192,14 @@ export default function SalenetBotPage() {
         <div className="flex gap-1 mb-5 overflow-x-auto scrollbar-hide">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] whitespace-nowrap transition-colors ${tab === t.id ? 'bg-white/[0.08] text-white' : 'text-white/45 hover:text-white/75 hover:bg-white/[0.04]'}`}>
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] whitespace-nowrap transition-colors ${tab === t.id ? 'bg-white/[0.08] text-white' : 'text-white/60 hover:text-white/75 hover:bg-white/[0.04]'}`}>
               <t.icon className="w-4 h-4" /> {t.label}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="glass-card rounded-2xl p-8 flex items-center justify-center text-white/40">
+          <div className="glass-card rounded-2xl p-8 flex items-center justify-center text-white/55">
             <Loader2 className="w-5 h-5 animate-spin mr-2" /> Lade…
           </div>
         ) : (
@@ -234,14 +234,14 @@ export default function SalenetBotPage() {
                   <h2 className="text-sm font-semibold text-white/70">Willkommen / Verabschiedung</h2>
                   <div>
                     <label className="block">
-                      <span className="text-[12px] text-white/45 mb-1.5 block">Willkommens-Text</span>
+                      <span className="text-[12px] text-white/60 mb-1.5 block">Willkommens-Text</span>
                       <textarea ref={welcomeRef} value={cfg.discord_welcome_message || ''} onChange={e => set('discord_welcome_message', e.target.value)} rows={2} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none focus:border-accent/40 resize-y" />
                     </label>
                     <PlaceholderChips tokens={['{user}', '{server}']} value={cfg.discord_welcome_message || ''} onChange={v => set('discord_welcome_message', v)} textareaRef={welcomeRef} />
                   </div>
                   <div>
                     <label className="block">
-                      <span className="text-[12px] text-white/45 mb-1.5 block">Verabschiedungs-Text</span>
+                      <span className="text-[12px] text-white/60 mb-1.5 block">Verabschiedungs-Text</span>
                       <textarea ref={leaveRef} value={cfg.discord_leave_message || ''} onChange={e => set('discord_leave_message', e.target.value)} rows={2} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none focus:border-accent/40 resize-y" />
                     </label>
                     <PlaceholderChips tokens={['{user}', '{server}']} value={cfg.discord_leave_message || ''} onChange={v => set('discord_leave_message', v)} textareaRef={leaveRef} />
@@ -283,7 +283,7 @@ function ContentTab({ flash, post, busy, setBusy, dir }: { flash: (ok: boolean, 
   const set = (k: string, v: string) => setCfg(p => ({ ...p, [k]: v }));
   const save = async () => { setBusy('save'); const r = await botCall('salenet', '/content/config', { method: 'PUT', body: JSON.stringify(cfg) }); setBusy(null); flash(r.ok, r.ok ? 'Gespeichert.' : r.data?.error || 'Fehler'); };
   const syncProducts = async () => { setBusy('sync'); const r = await botCall<{ synced?: number; error?: string }>('salenet', '/sync-products', { method: 'POST' }); setBusy(null); flash(r.ok, r.ok ? `${r.data.synced ?? 0} Produkte synchronisiert.` : r.data?.error || 'Fehler'); };
-  if (!loaded) return <div className="glass-card rounded-2xl p-6 text-white/40 text-sm">Lade…</div>;
+  if (!loaded) return <div className="glass-card rounded-2xl p-6 text-white/55 text-sm">Lade…</div>;
   return (
     <div className="space-y-4">
       <div className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -293,11 +293,11 @@ function ContentTab({ flash, post, busy, setBusy, dir }: { flash: (ok: boolean, 
         <ChannelPicker label="Systemstatus — Kanal" value={cfg.content_status_channel_id || ''} onChange={v => set('content_status_channel_id', v)} dir={dir} />
       </div>
       <div className="glass-card rounded-2xl p-5 space-y-3">
-        <label className="block text-[12px] text-white/50">Regeln — Titel</label>
+        <label className="block text-[12px] text-white/65">Regeln — Titel</label>
         <input value={cfg.content_rules_title || ''} onChange={e => set('content_rules_title', e.target.value)} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none focus:border-accent/40" />
-        <label className="block text-[12px] text-white/50">Regeln — Text (Markdown)</label>
+        <label className="block text-[12px] text-white/65">Regeln — Text (Markdown)</label>
         <textarea value={cfg.content_rules_text || ''} onChange={e => set('content_rules_text', e.target.value)} rows={10} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none focus:border-accent/40 resize-y" />
-        <p className="text-[11px] text-white/35">Erst speichern, dann „Regeln“ posten.</p>
+        <p className="text-[12px] text-white/50">Erst speichern, dann „Regeln“ posten.</p>
       </div>
       <div className="glass-card rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between">
@@ -360,7 +360,7 @@ function ModerationTab({ flash, dir }: { flash: (ok: boolean, m: string) => void
         <h2 className="text-sm font-semibold text-white/70">Aktion ausführen</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <label className="block">
-            <span className="text-[12px] text-white/45 mb-1.5 block">Aktion</span>
+            <span className="text-[12px] text-white/60 mb-1.5 block">Aktion</span>
             <select value={form.action} onChange={e => setForm({ ...form, action: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none">
               <option value="warn">Verwarnen</option>
               <option value="kick">Kicken</option>
@@ -375,12 +375,12 @@ function ModerationTab({ flash, dir }: { flash: (ok: boolean, m: string) => void
       <div className="glass-card rounded-2xl p-5 space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-white/70">Slowmode</h2>
-          <p className="text-[12px] text-white/40 mt-0.5">Begrenzt, wie oft jemand in einem Kanal schreiben darf.</p>
+          <p className="text-[12px] text-white/55 mt-0.5">Begrenzt, wie oft jemand in einem Kanal schreiben darf.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <ChannelPicker label="Kanal" value={slow.channel_id} onChange={v => setSlow({ ...slow, channel_id: v })} dir={dir} />
           <label className="block">
-            <span className="text-[12px] text-white/45 mb-1.5 block">Wartezeit</span>
+            <span className="text-[12px] text-white/60 mb-1.5 block">Wartezeit</span>
             <select value={slow.seconds} onChange={e => setSlow({ ...slow, seconds: parseInt(e.target.value, 10) })}
               className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none">
               {SLOWMODE_STEPS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -393,13 +393,13 @@ function ModerationTab({ flash, dir }: { flash: (ok: boolean, m: string) => void
       </div>
       <div className="glass-card rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-white/70 mb-3">Letzte Aktionen</h2>
-        {actions.length === 0 ? <div className="text-white/30 text-sm py-4 text-center">Keine Einträge.</div> : (
+        {actions.length === 0 ? <div className="text-white/50 text-sm py-4 text-center">Keine Einträge.</div> : (
           <div className="space-y-1 max-h-80 overflow-y-auto scrollbar-hide text-[13px]">
             {actions.map((a, i) => (
               <div key={a.id ?? i} className="flex gap-3 px-3 py-1.5 rounded-lg hover:bg-white/[0.03]">
                 <span className="text-accent-light/70 w-16">{a.action}</span>
-                <span className="text-white/60 flex-1 truncate">{a.target_username || a.target_user_id} — {a.reason || '—'}</span>
-                <span className="text-white/30 text-[11px]">{(a.created_at || '').slice(5, 16)}</span>
+                <span className="text-white/70 flex-1 truncate">{a.target_username || a.target_user_id} — {a.reason || '—'}</span>
+                <span className="text-white/50 text-[12px]">{(a.created_at || '').slice(5, 16)}</span>
               </div>
             ))}
           </div>
@@ -420,7 +420,7 @@ function TicketsTab({ flash }: { flash: (ok: boolean, m: string) => void }) {
         <h2 className="text-sm font-semibold text-white/70">Tickets</h2>
         <ActionBtn busy={false} onClick={load} icon={RefreshCw} label="Neu laden" small />
       </div>
-      {tickets.length === 0 ? <div className="text-white/30 text-sm py-6 text-center">Keine Tickets.</div> : (
+      {tickets.length === 0 ? <div className="text-white/50 text-sm py-6 text-center">Keine Tickets.</div> : (
         <div className="space-y-1.5">
           {tickets.map(t => (
             <div key={t.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] text-[13px]">
@@ -450,7 +450,7 @@ function AutomodTab({ flash }: { flash: (ok: boolean, m: string) => void }) {
         <h2 className="text-sm font-semibold text-white/70">Neue Regel</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <label className="block">
-            <span className="text-[12px] text-white/45 mb-1.5 block">Typ</span>
+            <span className="text-[12px] text-white/60 mb-1.5 block">Typ</span>
             <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none">
               <option value="word">Wort-Filter</option>
               <option value="invite">Invite-Filter</option>
@@ -459,7 +459,7 @@ function AutomodTab({ flash }: { flash: (ok: boolean, m: string) => void }) {
           </label>
           <Field label="Muster / Wort" value={form.pattern} onChange={v => setForm({ ...form, pattern: v })} />
           <label className="block">
-            <span className="text-[12px] text-white/45 mb-1.5 block">Aktion</span>
+            <span className="text-[12px] text-white/60 mb-1.5 block">Aktion</span>
             <select value={form.action} onChange={e => setForm({ ...form, action: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-black/25 border border-white/[0.08] text-sm text-white/85 outline-none">
               <option value="delete">Löschen</option>
               <option value="warn">Verwarnen</option>
@@ -471,14 +471,14 @@ function AutomodTab({ flash }: { flash: (ok: boolean, m: string) => void }) {
       </div>
       <div className="glass-card rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-white/70 mb-3">Regeln</h2>
-        {rules.length === 0 ? <div className="text-white/30 text-sm py-4 text-center">Keine Regeln.</div> : (
+        {rules.length === 0 ? <div className="text-white/50 text-sm py-4 text-center">Keine Regeln.</div> : (
           <div className="space-y-1.5">
             {rules.map(r => (
               <div key={r.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] text-[13px]">
                 <span className="text-accent-light/70 w-16">{r.type}</span>
-                <span className="text-white/60 flex-1 truncate">{r.pattern || '—'} → {r.action}</span>
+                <span className="text-white/70 flex-1 truncate">{r.pattern || '—'} → {r.action}</span>
                 <Toggle checked={!!r.is_active} onChange={() => toggle(r)} />
-                <button onClick={() => del(r.id)} className="text-white/30 hover:text-red-300"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => del(r.id)} className="text-white/50 hover:text-red-300"><Trash2 className="w-4 h-4" /></button>
               </div>
             ))}
           </div>
@@ -513,7 +513,7 @@ function GithubTab({ flash }: { flash: (ok: boolean, m: string) => void }) {
       {hook && (
         <div className="glass-card rounded-2xl p-5 space-y-3">
           <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-white/40" />
+            <Link2 className="w-4 h-4 text-white/55" />
             <h2 className="text-sm font-semibold text-white/70">Webhook bei GitHub eintragen</h2>
           </div>
           <div className="flex items-center gap-2">
@@ -526,21 +526,21 @@ function GithubTab({ flash }: { flash: (ok: boolean, m: string) => void }) {
               Kopieren
             </button>
           </div>
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-white/40">
-            <span>Content-Type: <span className="text-white/60">{hook.content_type}</span></span>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-white/55">
+            <span>Content-Type: <span className="text-white/70">{hook.content_type}</span></span>
             <span>Secret: <span className={hook.secret_configured ? 'text-emerald-300/80' : 'text-amber-300/80'}>{hook.secret_configured ? 'gesetzt' : 'fehlt'}</span></span>
-            <span>Ereignisse: <span className="text-white/60">{(hook.events_supported || []).join(', ')}</span></span>
+            <span>Ereignisse: <span className="text-white/70">{(hook.events_supported || []).join(', ')}</span></span>
           </div>
         </div>
       )}
       <div className="glass-card rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-white/70 mb-3">Repo-Abonnements ({subs.length})</h2>
-        {subs.length === 0 ? <div className="text-white/30 text-sm py-4 text-center">Keine Abonnements.</div> : (
+        {subs.length === 0 ? <div className="text-white/50 text-sm py-4 text-center">Keine Abonnements.</div> : (
           <div className="space-y-1.5 text-[13px]">
             {subs.map(s => (
               <div key={s.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02]">
                 <span className="text-white/70 flex-1 truncate">{s.repo_full_name}</span>
-                <span className={`text-[11px] px-2 py-0.5 rounded-md ${s.is_active ? 'bg-emerald-500/10 text-emerald-300' : 'bg-white/[0.05] text-white/40'}`}>{s.is_active ? 'aktiv' : 'aus'}</span>
+                <span className={`text-[12px] px-2 py-0.5 rounded-md ${s.is_active ? 'bg-emerald-500/10 text-emerald-300' : 'bg-white/[0.05] text-white/55'}`}>{s.is_active ? 'aktiv' : 'aus'}</span>
               </div>
             ))}
           </div>
@@ -561,12 +561,12 @@ function LogsTab() {
         <h2 className="text-sm font-semibold text-white/70">Bot-Logs</h2>
         <ActionBtn busy={false} onClick={load} icon={RefreshCw} label="Neu laden" small />
       </div>
-      {loading ? <div className="text-white/40 text-sm py-6 text-center"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Lade…</div>
-        : logs.length === 0 ? <div className="text-white/30 text-sm py-6 text-center">Keine Einträge.</div> : (
+      {loading ? <div className="text-white/55 text-sm py-6 text-center"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Lade…</div>
+        : logs.length === 0 ? <div className="text-white/50 text-sm py-6 text-center">Keine Einträge.</div> : (
           <div className="max-h-[55vh] overflow-y-auto space-y-1 scrollbar-hide font-mono text-[12px]">
             {logs.map((l, i) => (
               <div key={l.id ?? i} className="flex gap-3 px-3 py-1.5 rounded-lg hover:bg-white/[0.03]">
-                <span className="text-white/30 whitespace-nowrap">{(l.created_at || '').slice(5, 16)}</span>
+                <span className="text-white/50 whitespace-nowrap">{(l.created_at || '').slice(5, 16)}</span>
                 <span className="text-accent-light/70 whitespace-nowrap">{l.event_type}</span>
                 <span className="text-white/55 truncate">{typeof l.payload === 'string' ? l.payload : JSON.stringify(l.payload)}</span>
               </div>

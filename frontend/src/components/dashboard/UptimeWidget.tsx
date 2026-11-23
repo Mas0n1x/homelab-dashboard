@@ -43,15 +43,15 @@ export function UptimeWidget() {
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-2">
             <span className="stat-label">Service Health</span>
-            <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-emerald-400/60 transition-colors" />
+            <ChevronRight className="w-4 h-4 text-white/50 group-hover:text-emerald-400/60 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="stat-value text-emerald-400"><AnimatedNumber value={online} /></span>
-            <span className="text-white/30 text-sm">/ {total}</span>
+            <span className="text-white/50 text-sm">/ {total}</span>
           </div>
-          <p className="text-xs text-white/30 mt-1">Dienste gesund (24h) · fleetweit</p>
+          <p className="text-xs text-white/50 mt-1">Dienste gesund (24h) · fleetweit</p>
           <div className="mt-2 pt-2 border-t border-white/[0.06] flex items-center justify-between">
-            <span className="text-xs text-white/40">Ø Verfügbarkeit</span>
+            <span className="text-xs text-white/55">Ø Verfügbarkeit</span>
             <span className="text-xs text-emerald-400 font-medium">{zahl(avgUptime, 1)}%</span>
           </div>
         </div>

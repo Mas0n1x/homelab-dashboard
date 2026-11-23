@@ -111,10 +111,10 @@ export function MailAdmin() {
               placeholder="Anzeigename (z.B. Max Mustermann)"
               className="glass-input w-full text-sm"
             />
-            <p className="text-[10px] text-white/30">
+            <p className="text-[11px] text-white/50">
               E-Mail wird: {newUsername || '...'}@{selectedDomain}
               <br />
-              <span className="text-white/20">Kein Passwort erforderlich - nur Zugriff über Dashboard</span>
+              <span className="text-white/50">Kein Passwort erforderlich - nur Zugriff über Dashboard</span>
             </p>
             <div className="flex gap-2">
               <button
@@ -146,7 +146,7 @@ export function MailAdmin() {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{account.description || account.name}</p>
-                    <p className="text-[10px] text-white/40">
+                    <p className="text-[11px] text-white/55">
                       {account.emails?.join(', ') || account.name}
                     </p>
                   </div>
@@ -165,7 +165,7 @@ export function MailAdmin() {
                 </div>
               ))
           ) : (
-            <p className="text-xs text-white/30 text-center py-4">
+            <p className="text-xs text-white/50 text-center py-4">
               {Array.isArray(accounts) ? 'Keine Konten vorhanden' : 'Konten werden geladen...'}
             </p>
           )}
@@ -199,7 +199,7 @@ export function MailAdmin() {
               className="p-0.5 rounded hover:bg-white/10"
               title="Alle kopieren"
             >
-              {copiedDkim ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3 text-white/30" />}
+              {copiedDkim ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3 text-white/50" />}
             </button>
           )}
         </div>
@@ -209,14 +209,14 @@ export function MailAdmin() {
             dnsRecordsList.map((record, i) => (
               <div key={i} className="p-2 rounded bg-white/[0.04]">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-white/[0.08]">{record.type}</span>
-                  <span className="text-white/50 text-[11px] truncate">{record.name}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[11px] font-mono font-bold bg-white/[0.08]">{record.type}</span>
+                  <span className="text-white/65 text-[12px] truncate">{record.name}</span>
                 </div>
-                <code className="text-white/70 font-mono text-[11px] break-all">{record.content}</code>
+                <code className="text-white/70 font-mono text-[12px] break-all">{record.content}</code>
               </div>
             ))
           ) : (
-            <p className="text-white/30 text-center py-4">DNS-Records werden geladen...</p>
+            <p className="text-white/50 text-center py-4">DNS-Records werden geladen...</p>
           )}
         </div>
       </div>

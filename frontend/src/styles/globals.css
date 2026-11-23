@@ -3,7 +3,6 @@
  * Copyright (c) 2024-2026 DEV Mas0n1x.
  * Licensed under the MIT License.
  */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import '@xterm/xterm/css/xterm.css';
 
 @tailwind base;
@@ -43,7 +42,7 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -52,6 +51,31 @@
     background-color: #050510;
     color: rgba(255, 255, 255, 0.95);
     overflow-x: hidden;
+  }
+
+  /* Sichtbarer Tastaturfokus — vorher gab es fast nirgends einen. */
+  :focus-visible {
+    outline: 2px solid rgba(var(--accent-rgb), 0.8);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  input:focus-visible, textarea:focus-visible, select:focus-visible {
+    outline-offset: 0;
+  }
+
+  /* Wer Bewegung reduziert haben möchte, bekommt sie überall reduziert. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    /* Ladeanzeigen dürfen weiterdrehen — sonst wirkt ein hängender Ladevorgang wie ein Absturz. */
+    .animate-spin {
+      animation-duration: 1s !important;
+      animation-iteration-count: infinite !important;
+    }
   }
 
   * {

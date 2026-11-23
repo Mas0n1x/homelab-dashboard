@@ -99,19 +99,19 @@ export function ShareCreateModal({ target, onClose }: { target: { serverId: stri
           </div>
 
           <label className="block space-y-1.5">
-            <span className="text-xs text-white/40">Link gültig für</span>
+            <span className="text-xs text-white/55">Link gültig für</span>
             <select value={dauer} onChange={e => setDauer(Number(e.target.value))} className={feld}>
               {DAUER.map(d => <option key={d.value} value={d.value} className="bg-[#12122a]">{d.label}</option>)}
             </select>
           </label>
 
           <label className="block space-y-1.5">
-            <span className="text-xs text-white/40">Passwort (optional)</span>
+            <span className="text-xs text-white/55">Passwort (optional)</span>
             <input type="text" value={passwort} onChange={e => setPasswort(e.target.value)} placeholder="Leer lassen = kein Passwort" autoComplete="off" className={feld} />
           </label>
 
           <label className="block space-y-1.5">
-            <span className="text-xs text-white/40">Maximale Downloads (optional)</span>
+            <span className="text-xs text-white/55">Maximale Downloads (optional)</span>
             <input type="number" min={1} value={limit} onChange={e => setLimit(e.target.value)} placeholder="Unbegrenzt" className={feld} />
           </label>
 
@@ -122,7 +122,7 @@ export function ShareCreateModal({ target, onClose }: { target: { serverId: stri
           )}
 
           <div className="flex justify-end gap-2 pt-1">
-            <button onClick={schliessen} className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/60 transition-colors">Abbrechen</button>
+            <button onClick={schliessen} className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/70 transition-colors">Abbrechen</button>
             <button onClick={anlegen} disabled={busy || (!!passwort && passwort.length < 4)} className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-accent/20 hover:bg-accent/30 text-accent-light font-medium transition-colors disabled:opacity-30">
               {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Link erstellen
             </button>
@@ -132,17 +132,17 @@ export function ShareCreateModal({ target, onClose }: { target: { serverId: stri
 
       {ergebnis && (
         <div className="space-y-4">
-          <p className="text-sm text-white/60">Jeder mit diesem Link kann die Datei herunterladen{ergebnis.passwort ? ' (Passwort nötig)' : ''}.</p>
+          <p className="text-sm text-white/70">Jeder mit diesem Link kann die Datei herunterladen{ergebnis.passwort ? ' (Passwort nötig)' : ''}.</p>
           <div className="flex items-center gap-2">
             <input readOnly value={link} onFocus={e => e.currentTarget.select()} className={`${feld} font-mono text-xs`} />
             <CopyButton text={link} />
           </div>
-          <p className="text-xs text-white/30">
+          <p className="text-xs text-white/50">
             {ergebnis.expiresAt ? `Gültig bis ${formatDateTime(ergebnis.expiresAt)}` : 'Ohne Ablaufdatum'}
             {ergebnis.maxDownloads ? ` · maximal ${ergebnis.maxDownloads} Downloads` : ''}
           </p>
           <div className="flex justify-end">
-            <button onClick={schliessen} className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/60 transition-colors">Fertig</button>
+            <button onClick={schliessen} className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/70 transition-colors">Fertig</button>
           </div>
         </div>
       )}
@@ -164,9 +164,9 @@ export function SharesListModal({ open, onClose }: { open: boolean; onClose: () 
   return (
     <Modal isOpen={open} onClose={onClose} title="Freigaben" size="lg">
       {isLoading ? (
-        <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-white/30" /></div>
+        <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-white/50" /></div>
       ) : !data?.length ? (
-        <p className="text-sm text-white/40 text-center py-10">Noch keine Links erstellt. In der Dateiliste auf das Teilen-Symbol klicken.</p>
+        <p className="text-sm text-white/55 text-center py-10">Noch keine Links erstellt. In der Dateiliste auf das Teilen-Symbol klicken.</p>
       ) : (
         <div className="divide-y divide-white/[0.05] max-h-[60vh] overflow-y-auto">
           {data.map(s => (
@@ -175,18 +175,18 @@ export function SharesListModal({ open, onClose }: { open: boolean; onClose: () 
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-sm text-white/80 truncate">{s.name}</span>
                   {s.passwort && <Lock className="w-3 h-3 text-amber-400/70 flex-shrink-0" />}
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${s.status === 'aktiv' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/[0.06] text-white/40'}`}>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${s.status === 'aktiv' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/[0.06] text-white/55'}`}>
                     {s.status === 'aktiv' ? 'Aktiv' : 'Beendet'}
                   </span>
                 </div>
-                <p className="text-[11px] text-white/30">
+                <p className="text-[12px] text-white/50">
                   {s.size != null ? `${formatBytes(s.size)} · ` : ''}
                   {s.downloads}{s.maxDownloads ? ` / ${s.maxDownloads}` : ''} Downloads ·{' '}
                   {s.expiresAt ? `bis ${formatDateTime(s.expiresAt)}` : 'ohne Ablauf'}
                 </p>
               </div>
               {s.status === 'aktiv' && <CopyButton text={api.shareUrl(s.token)} />}
-              <button onClick={() => widerrufen(s)} title="Widerrufen" className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0">
+              <button onClick={() => widerrufen(s)} title="Widerrufen" className="p-2 rounded-lg text-white/55 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>

@@ -745,3 +745,83 @@ export interface UnifiedEmail {
   accountDisplayName: string
   mailboxId: string
 }
+
+
+// ── Alarme, Aufmerksamkeit, Langzeit-Metriken ──────────────────────────────
+
+export type AttentionSeverity = 'critical' | 'warning' | 'info'
+
+export interface AttentionItem {
+  id: string
+  severity: AttentionSeverity
+  kind: string
+  title: string
+  detail: string
+  href: string
+  serverId: string | null
+}
+
+export interface AttentionBoard {
+  status: 'ok' | 'warning' | 'critical'
+  counts: Record<AttentionSeverity, number>
+  items: AttentionItem[]
+  generatedAt: string
+}
+
+export interface ActiveAlert {
+  metric: 'cpu' | 'ram' | 'disk' | 'temp'
+  label: string
+  subject: string | null
+  value: number
+  limit: number
+  since: string | null
+}
+
+export interface MaintenanceWindow {
+  id: string
+  serverId: string
+  until: string
+  reason: string
+  createdAt?: string
+}
+
+export interface ServerAlertState {
+  name: string
+  alerts: ActiveAlert[]
+  /** Wirksame „high"-Schwellen; null = Metrik für diesen Server abgeschaltet. */
+  limits: { cpu: number | null; ram: number | null; disk: number | null; temp: number | null }
+  maintenance: { id: string; until: string; reason: string } | null
+}
+
+export interface AlertOverview {
+  servers: Record<string, ServerAlertState>
+  maintenance: MaintenanceWindow[]
+}
+
+export type AlertOverrides = Record<string, Partial<Record<'cpu' | 'ram' | 'disk' | 'temp', number | null>>>
+
+export interface MetricRangePoint {
+  ts: string
+  cpu: number | null
+  mem: number | null
+  disk: number | null
+  rx: number | null
+  tx: number | null
+  temp: number | null
+  cpuMax: number | null
+  memMax: number | null
+}
+
+export type MetricRange = '1h' | '6h' | '24h' | '7d' | '30d' | '90d'
+
+export interface MemoryTrend {
+  serverId: string
+  serverName: string
+  days: number
+  current: number | null
+  slopePerDay: number | null
+  r2: number | null
+  daysUntilFull: number | null
+  status: 'unbekannt' | 'stabil' | 'steigend' | 'fallend'
+  series: { day: string; value: number }[]
+}

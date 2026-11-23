@@ -83,7 +83,7 @@ export function UnifiedInbox({ overview }: { overview: MailOverview | undefined 
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 text-xs text-white/40">
+        <div className="flex items-center gap-2 text-xs text-white/55">
           <Inbox className="w-3.5 h-3.5" />
           {emails.length} {emails.length === 1 ? 'E-Mail' : 'E-Mails'} aus {accounts.length}{' '}
           {accounts.length === 1 ? 'Postfach' : 'Postfächern'}
@@ -93,7 +93,7 @@ export function UnifiedInbox({ overview }: { overview: MailOverview | undefined 
             queryClient.invalidateQueries({ queryKey: ['mail-unified'] });
             queryClient.invalidateQueries({ queryKey: ['mail-overview'] });
           }}
-          className="btn-glass p-1.5 text-white/60 hover:text-white transition-all"
+          className="btn-glass p-1.5 text-white/70 hover:text-white transition-all"
           title="Aktualisieren"
         >
           <RefreshCw className={clsx('w-4 h-4', isFetching && 'animate-spin')} />
@@ -102,8 +102,8 @@ export function UnifiedInbox({ overview }: { overview: MailOverview | undefined 
 
       {emails.length === 0 ? (
         <div className="glass-card p-10 text-center">
-          <Inbox className="w-8 h-8 text-white/15 mx-auto mb-3" />
-          <p className="text-white/35 text-sm">Alle Postfächer sind leer.</p>
+          <Inbox className="w-8 h-8 text-white/50 mx-auto mb-3" />
+          <p className="text-white/50 text-sm">Alle Postfächer sind leer.</p>
         </div>
       ) : (
         <div className="glass-card divide-y divide-white/[0.06] overflow-hidden">
@@ -133,22 +133,22 @@ export function UnifiedInbox({ overview }: { overview: MailOverview | undefined 
                     <span className={clsx('text-sm truncate', !isRead ? 'font-semibold' : 'text-white/70')}>
                       {formatSender(mail.from)}
                     </span>
-                    <span className="text-[10px] text-white/30 shrink-0 ml-auto tabular-nums">
+                    <span className="text-[11px] text-white/50 shrink-0 ml-auto tabular-nums">
                       {formatDate(mail.receivedAt)}
                     </span>
                   </div>
-                  <p className={clsx('text-sm truncate', !isRead ? 'text-white/90' : 'text-white/60')}>
+                  <p className={clsx('text-sm truncate', !isRead ? 'text-white/90' : 'text-white/70')}>
                     {mail.subject || '(Kein Betreff)'}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className={clsx('text-[10px] font-medium flex-shrink-0', farbe.text)}>
+                    <span className={clsx('text-[11px] font-medium flex-shrink-0', farbe.text)}>
                       {mail.accountDisplayName}
                     </span>
-                    <p className="text-xs text-white/30 truncate">{mail.preview}</p>
+                    <p className="text-xs text-white/50 truncate">{mail.preview}</p>
                   </div>
                 </div>
 
-                {mail.hasAttachment && <Paperclip className="w-3.5 h-3.5 text-white/30 shrink-0" />}
+                {mail.hasAttachment && <Paperclip className="w-3.5 h-3.5 text-white/50 shrink-0" />}
               </div>
             );
           })}

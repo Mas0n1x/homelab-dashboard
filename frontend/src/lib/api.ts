@@ -10,6 +10,7 @@ import type {
   StatusBoard, FleetChange, TimeEntry, TimeSummary, BillingRate, BillingProfile, InvoiceDraft,
   ImageUpdateSummary, DiskForecast, EtsyStatus, EtsyOrders,
   MailOverview, UnifiedEmail,
+  AttentionBoard, AlertOverview, AlertOverrides, MaintenanceWindow, MetricRange, MetricRangePoint, MemoryTrend,
 } from './types';
 
 const API_BASE = typeof window !== 'undefined'
@@ -161,6 +162,24 @@ export const deleteServer = (id: string) =>
 // Metrik-Verlauf (Sparklines/Charts)
 export const getMetrics = (serverId = 'local', minutes = 60) =>
   fetchApi<MetricSample[]>(`/metrics/${serverId}?minutes=${minutes}`);
+
+export const getMetricsRange = (serverId: string, range: MetricRange) =>
+  fetchApi<{ range: MetricRange; points: MetricRangePoint[] }>(`/metrics/${serverId}/range?range=${range}`);
+export const getMemoryTrends = () => fetchApi<MemoryTrend[]>('/metrics/memory-trends');
+
+// Aufmerksamkeit + Alarme
+export const getAttention = () => fetchApi<AttentionBoard>('/status/attention');
+export const getAlertOverview = () => fetchApi<AlertOverview>('/alerts/active');
+export const getAlertOverrides = () => fetchApi<AlertOverrides>('/alerts/overrides');
+export const setAlertOverrides = (data: AlertOverrides) =>
+  fetchApi<AlertOverrides>('/alerts/overrides', { method: 'PUT', body: JSON.stringify(data) });
+export const addMaintenanceWindow = (data: { serverId: string; minutes: number; reason?: string }) =>
+  fetchApi<MaintenanceWindow>('/alerts/maintenance', { method: 'POST', body: JSON.stringify(data) });
+export const removeMaintenanceWindow = (id: string) =>
+  fetchApi(`/alerts/maintenance/${id}`, { method: 'DELETE' });
+export const getVapidKey = () => fetchApi<{ publicKey: string }>('/alerts/vapid-key');
+export const subscribePush = (data: { subscription: unknown; name?: string }) =>
+  fetchApi<{ id: string; updated: boolean }>('/alerts/push/subscribe', { method: 'POST', body: JSON.stringify(data) });
 
 // Cloudflare-Tunnel-Status
 export const getTunnels = () => fetchApi<TunnelInfo[]>('/tunnels');

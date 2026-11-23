@@ -86,8 +86,8 @@ function Gauge({ value, color, label, detail }: {
           <span className="text-xs font-mono font-bold" style={{ color }}>{zahl(value, 1)}%</span>
         </div>
       </div>
-      <span className="text-[10px] text-white/40 uppercase tracking-wider">{label}</span>
-      <span className="text-[10px] text-white/30 font-mono">{detail}</span>
+      <span className="text-[11px] text-white/55 uppercase tracking-wider">{label}</span>
+      <span className="text-[11px] text-white/50 font-mono">{detail}</span>
     </div>
   );
 }
@@ -149,9 +149,9 @@ export function ServiceDetail({ service }: { service: Service }) {
         {isDocker && stat && (
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
             <div className="flex items-center gap-2 mb-3">
-              <HardDrive className="w-3.5 h-3.5 text-white/30" />
-              <span className="text-xs font-medium text-white/50">Ressourcen-Verbrauch</span>
-              <span className="text-[10px] text-white/20 font-mono ml-auto">{service.image}</span>
+              <HardDrive className="w-3.5 h-3.5 text-white/50" />
+              <span className="text-xs font-medium text-white/65">Ressourcen-Verbrauch</span>
+              <span className="text-[11px] text-white/50 font-mono ml-auto">{service.image}</span>
             </div>
 
             {/* Gauges */}
@@ -175,25 +175,25 @@ export function ServiceDetail({ service }: { service: Service }) {
               <div className="p-2 rounded-lg bg-white/[0.02]">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Cpu className="w-3 h-3 text-indigo-400/60" />
-                  <span className="text-[10px] text-white/40">CPU Verlauf</span>
-                  <span className="text-[10px] font-mono text-indigo-400 ml-auto">{zahl(stat.cpu, 1)}%</span>
+                  <span className="text-[11px] text-white/55">CPU Verlauf</span>
+                  <span className="text-[11px] font-mono text-indigo-400 ml-auto">{zahl(stat.cpu, 1)}%</span>
                 </div>
                 {cpuH.length >= 2 ? (
                   <Sparkline data={cpuH} color="#818cf8" />
                 ) : (
-                  <div className="h-8 flex items-center justify-center text-[10px] text-white/20">Sammle Daten...</div>
+                  <div className="h-8 flex items-center justify-center text-[11px] text-white/50">Sammle Daten...</div>
                 )}
               </div>
               <div className="p-2 rounded-lg bg-white/[0.02]">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <MemoryStick className="w-3 h-3 text-emerald-400/60" />
-                  <span className="text-[10px] text-white/40">RAM Verlauf</span>
-                  <span className="text-[10px] font-mono text-emerald-400 ml-auto">{formatBytes(stat.memUsage)}</span>
+                  <span className="text-[11px] text-white/55">RAM Verlauf</span>
+                  <span className="text-[11px] font-mono text-emerald-400 ml-auto">{formatBytes(stat.memUsage)}</span>
                 </div>
                 {memH.length >= 2 ? (
                   <Sparkline data={memH} color="#34d399" />
                 ) : (
-                  <div className="h-8 flex items-center justify-center text-[10px] text-white/20">Sammle Daten...</div>
+                  <div className="h-8 flex items-center justify-center text-[11px] text-white/50">Sammle Daten...</div>
                 )}
               </div>
             </div>
@@ -203,7 +203,7 @@ export function ServiceDetail({ service }: { service: Service }) {
         {/* Docker service without stats (not running) */}
         {isDocker && !stat && (
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-            <div className="flex items-center gap-2 text-white/30">
+            <div className="flex items-center gap-2 text-white/50">
               <HardDrive className="w-3.5 h-3.5" />
               <span className="text-xs">Keine Ressourcen-Daten — Container läuft nicht</span>
             </div>

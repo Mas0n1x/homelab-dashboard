@@ -26,7 +26,7 @@ function ContainerOverview() {
         <div className="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center">
           <Activity className="w-3.5 h-3.5 text-cyan-400" />
         </div>
-        <span className="text-xs font-medium text-white/60">Container pro Server</span>
+        <span className="text-xs font-medium text-white/70">Container pro Server</span>
       </div>
       <div className="space-y-2.5">
         {servers.map(server => {
@@ -40,13 +40,13 @@ function ContainerOverview() {
           return (
             <div key={server.id} className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-white/40 truncate">{server.name}</span>
+                <span className="text-[12px] text-white/55 truncate">{server.name}</span>
                 {hasDocker ? (
-                  <span className="text-[11px] text-white/50 tabular-nums">
+                  <span className="text-[12px] text-white/65 tabular-nums">
                     <span className="text-cyan-400">{running}</span>/{total}
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-[10px] text-white/25">
+                  <span className="flex items-center gap-1 text-[11px] text-white/50">
                     <Eye className="w-2.5 h-2.5" /> Nur Monitoring
                   </span>
                 )}

@@ -54,11 +54,11 @@ function Kennzahl({ icon, titel, wert, unter, anteil }: {
   return (
     <div className={`${KARTE} h-full`}>
       <div className="relative z-10 p-4 flex flex-col gap-3 h-full">
-        <div className="flex items-center gap-2 text-white/50 text-sm">{icon}<span>{titel}</span></div>
+        <div className="flex items-center gap-2 text-white/65 text-sm">{icon}<span>{titel}</span></div>
         <div className="text-2xl font-semibold leading-none">{wert}</div>
         <div className="mt-auto flex flex-col gap-2">
           <Balken anteil={anteil} />
-          <div className="text-xs text-white/40 truncate">{unter}</div>
+          <div className="text-xs text-white/55 truncate">{unter}</div>
         </div>
       </div>
     </div>
@@ -145,20 +145,20 @@ export default function ProxmoxPage() {
             </div>
             <div className="min-w-0">
               <h1 className="text-xl font-semibold leading-none">Proxmox</h1>
-              <p className="text-sm text-white/40 mt-1 truncate">
+              <p className="text-sm text-white/55 mt-1 truncate">
                 {node ? `${node.name} · Proxmox VE ${status?.version} · Kernel ${node.kernel}` : 'Cerberus'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-            <button onClick={laden} className="p-2 rounded-xl text-white/40 hover:text-white/80 hover:bg-white/[0.04] transition-all" title="Neu laden">
+            <button onClick={laden} className="p-2 rounded-xl text-white/55 hover:text-white/80 hover:bg-white/[0.04] transition-all" title="Neu laden">
               <RefreshCw className="w-4 h-4" />
             </button>
             {node && (
               <>
                 <button
                   onClick={() => nodeAktion('reboot')} disabled={beschaeftigt === 'node'}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm text-white/50 hover:text-white/80 hover:bg-white/[0.04] transition-all disabled:opacity-40"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm text-white/65 hover:text-white/80 hover:bg-white/[0.04] transition-all disabled:opacity-40"
                   title="Cerberus neu starten"
                 >
                   <RotateCw className="w-4 h-4" /><span className="hidden sm:inline">Neustart</span>
@@ -184,15 +184,15 @@ export default function ProxmoxPage() {
             <div className="relative z-10 p-8 flex flex-col items-center text-center gap-2">
               <AlertTriangle className="w-6 h-6 text-amber-400" />
               <h2 className="text-base font-medium text-white/80">Cerberus nicht erreichbar</h2>
-              <p className="text-sm text-white/40 max-w-md">{fehler}. Läuft der Tunnel (<code className="text-white/50">dashboard-tunnel</code> auf Cerberus)?</p>
+              <p className="text-sm text-white/55 max-w-md">{fehler}. Läuft der Tunnel (<code className="text-white/65">dashboard-tunnel</code> auf Cerberus)?</p>
             </div>
           </div>
         )}
 
         {status && !status.konfiguriert && (
           <div className={KARTE}>
-            <div className="relative z-10 p-8 text-center text-sm text-white/50">
-              Proxmox ist nicht konfiguriert. Es fehlen <code className="text-white/60">PROXMOX_URL</code>, <code className="text-white/60">PROXMOX_TOKEN_ID</code> und <code className="text-white/60">PROXMOX_TOKEN_SECRET</code> in der <code className="text-white/60">.env</code>.
+            <div className="relative z-10 p-8 text-center text-sm text-white/65">
+              Proxmox ist nicht konfiguriert. Es fehlen <code className="text-white/70">PROXMOX_URL</code>, <code className="text-white/70">PROXMOX_TOKEN_ID</code> und <code className="text-white/70">PROXMOX_TOKEN_SECRET</code> in der <code className="text-white/70">.env</code>.
             </div>
           </div>
         )}
@@ -228,9 +228,9 @@ export default function ProxmoxPage() {
 
             <div className={KARTE}>
               <div className="relative z-10 p-4">
-                <h2 className="text-sm font-medium text-white/70 mb-3">VMs &amp; Container <span className="text-white/30">({gaeste.length})</span></h2>
+                <h2 className="text-sm font-medium text-white/70 mb-3">VMs &amp; Container <span className="text-white/50">({gaeste.length})</span></h2>
                 {gaeste.length === 0 ? (
-                  <p className="text-sm text-white/40 py-6 text-center">Noch keine VMs oder Container auf Cerberus.</p>
+                  <p className="text-sm text-white/55 py-6 text-center">Noch keine VMs oder Container auf Cerberus.</p>
                 ) : (
                   <div className="flex flex-col divide-y divide-white/[0.06]">
                     {gaeste.map((g) => {
@@ -244,13 +244,13 @@ export default function ProxmoxPage() {
                               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${laeuft ? 'bg-emerald-400' : 'bg-white/20'}`} />
                               <div className="min-w-0">
                                 <div className="text-sm font-medium truncate">{g.name}</div>
-                                <div className="text-xs text-white/40">{g.typ === 'qemu' ? 'VM' : 'Container'} · {g.vmid}{g.vorlage ? ' · Vorlage' : ''}</div>
+                                <div className="text-xs text-white/55">{g.typ === 'qemu' ? 'VM' : 'Container'} · {g.vmid}{g.vorlage ? ' · Vorlage' : ''}</div>
                               </div>
                             </div>
-                            <div className="grid grid-cols-3 gap-4 text-xs text-white/50 flex-1 basis-64">
-                              <div><div className="text-white/30">CPU</div>{laeuft ? `${zahl(g.cpu * 100, 0)} %` : '–'}</div>
-                              <div><div className="text-white/30">RAM</div>{laeuft ? formatBytes(g.mem, 0) : formatBytes(g.maxmem, 0)}</div>
-                              <div><div className="text-white/30">Laufzeit</div>{laeuft ? dauer(g.uptime) : 'aus'}</div>
+                            <div className="grid grid-cols-3 gap-4 text-xs text-white/65 flex-1 basis-64">
+                              <div><div className="text-white/50">CPU</div>{laeuft ? `${zahl(g.cpu * 100, 0)} %` : '–'}</div>
+                              <div><div className="text-white/50">RAM</div>{laeuft ? formatBytes(g.mem, 0) : formatBytes(g.maxmem, 0)}</div>
+                              <div><div className="text-white/50">Laufzeit</div>{laeuft ? dauer(g.uptime) : 'aus'}</div>
                             </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
                               {!g.vorlage && !laeuft && (
@@ -260,16 +260,16 @@ export default function ProxmoxPage() {
                               {!g.vorlage && laeuft && (
                                 <>
                                   <button disabled={busy} onClick={() => gastAktion(g, 'reboot', 'startet neu …', `${g.name} neu starten?`)} title="Neu starten"
-                                    className="p-2 rounded-lg text-white/50 hover:text-white/80 hover:bg-white/[0.05] disabled:opacity-40"><RotateCw className="w-4 h-4" /></button>
+                                    className="p-2 rounded-lg text-white/65 hover:text-white/80 hover:bg-white/[0.05] disabled:opacity-40"><RotateCw className="w-4 h-4" /></button>
                                   <button disabled={busy} onClick={() => gastAktion(g, 'shutdown', 'fährt herunter …', `${g.name} herunterfahren?`)} title="Herunterfahren"
-                                    className="p-2 rounded-lg text-white/50 hover:text-white/80 hover:bg-white/[0.05] disabled:opacity-40"><Power className="w-4 h-4" /></button>
+                                    className="p-2 rounded-lg text-white/65 hover:text-white/80 hover:bg-white/[0.05] disabled:opacity-40"><Power className="w-4 h-4" /></button>
                                   <button disabled={busy} onClick={() => gastAktion(g, 'stop', 'wurde hart gestoppt.', `${g.name} HART stoppen? Das entspricht dem Ziehen des Stromkabels.`)} title="Hart stoppen"
                                     className="p-2 rounded-lg text-red-300/70 hover:text-red-300 hover:bg-red-500/10 disabled:opacity-40"><Square className="w-4 h-4" /></button>
                                 </>
                               )}
                               {!g.vorlage && (
                                 <button onClick={() => snapshotsUmschalten(g)} title="Snapshots"
-                                  className="flex items-center gap-1 px-2 py-2 rounded-lg text-white/50 hover:text-white/80 hover:bg-white/[0.05]">
+                                  className="flex items-center gap-1 px-2 py-2 rounded-lg text-white/65 hover:text-white/80 hover:bg-white/[0.05]">
                                   <Camera className="w-4 h-4" />
                                   {offen === schluessel ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                                 </button>
@@ -279,18 +279,18 @@ export default function ProxmoxPage() {
 
                           {offen === schluessel && (
                             <div className="mt-3 ml-5 rounded-xl border border-white/[0.06] bg-black/20 p-3 flex flex-col gap-2">
-                              {snapshots.length === 0 && <div className="text-xs text-white/40">Keine Snapshots.</div>}
+                              {snapshots.length === 0 && <div className="text-xs text-white/55">Keine Snapshots.</div>}
                               {snapshots.map((s) => (
                                 <div key={s.name} className="flex items-center justify-between gap-3 text-sm">
                                   <div className="min-w-0">
                                     <span className="text-white/80">{s.name}</span>
-                                    <span className="text-xs text-white/30 ml-2">{zeit(s.zeit)}{s.beschreibung ? ` · ${s.beschreibung}` : ''}</span>
+                                    <span className="text-xs text-white/50 ml-2">{zeit(s.zeit)}{s.beschreibung ? ` · ${s.beschreibung}` : ''}</span>
                                   </div>
                                   <div className="flex gap-1 flex-shrink-0">
                                     <button title="Zurücksetzen auf diesen Stand"
                                       onClick={() => window.confirm(`${g.name} auf „${s.name}“ zurücksetzen? Der aktuelle Stand geht verloren.`) &&
                                         ausfuehren(schluessel, () => proxmoxSnapshotRollback(g.typ, g.vmid, s.name), `${g.name}: Rollback auf „${s.name}“ läuft …`)}
-                                      className="p-1.5 rounded-lg text-white/50 hover:text-white/80 hover:bg-white/[0.05]"><Undo2 className="w-4 h-4" /></button>
+                                      className="p-1.5 rounded-lg text-white/65 hover:text-white/80 hover:bg-white/[0.05]"><Undo2 className="w-4 h-4" /></button>
                                     <button title="Snapshot löschen"
                                       onClick={() => window.confirm(`Snapshot „${s.name}“ löschen?`) &&
                                         ausfuehren(schluessel, async () => { await proxmoxSnapshotLoeschen(g.typ, g.vmid, s.name); await snapshotsLaden(g); }, `Snapshot „${s.name}“ gelöscht.`)}
@@ -337,8 +337,8 @@ export default function ProxmoxPage() {
                   {(status?.speicher ?? []).map((s) => (
                     <div key={s.name} className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-white/80">{s.name} <span className="text-xs text-white/30">{s.art}</span></span>
-                        <span className="text-xs text-white/40">{formatBytes(s.disk)} / {formatBytes(s.maxdisk)}</span>
+                        <span className="text-white/80">{s.name} <span className="text-xs text-white/50">{s.art}</span></span>
+                        <span className="text-xs text-white/55">{formatBytes(s.disk)} / {formatBytes(s.maxdisk)}</span>
                       </div>
                       <Balken anteil={s.maxdisk ? s.disk / s.maxdisk : 0} />
                     </div>
@@ -349,13 +349,13 @@ export default function ProxmoxPage() {
               <div className={`${KARTE} h-full`}>
                 <div className="relative z-10 p-4 flex flex-col gap-3 h-full">
                   <h2 className="text-sm font-medium text-white/70">Letzte Aufgaben</h2>
-                  {aufgaben.length === 0 && <div className="text-sm text-white/40">Keine Aufgaben.</div>}
+                  {aufgaben.length === 0 && <div className="text-sm text-white/55">Keine Aufgaben.</div>}
                   <div className="flex flex-col gap-1.5 max-h-56 overflow-y-auto">
                     {aufgaben.slice(0, 10).map((a) => (
                       <div key={a.upid} className="flex items-center justify-between gap-3 text-xs">
                         <span className="text-white/70 truncate">{a.art}{a.vmid ? ` · ${a.vmid}` : ''}</span>
-                        <span className="text-white/30 flex-shrink-0">{zeit(a.start)}</span>
-                        <span className={`flex-shrink-0 ${a.status === 'OK' ? 'text-emerald-300/80' : a.status === 'läuft' ? 'text-white/50' : 'text-red-300/80'}`}>{a.status}</span>
+                        <span className="text-white/50 flex-shrink-0">{zeit(a.start)}</span>
+                        <span className={`flex-shrink-0 ${a.status === 'OK' ? 'text-emerald-300/80' : a.status === 'läuft' ? 'text-white/65' : 'text-red-300/80'}`}>{a.status}</span>
                       </div>
                     ))}
                   </div>

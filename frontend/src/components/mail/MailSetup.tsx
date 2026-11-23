@@ -62,7 +62,7 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="text-xs text-white/50 mb-1 block">E-Mail-Adresse</label>
+        <label className="text-xs text-white/65 mb-1 block">E-Mail-Adresse</label>
         <input
           type="text"
           value={email}
@@ -73,7 +73,7 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
         />
       </div>
       <div>
-        <label className="text-xs text-white/50 mb-1 block">Anzeigename (optional)</label>
+        <label className="text-xs text-white/65 mb-1 block">Anzeigename (optional)</label>
         <input
           type="text"
           value={displayName}
@@ -82,7 +82,7 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
           className="glass-input w-full"
         />
       </div>
-      <p className="text-[10px] text-white/30">
+      <p className="text-[11px] text-white/50">
         Kein Passwort erforderlich - nur Zugriff über Dashboard
       </p>
 
@@ -119,7 +119,7 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold">Mail-Konto hinzufügen</h2>
-                  <p className="text-xs text-white/40">Stalwart JMAP-Zugangsdaten eingeben</p>
+                  <p className="text-xs text-white/55">Stalwart JMAP-Zugangsdaten eingeben</p>
                 </div>
               </div>
               <button
@@ -147,7 +147,7 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
             </div>
             <div>
               <h2 className="text-lg font-semibold">Mail-Konto verbinden</h2>
-              <p className="text-xs text-white/40">Stalwart JMAP-Zugangsdaten eingeben</p>
+              <p className="text-xs text-white/55">Stalwart JMAP-Zugangsdaten eingeben</p>
             </div>
           </div>
           {formContent}

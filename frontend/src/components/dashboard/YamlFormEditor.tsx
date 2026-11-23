@@ -55,7 +55,7 @@ function Row({ label, comment, children }: { label: string; comment: string; chi
     <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-2 hover:bg-white/[0.02] transition">
       <div className="min-w-0 flex-1">
         <p className="text-[13px] text-white/75 truncate">{label}</p>
-        {comment && <p title={comment} className="text-[11px] text-white/30 leading-snug mt-0.5 line-clamp-2">{shortComment(comment)}</p>}
+        {comment && <p title={comment} className="text-[12px] text-white/50 leading-snug mt-0.5 line-clamp-2">{shortComment(comment)}</p>}
       </div>
       <div className="flex-shrink-0">{children}</div>
     </div>
@@ -84,25 +84,25 @@ function ArrayRow({ label, comment, value, onChange }: { label: string; comment:
   if (!simple) return (
     <div className="rounded-lg px-3 py-2">
       <p className="text-[13px] text-white/75">{label}</p>
-      {comment && <p title={comment} className="text-[11px] text-white/30 mt-0.5 line-clamp-2">{shortComment(comment)}</p>}
-      <p className="text-[11px] text-white/25 mt-1">Komplexe Liste ({value.length}) — im Rohtext bearbeiten.</p>
+      {comment && <p title={comment} className="text-[12px] text-white/50 mt-0.5 line-clamp-2">{shortComment(comment)}</p>}
+      <p className="text-[12px] text-white/50 mt-1">Komplexe Liste ({value.length}) — im Rohtext bearbeiten.</p>
     </div>
   );
   return (
     <div className="rounded-lg px-3 py-2">
       <p className="text-[13px] text-white/75">{label}</p>
-      {comment && <p title={comment} className="text-[11px] text-white/30 leading-snug mt-0.5 mb-1.5 line-clamp-2">{shortComment(comment)}</p>}
+      {comment && <p title={comment} className="text-[12px] text-white/50 leading-snug mt-0.5 mb-1.5 line-clamp-2">{shortComment(comment)}</p>}
       <div className="flex flex-wrap gap-1.5 mb-2">
         {value.map((v, i) => (
           <span key={i} className="flex items-center gap-1 text-[12px] text-white/70 bg-white/[0.05] border border-white/[0.08] rounded-md pl-2 pr-1 py-0.5">
-            {String(v)}<button onClick={() => onChange(value.filter((_, j) => j !== i))} className="text-white/30 hover:text-red-400"><X className="w-3 h-3" /></button>
+            {String(v)}<button onClick={() => onChange(value.filter((_, j) => j !== i))} className="text-white/50 hover:text-red-400"><X className="w-3 h-3" /></button>
           </span>
         ))}
-        {value.length === 0 && <span className="text-[11px] text-white/25">leer</span>}
+        {value.length === 0 && <span className="text-[12px] text-white/50">leer</span>}
       </div>
       <div className="flex items-center gap-1.5">
         <input value={add} onChange={e => setAdd(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && add.trim()) { onChange([...value, add.trim()]); setAdd(''); } }}
-          placeholder="Eintrag hinzufügen…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1 text-[12px] text-white/80 placeholder:text-white/25 outline-none focus:border-orange-400/40" />
+          placeholder="Eintrag hinzufügen…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1 text-[12px] text-white/80 placeholder:text-white/45 outline-none focus:border-orange-400/40" />
         <button onClick={() => { if (add.trim()) { onChange([...value, add.trim()]); setAdd(''); } }} className="p-1.5 rounded-lg text-orange-300/80 hover:bg-orange-500/10"><Plus className="w-4 h-4" /></button>
       </div>
     </div>
@@ -115,10 +115,10 @@ function Section({ title, comment, depth, filtering, children }: { title: string
   return (
     <div className={depth > 0 ? 'border-l border-white/[0.06] pl-3 ml-1' : ''}>
       <button onClick={() => setOpen(o => !o)} className="flex items-start gap-1.5 w-full text-left py-1.5 group">
-        {isOpen ? <ChevronDown className="w-4 h-4 text-white/30 mt-0.5 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-white/30 mt-0.5 flex-shrink-0" />}
+        {isOpen ? <ChevronDown className="w-4 h-4 text-white/50 mt-0.5 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-white/50 mt-0.5 flex-shrink-0" />}
         <span className="min-w-0">
           <span className="block text-xs uppercase tracking-widest text-orange-400/70 font-medium group-hover:text-orange-400 transition">{title}</span>
-          {comment && !isOpen && <span title={comment} className="block text-[11px] text-white/25 truncate">{shortComment(comment)}</span>}
+          {comment && !isOpen && <span title={comment} className="block text-[12px] text-white/50 truncate">{shortComment(comment)}</span>}
         </span>
       </button>
       {isOpen && <div className="pb-1.5">{children}</div>}
@@ -152,17 +152,17 @@ export function YamlFormEditor({ content, onChange }: { content: string; onChang
   if (!docRef.current) { try { docRef.current = parseDocument(content); } catch { docRef.current = null; } }
   const doc = docRef.current;
   if (!doc || doc.errors?.length || !isMap(doc.contents)) {
-    return <div className="p-5 text-sm text-white/40">Diese Datei lässt sich nicht als Formular darstellen — bitte den Rohtext-Modus nutzen.</div>;
+    return <div className="p-5 text-sm text-white/55">Diese Datei lässt sich nicht als Formular darstellen — bitte den Rohtext-Modus nutzen.</div>;
   }
   const onSet = (p: (string | number)[], v: any) => { doc.setIn(p, v); onChange(String(doc)); bump(n => n + 1); };
   const f = filter.trim().toLowerCase();
   return (
     <div className="flex flex-col max-h-[54vh]">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/[0.05] bg-white/[0.01]">
-        <Search className="w-3.5 h-3.5 text-white/25" />
+        <Search className="w-3.5 h-3.5 text-white/50" />
         <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Einstellung suchen…"
-          className="flex-1 bg-transparent outline-none text-[13px] text-white/80 placeholder:text-white/25" />
-        {filter && <button onClick={() => setFilter('')} className="text-white/25 hover:text-white/60"><X className="w-3.5 h-3.5" /></button>}
+          className="flex-1 bg-transparent outline-none text-[13px] text-white/80 placeholder:text-white/45" />
+        {filter && <button onClick={() => setFilter('')} className="text-white/50 hover:text-white/70"><X className="w-3.5 h-3.5" /></button>}
       </div>
       <div className="overflow-y-auto px-3 py-3 space-y-0.5">
         <MapNodes node={doc.contents} path={[]} onSet={onSet} depth={0} filter={f} />

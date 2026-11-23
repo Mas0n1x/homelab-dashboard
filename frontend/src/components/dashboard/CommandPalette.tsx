@@ -330,19 +330,19 @@ export function CommandPalette() {
               onChange={e => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Suche Server, Container, Aktionen... (server: für Filter)"
-              className="flex-1 bg-transparent text-sm text-white placeholder:text-white/25 outline-none"
+              className="flex-1 bg-transparent text-sm text-white placeholder:text-white/45 outline-none"
             />
-            <kbd className="text-[10px] text-white/15 border border-white/[0.08] rounded px-1.5 py-0.5 font-mono">ESC</kbd>
+            <kbd className="text-[11px] text-white/50 border border-white/[0.08] rounded px-1.5 py-0.5 font-mono">ESC</kbd>
           </div>
 
           {/* Results */}
           <div ref={listRef} className="max-h-[55vh] overflow-y-auto p-2">
             {filtered.length === 0 ? (
-              <p className="text-sm text-white/20 text-center py-8">Keine Ergebnisse</p>
+              <p className="text-sm text-white/50 text-center py-8">Keine Ergebnisse</p>
             ) : (
               Array.from(grouped.entries()).map(([category, items]) => (
                 <div key={category} className="mb-2 last:mb-0">
-                  <p className="text-[10px] text-white/20 uppercase tracking-widest px-3 py-1.5 font-medium">{category}</p>
+                  <p className="text-[11px] text-white/50 uppercase tracking-widest px-3 py-1.5 font-medium">{category}</p>
                   {items.map(item => {
                     const idx = flatIndex++;
                     return (
@@ -351,22 +351,22 @@ export function CommandPalette() {
                         data-index={idx}
                         onClick={item.action}
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all duration-150 ${
-                          idx === selectedIndex ? 'bg-white/[0.08] text-white' : 'text-white/50 hover:bg-white/[0.04] hover:text-white/70'
+                          idx === selectedIndex ? 'bg-white/[0.08] text-white' : 'text-white/65 hover:bg-white/[0.04] hover:text-white/70'
                         }`}
                       >
-                        <span className="flex-shrink-0 text-white/30">{item.icon}</span>
+                        <span className="flex-shrink-0 text-white/50">{item.icon}</span>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{item.label}</p>
                           {item.description && (
-                            <p className="text-[11px] text-white/20 truncate">{item.description}</p>
+                            <p className="text-[12px] text-white/50 truncate">{item.description}</p>
                           )}
                         </div>
                         {item.serverName && (
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] ${item.serverColor || 'text-white/30'} flex-shrink-0`}>
+                          <span className={`text-[11px] px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] ${item.serverColor || 'text-white/50'} flex-shrink-0`}>
                             {item.serverName}
                           </span>
                         )}
-                        {idx === selectedIndex && <ArrowRight className="w-3.5 h-3.5 text-white/20 flex-shrink-0" />}
+                        {idx === selectedIndex && <ArrowRight className="w-3.5 h-3.5 text-white/50 flex-shrink-0" />}
                       </button>
                     );
                   })}
@@ -376,7 +376,7 @@ export function CommandPalette() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center gap-4 px-4 py-2 border-t border-white/[0.04] text-[10px] text-white/15">
+          <div className="flex items-center gap-4 px-4 py-2 border-t border-white/[0.04] text-[11px] text-white/50">
             <span className="flex items-center gap-1"><Command className="w-3 h-3" />K öffnen</span>
             <span>↑↓ navigieren</span>
             <span>↵ ausführen</span>

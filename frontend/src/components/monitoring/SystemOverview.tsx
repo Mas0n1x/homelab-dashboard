@@ -87,13 +87,13 @@ export function SystemOverview({ stats }: SystemOverviewProps) {
         <GlassCard key={card.label} delay={i * 0.08} glow={card.color === 'indigo' ? 'indigo' : card.color === 'cyan' ? 'cyan' : undefined} hover>
           <div className="flex items-center justify-between mb-3">
             <span className="stat-label">{card.label}</span>
-            <card.icon className="w-4 h-4 text-white/30" />
+            <card.icon className="w-4 h-4 text-white/50" />
           </div>
           <div className="stat-value mb-2">
             <AnimatedNumber value={card.value} decimals={card.decimals} suffix={card.suffix} />
           </div>
           <ProgressBar value={card.value} color={card.color} />
-          <p className="text-xs text-white/40 mt-2">{card.sub}</p>
+          <p className="text-xs text-white/55 mt-2">{card.sub}</p>
         </GlassCard>
       ))}
     </div>

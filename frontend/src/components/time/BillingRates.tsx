@@ -55,9 +55,9 @@ export function BillingRates() {
   return (
     <div className="space-y-4">
       <GlassCard>
-        <h3 className="text-xs uppercase tracking-widest text-white/25 font-medium mb-3">Stundensätze je Projekt</h3>
+        <h3 className="text-xs uppercase tracking-widest text-white/50 font-medium mb-3">Stundensätze je Projekt</h3>
         {projekte.length === 0 ? (
-          <p className="text-sm text-white/30 py-6 text-center">
+          <p className="text-sm text-white/50 py-6 text-center">
             Noch keine Projekte. Leg eine Aufgabe mit Projekt an, dann taucht es hier auf.
           </p>
         ) : (
@@ -100,14 +100,14 @@ function RateZeile({ project, rate, onSpeichern, onEntfernen }: {
       <div className="flex items-center gap-2 mb-2.5">
         <span className="text-[13px] font-medium truncate flex-1">{project}</span>
         {rate && rate.hourlyRate > 0 && (
-          <span className="text-[11px] text-emerald-300/70 tabular-nums flex-shrink-0">
+          <span className="text-[12px] text-emerald-300/70 tabular-nums flex-shrink-0">
             {formatMoney(rate.hourlyRate, rate.currency)}/Std.
           </span>
         )}
         {rate && (
           <button
             onClick={() => { if (confirm(`Stundensatz für „${project}" entfernen?`)) onEntfernen(); }}
-            className="p-1.5 rounded-lg text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+            className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
             title="Satz entfernen"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -117,11 +117,11 @@ function RateZeile({ project, rate, onSpeichern, onEntfernen }: {
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
         <label className="block sm:col-span-2">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Kunde</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Kunde</span>
           <input className="glass-input py-2 w-full" value={kunde} onChange={e => setKunde(e.target.value)} placeholder="z. B. Mert" />
         </label>
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Satz (€/Std.)</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Satz (€/Std.)</span>
           <input
             type="number"
             min={0}
@@ -133,7 +133,7 @@ function RateZeile({ project, rate, onSpeichern, onEntfernen }: {
           />
         </label>
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Rundung</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Rundung</span>
           <select className="glass-input py-2 w-full" value={rundung} onChange={e => setRundung(Number(e.target.value))}>
             {RUNDUNGEN.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
@@ -167,21 +167,21 @@ function ProfilFormular({ profile }: { profile: BillingProfile }) {
   return (
     <GlassCard>
       <div className="flex items-center gap-2 mb-3">
-        <Building2 className="w-3.5 h-3.5 text-white/40" />
-        <h3 className="text-xs uppercase tracking-widest text-white/25 font-medium">Rechnungssteller</h3>
+        <Building2 className="w-3.5 h-3.5 text-white/55" />
+        <h3 className="text-xs uppercase tracking-widest text-white/50 font-medium">Rechnungssteller</h3>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Name</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Name</span>
           <input className="glass-input py-2 w-full" value={form.issuerName} onChange={e => setzen('issuerName', e.target.value)} />
         </label>
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">E-Mail</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">E-Mail</span>
           <input className="glass-input py-2 w-full" value={form.issuerEmail} onChange={e => setzen('issuerEmail', e.target.value)} />
         </label>
         <label className="block sm:col-span-2">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Anschrift</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Anschrift</span>
           <textarea
             className="glass-input py-2 w-full min-h-[64px] resize-y"
             value={form.issuerAddress}
@@ -189,11 +189,11 @@ function ProfilFormular({ profile }: { profile: BillingProfile }) {
           />
         </label>
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Steuernummer / USt-IdNr.</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Steuernummer / USt-IdNr.</span>
           <input className="glass-input py-2 w-full" value={form.taxId} onChange={e => setzen('taxId', e.target.value)} />
         </label>
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Zahlungsziel (Tage)</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Zahlungsziel (Tage)</span>
           <input
             type="number"
             min={0}
@@ -203,11 +203,11 @@ function ProfilFormular({ profile }: { profile: BillingProfile }) {
           />
         </label>
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Nummernkreis</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Nummernkreis</span>
           <input className="glass-input py-2 w-full" value={form.invoicePrefix} onChange={e => setzen('invoicePrefix', e.target.value)} />
         </label>
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Nächste Nummer</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Nächste Nummer</span>
           <input
             type="number"
             min={1}
@@ -232,7 +232,7 @@ function ProfilFormular({ profile }: { profile: BillingProfile }) {
         </label>
         {!form.smallBusiness && (
           <label className="block sm:w-40 flex-shrink-0">
-            <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Steuersatz (%)</span>
+            <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Steuersatz (%)</span>
             <input
               type="number"
               min={0}

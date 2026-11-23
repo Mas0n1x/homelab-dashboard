@@ -6,72 +6,40 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Server, Thermometer, Box, HardDrive, ArrowDown, ArrowUp, Eye, Cloud, MapPin, Wallet, CalendarClock, WifiOff, MemoryStick, AlertTriangle } from 'lucide-react';
+import { Server, Thermometer, Box, HardDrive, ArrowDown, ArrowUp, Cloud, MapPin, Wallet, CalendarClock, WifiOff, MemoryStick } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import * as api from '@/lib/api';
 import { Sparkline } from '@/components/ui/Sparkline';
 import type { ServerData } from '@/stores/fleetStore';
-import type { Server as ServerType, MetricSample, TunnelInfo } from '@/lib/types';
+import type { Server as ServerType, MetricSample } from '@/lib/types';
 
-import { istErreichbar, zahl, formatUptime, formatPreis } from '@/lib/formatters';
+import { zahl, formatUptime, formatPreis } from '@/lib/formatters';
+import { LEVEL_HEX, LEVEL_TEXT } from '@/lib/health';
+import { useServerMetrics } from './useServerMetrics';
+import { StatusBadges, formatBytes, formatRate, relativeTime, daysUntil, useCardNav, useFirstTime, useTunnel } from './serverCardShared';
+
 interface ServerNodeCardProps {
   server: ServerType;
   data: ServerData;
   index: number;
 }
 
-function formatBytes(bytes: number): string {
-  const gb = bytes / (1024 * 1024 * 1024);
-  if (gb >= 1) return `${zahl(gb, 1)} GB`;
-  const mb = bytes / (1024 * 1024);
-  return `${zahl(mb, 0)} MB`;
-}
-
-function formatRate(bytes: number): string {
-  if (!bytes || bytes < 1) return '0 B/s';
-  const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${zahl(bytes / Math.pow(1024, i), 1)} ${units[i]}`;
-}
-
-function relativeTime(iso?: string | null): string | null {
-  if (!iso) return null;
-  const then = new Date(iso).getTime();
-  if (isNaN(then)) return null;
-  const sec = Math.max(0, Math.round((Date.now() - then) / 1000));
-  if (sec < 60) return `vor ${sec}s`;
-  const min = Math.round(sec / 60);
-  if (min < 60) return `vor ${min} min`;
-  const std = Math.round(min / 60);
-  if (std < 24) return `vor ${std} h`;
-  return `vor ${Math.round(std / 24)} d`;
-}
-
-function daysUntil(iso?: string | null): number | null {
-  if (!iso) return null;
-  const d = new Date(iso).getTime();
-  if (isNaN(d)) return null;
-  return Math.ceil((d - Date.now()) / (1000 * 60 * 60 * 24));
-}
-
-function CpuRingGauge({ percent, size = 60 }: { percent: number; size?: number }) {
+function CpuRingGauge({ percent, color, size = 60, animate }: { percent: number; color: string; size?: number; animate: boolean }) {
   const strokeWidth = 4;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (percent / 100) * circumference;
-  const color = percent > 90 ? '#ef4444' : percent > 70 ? '#f59e0b' : '#10b981';
 
   return (
-    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }} role="img" aria-label={`CPU ${Math.round(percent)} Prozent`}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={strokeWidth} />
         <motion.circle
           cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round"
           strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
+          initial={animate ? { strokeDashoffset: circumference } : false}
           animate={{ strokeDashoffset: offset }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           style={{ filter: `drop-shadow(0 0 5px ${color}55)` }}
@@ -79,24 +47,24 @@ function CpuRingGauge({ percent, size = 60 }: { percent: number; size?: number }
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-sm font-bold tabular-nums leading-none" style={{ color }}>{Math.round(percent)}%</span>
-        <span className="text-[8px] uppercase tracking-wider text-white/30 mt-0.5">CPU</span>
+        <span className="text-[10px] uppercase tracking-wider text-white/50 mt-0.5">CPU</span>
       </div>
     </div>
   );
 }
 
-function StatBar({ label, percent, right, color, icon }: { label: string; percent: number; right: string; color: string; icon: ReactNode }) {
+function StatBar({ label, percent, right, color, icon, animate }: { label: string; percent: number; right: string; color: string; icon: ReactNode; animate: boolean }) {
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[10px]">
-        <span className="flex items-center gap-1 text-white/40">{icon}{label}</span>
-        <span className="text-white/50 tabular-nums">{right}</span>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="flex items-center gap-1 text-white/55">{icon}{label}</span>
+        <span className="text-white/65 tabular-nums">{right}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+      <div className="h-1.5 rounded-full bg-white/[0.07] overflow-hidden">
         <motion.div
           className="h-full rounded-full"
-          style={{ background: `linear-gradient(90deg, ${color}80, ${color})`, boxShadow: `0 0 8px ${color}40` }}
-          initial={{ width: 0 }}
+          style={{ background: `linear-gradient(90deg, ${color}99, ${color})`, boxShadow: `0 0 8px ${color}40` }}
+          initial={animate ? { width: 0 } : false}
           animate={{ width: `${Math.min(percent, 100)}%` }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
         />
@@ -108,107 +76,55 @@ function StatBar({ label, percent, right, color, icon }: { label: string; percen
 function MiniSpark({ label, value, series, color, unit, min, max }: { label: string; value: string; series: number[]; color: string; unit?: string; min?: number; max?: number }) {
   return (
     <div className="rounded-lg bg-white/[0.02] border border-white/[0.05] px-2 pt-1.5 pb-1 overflow-hidden">
-      <div className="flex items-center justify-between mb-0.5">
-        <span className="text-[9px] uppercase tracking-wider text-white/30">{label}</span>
-        <span className="text-[10px] font-medium tabular-nums" style={{ color }}>{value}<span className="text-white/25">{unit}</span></span>
+      <div className="flex items-center justify-between gap-1 mb-0.5">
+        <span className="text-[10px] uppercase tracking-wider text-white/50">{label}</span>
+        <span className="text-[11px] font-medium tabular-nums whitespace-nowrap" style={{ color }}>{value}<span className="text-white/45">{unit}</span></span>
       </div>
       <Sparkline data={series} color={color} height={24} min={min} max={max} />
     </div>
   );
 }
 
+/** Detailkarte: Ring, Sparklines, Balken, Laufwerke, Betriebs-Metadaten. */
 export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
-  const router = useRouter();
-  const { system, containers } = data;
-
-  const isOnline = istErreichbar(server.status);
-  const hasData = system !== null;
+  const { system } = data;
+  const m = useServerMetrics(server, data);
+  const tunnel = useTunnel(server);
+  const nav = useCardNav(server);
+  const erste = useFirstTime(`detail:${server.id}`);
 
   // Metrik-Verlauf für Sparklines (react-query dedupt je Server)
   const { data: metrics } = useQuery<MetricSample[]>({
     queryKey: ['metrics', server.id],
     queryFn: () => api.getMetrics(server.id, 60) as Promise<MetricSample[]>,
     refetchInterval: 30000,
-    enabled: isOnline,
+    enabled: m.isOnline,
   });
 
-  // Tunnel-Status (ein geteilter Fetch für alle Karten)
-  const { data: tunnels } = useQuery<TunnelInfo[]>({
-    queryKey: ['tunnels'],
-    queryFn: () => api.getTunnels() as Promise<TunnelInfo[]>,
-    refetchInterval: 60000,
-  });
-
-  // Konfigurierbare Alert-Schwellen (geteilter Fetch)
-  const { data: thresholds } = useQuery<{ cpu: number; ram: number; disk: number; temp: number }>({
-    queryKey: ['alertThresholds'],
-    queryFn: () => api.getAlertThresholds() as Promise<any>,
-    staleTime: 60000,
-  });
-  const TH = thresholds ?? { cpu: 90, ram: 90, disk: 90, temp: 75 };
-
-  const cpuPercent = system?.cpu.total ?? 0;
-  const memPercent = system?.memory.percent ?? 0;
+  const { isOnline, hasData, cpu: cpuPercent, mem: memPercent, temp, hasDocker, running, totalCt, disks, rx: rxRate, tx: txRate, memFehlt, diskFehlt } = m;
   const memUsed = system?.memory.used ?? 0;
   const memTotal = system?.memory.total ?? 0;
-  const temp = system?.temperature?.[0]?.value ?? null;
-  // Teilmessungen, die ausfielen (z. B. TrueNas ohne Gast-Agent): „nicht gemessen", nicht „0"
-  const memFehlt = !!system?.fehlend?.includes('mem');
-  const diskFehlt = !!system?.fehlend?.includes('fs');
 
-  const hasDocker = !!(server.is_local || server.docker_socket || server.docker_host || server.ssh_host);
-  const running = containers?.filter(c => c.state === 'running').length ?? 0;
-  const totalCt = containers?.length ?? 0;
-
-  const disks = system?.disk ?? [];
-  const net = system?.network ?? [];
-  const rxRate = net.reduce((s, n) => s + (n.rxRate || 0), 0);
-  const txRate = net.reduce((s, n) => s + (n.txRate || 0), 0);
-
-  const memColor = memPercent > 90 ? '#ef4444' : memPercent > 70 ? '#f59e0b' : '#8b5cf6';
-  const tempColor = temp !== null
-    ? temp >= 75 ? 'text-red-400' : temp >= 60 ? 'text-amber-400' : 'text-emerald-400'
-    : 'text-white/30';
-
-  // Sparkline-Serien
-  const cpuSeries = (metrics ?? []).map(m => m.cpu ?? 0);
-  const memSeries = (metrics ?? []).map(m => m.mem ?? 0);
-  const netSeries = (metrics ?? []).map(m => (m.rx ?? 0) + (m.tx ?? 0));
-
-  // Tunnel diesem Server zuordnen (via tunnel_name-Metadaten oder Namensgleichheit)
-  const tunnelKey = (server.tunnel_name || server.name || '').toLowerCase();
-  const tunnel = (tunnels ?? []).find(t =>
-    server.tunnel_name ? t.name.toLowerCase() === tunnelKey : (t.name.toLowerCase() === (server.id || '').toLowerCase())
-  );
-  const tunnelColor = !tunnel ? '' : tunnel.status === 'healthy' ? 'text-emerald-400' : tunnel.status === 'degraded' ? 'text-amber-400' : 'text-red-400';
+  const cpuSeries = (metrics ?? []).map(x => x.cpu ?? 0);
+  const memSeries = (metrics ?? []).map(x => x.mem ?? 0);
+  const netSeries = (metrics ?? []).map(x => (x.rx ?? 0) + (x.tx ?? 0));
 
   // Betriebs-Metadaten
   const cost = server.monthly_cost != null ? `${formatPreis(server.monthly_cost, server.currency)}/mtl.` : null;
   const expDays = daysUntil(server.expires_at);
   const lastContact = relativeTime(server.lastSeen);
 
-  // Aktive Alerts aus den Live-Stats ableiten (gleiche Schwellen wie die Alert-Konfig)
-  const diskAgg = (() => {
-    const cap = disks.reduce((s, d) => s + (d.total || 0), 0);
-    const used = disks.reduce((s, d) => s + (d.used || 0), 0);
-    return cap ? (used / cap) * 100 : 0;
-  })();
-  const activeAlerts: string[] = [];
-  if (hasData) {
-    if (cpuPercent > TH.cpu) activeAlerts.push(`CPU > ${TH.cpu}%`);
-    if (memPercent > TH.ram) activeAlerts.push(`RAM > ${TH.ram}%`);
-    if (diskAgg > TH.disk) activeAlerts.push(`Speicher > ${TH.disk}%`);
-    if (temp !== null && temp > TH.temp) activeAlerts.push(`Temperatur ${zahl(temp, 0)}°C`);
-  }
-  const hasAlert = activeAlerts.length > 0;
+  const hasAlert = m.alerts.length > 0 && !m.maintenance;
+  const aggPct = m.disk ?? 0;
+  const barFarbe = (p: number) => (p > m.limits.disk! ? LEVEL_HEX.crit : p > (m.limits.disk ?? 90) - 15 ? LEVEL_HEX.warn : '#06b6d4');
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.97 }}
+      initial={erste ? { opacity: 0, y: 20, scale: 0.97 } : false}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.5, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
-      onClick={() => router.push(`/server/${server.id}`)}
-      className="group cursor-pointer h-full"
+      transition={{ duration: 0.5, delay: erste ? index * 0.1 : 0, ease: [0.16, 1, 0.3, 1] }}
+      {...nav}
+      className="group cursor-pointer h-full rounded-2xl focus-visible:outline-none"
     >
       <div className={clsx('relative rounded-2xl overflow-hidden transition-all duration-300 glass-card glass-card-hover h-full flex flex-col', !isOnline && 'opacity-70', hasAlert && 'ring-1 ring-red-500/40 shadow-[0_0_24px_-4px_rgba(239,68,68,0.35)]')}>
         {/* Statusstreifen oben */}
@@ -225,35 +141,21 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-semibold truncate group-hover:text-white transition-colors">{server.name}</h3>
-              <p className="text-[11px] text-white/30 truncate font-mono">{server.host}</p>
+              <p className="text-[12px] text-white/50 truncate font-mono">{server.host}</p>
             </div>
             <div className="flex flex-col items-end gap-1 flex-shrink-0">
-              {hasAlert && (
-                <span className="flex items-center gap-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-red-500/15 border border-red-500/30 text-red-400 animate-pulse" title={activeAlerts.join(' · ')}>
-                  <AlertTriangle className="w-2.5 h-2.5" /> {activeAlerts.length} {activeAlerts.length > 1 ? 'Alarme' : 'Alarm'}
-                </span>
-              )}
-              {tunnel && (
-                <span className={clsx('flex items-center gap-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-white/[0.03] border border-white/[0.06]', tunnelColor)} title={`Cloudflare-Tunnel: ${tunnel.status} (${tunnel.connections} Verbindungen)`}>
-                  <Cloud className="w-2.5 h-2.5" /> {tunnel.status === 'healthy' ? 'Tunnel' : tunnel.status}
-                </span>
-              )}
-              {!hasDocker && hasData && (
-                <span className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-white/25 bg-white/[0.03] border border-white/[0.06] rounded-md px-1.5 py-0.5">
-                  <Eye className="w-2.5 h-2.5" /> Monitor
-                </span>
-              )}
+              <StatusBadges alerts={m.alerts} maintenance={m.maintenance} tunnel={tunnel} monitorOnly={!hasDocker && hasData} />
             </div>
           </div>
 
           {/* Betriebs-Metadaten-Chips (nur wenn gesetzt) */}
           {(server.provider || server.location || cost || expDays != null) && (
             <div className="flex flex-wrap gap-1.5 mb-4">
-              {server.provider && <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/50"><Cloud className="w-2.5 h-2.5" />{server.provider}</span>}
-              {server.location && <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/50"><MapPin className="w-2.5 h-2.5" />{server.location}</span>}
-              {cost && <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/50"><Wallet className="w-2.5 h-2.5" />{cost}</span>}
+              {server.provider && <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/60"><Cloud className="w-2.5 h-2.5" />{server.provider}</span>}
+              {server.location && <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/60"><MapPin className="w-2.5 h-2.5" />{server.location}</span>}
+              {cost && <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/60"><Wallet className="w-2.5 h-2.5" />{cost}</span>}
               {expDays != null && (
-                <span className={clsx('flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border', expDays <= 14 ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-white/[0.03] border-white/[0.06] text-white/50')}>
+                <span className={clsx('flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border', expDays <= 14 ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-white/[0.03] border-white/[0.06] text-white/60')}>
                   <CalendarClock className="w-2.5 h-2.5" />{expDays <= 0 ? 'abgelaufen' : `${expDays} T`}
                 </span>
               )}
@@ -263,97 +165,87 @@ export function ServerNodeCard({ server, data, index }: ServerNodeCardProps) {
           {!hasData ? (
             <div className="flex flex-col items-center justify-center py-8 gap-2">
               {isOnline ? (
-                <span className="text-white/20 text-xs">Verbinde...</span>
+                <span className="text-white/45 text-xs">Verbinde…</span>
               ) : (
                 <>
-                  <WifiOff className="w-8 h-8 text-red-400/40" />
-                  <span className="text-sm font-medium text-red-400/70">Offline</span>
-                  {lastContact && <span className="text-[11px] text-white/30">Letzter Kontakt {lastContact}</span>}
+                  <WifiOff className="w-8 h-8 text-red-400/50" />
+                  <span className="text-sm font-medium text-red-400/80">Offline</span>
+                  {lastContact && <span className="text-[12px] text-white/50">Letzter Kontakt {lastContact}</span>}
                 </>
               )}
             </div>
           ) : (
             <div className="flex-1 flex flex-col">
-              {/* CPU Gauge + Stat-Spalte — feste Höhe und immer drei Zeilen, damit die
+              {/* CPU-Ring + Stat-Spalte — feste Höhe und immer drei Zeilen, damit die
                   Karten im Raster auf gleicher Höhe beginnen (auch ohne Docker/Sensor) */}
               <div className="flex items-center gap-4 mb-4 min-h-[76px]">
-                <CpuRingGauge percent={cpuPercent} />
+                <CpuRingGauge percent={cpuPercent} color={LEVEL_HEX[m.levels.cpu]} animate={erste} />
                 <div className="flex-1 space-y-1.5">
                   <div className="flex items-center gap-1.5">
-                    <Thermometer className={clsx('w-3.5 h-3.5', tempColor)} />
-                    <span className={clsx('text-sm font-semibold tabular-nums', tempColor)}>
+                    <Thermometer className={clsx('w-3.5 h-3.5', temp !== null ? LEVEL_TEXT[m.levels.temp] : 'text-white/45')} />
+                    <span className={clsx('text-sm font-semibold tabular-nums', temp !== null ? LEVEL_TEXT[m.levels.temp] : 'text-white/50')}>
                       {temp !== null ? `${zahl(temp, 1)}°C` : 'n. v.'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Box className={clsx('w-3.5 h-3.5', hasDocker ? 'text-cyan-400/60' : 'text-white/20')} />
+                    <Box className={clsx('w-3.5 h-3.5', hasDocker ? 'text-cyan-400/70' : 'text-white/45')} />
                     {hasDocker ? (
                       <span className="text-sm text-white/70 tabular-nums">
                         <span className="text-cyan-400 font-semibold">{running}</span>
-                        <span className="text-white/30">/{totalCt}</span>
-                        <span className="text-[10px] text-white/30 ml-1">Container</span>
+                        <span className="text-white/50">/{totalCt}</span>
+                        <span className="text-[11px] text-white/50 ml-1">Container</span>
                       </span>
                     ) : (
-                      <span className="text-sm text-white/30">Kein Docker</span>
+                      <span className="text-sm text-white/50">Kein Docker</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-[11px] tabular-nums">
-                    <span className="flex items-center gap-1 text-emerald-400/70"><ArrowDown className="w-3 h-3" />{formatRate(rxRate)}</span>
-                    <span className="flex items-center gap-1 text-blue-400/70"><ArrowUp className="w-3 h-3" />{formatRate(txRate)}</span>
+                  <div className="flex items-center gap-3 text-[12px] tabular-nums">
+                    <span className="flex items-center gap-1 text-emerald-400/80"><ArrowDown className="w-3 h-3" />{formatRate(rxRate)}</span>
+                    <span className="flex items-center gap-1 text-blue-400/80"><ArrowUp className="w-3 h-3" />{formatRate(txRate)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Sparklines (Verlauf 60 Min) — mobil aus: die Werte stehen
                   schon oben, der Verlauf gehört auf die Detailseite */}
-              {(
-                <div className="hidden sm:grid grid-cols-3 gap-2 mb-4">
-                  <MiniSpark label="CPU" value={`${Math.round(cpuPercent)}`} unit="%" series={cpuSeries} color="#10b981" min={0} max={100} />
-                  <MiniSpark label="RAM" value={`${Math.round(memPercent)}`} unit="%" series={memSeries} color="#8b5cf6" min={0} max={100} />
-                  <MiniSpark label="Netz" value={formatRate(rxRate + txRate).split(' ')[0]} unit={` ${formatRate(rxRate + txRate).split(' ')[1]}`} series={netSeries} color="#06b6d4" />
-                </div>
-              )}
+              <div className="hidden sm:grid grid-cols-3 gap-2 mb-4">
+                <MiniSpark label="CPU" value={`${Math.round(cpuPercent)}`} unit="%" series={cpuSeries} color={LEVEL_HEX[m.levels.cpu]} min={0} max={100} />
+                <MiniSpark label="RAM" value={`${Math.round(memPercent)}`} unit="%" series={memSeries} color="#8b5cf6" min={0} max={100} />
+                <MiniSpark label="Netz" value={formatRate(rxRate + txRate).split(' ')[0].replace(/,\d+$/, '')} unit={` ${formatRate(rxRate + txRate).split(' ')[1]}`} series={netSeries} color="#06b6d4" />
+              </div>
 
-              {/* RAM + Disk */}
+              {/* RAM + Platte */}
               <div className="space-y-3">
-                <StatBar label="RAM" percent={memFehlt ? 0 : memPercent} right={memFehlt ? 'n. v. (Gast-Agent nicht erreichbar)' : `${formatBytes(memUsed)} / ${formatBytes(memTotal)}`} color={memColor} icon={<MemoryStick className="w-2.5 h-2.5 text-violet-400/60" />} />
-                {disks.length === 0 && (
-                  <StatBar label="Speicher" percent={0} right={diskFehlt ? 'n. v. (Gast-Agent nicht erreichbar)' : 'n. v.'} color="#06b6d4" icon={<HardDrive className="w-2.5 h-2.5 text-cyan-400/60" />} />
-                )}
-                {disks.length > 0 && (() => {
-                  const totalCap = disks.reduce((s, d) => s + (d.total || 0), 0);
-                  const totalUsed = disks.reduce((s, d) => s + (d.used || 0), 0);
-                  const aggPct = totalCap ? Math.round((totalUsed / totalCap) * 100) : 0;
-                  const aggColor = aggPct > 90 ? '#ef4444' : aggPct > 75 ? '#f59e0b' : '#06b6d4';
-                  const barColor = (p: number) => p > 90 ? '#ef4444' : p > 75 ? '#f59e0b' : '#06b6d4';
-                  return (
-                    <>
-                      <StatBar label="Speicher" percent={aggPct} right={`${formatBytes(totalUsed)} / ${formatBytes(totalCap)}`} color={aggColor} icon={<HardDrive className="w-2.5 h-2.5 text-cyan-400/60" />} />
-                      {/* Einzelne Laufwerke nur bei mehreren — bei einem wiederholte die Zeile den
-                          Summenbalken. Mobil aus: der Summenbalken genügt. */}
-                      {disks.length > 1 && (
-                        <div className="hidden sm:block space-y-1 pl-4">
-                          {disks.map(d => (
-                            <div key={d.device} className="flex items-center gap-2 text-[10px] text-white/35">
-                              <span className="font-mono text-white/50 w-14 truncate" title={`${d.mountPoint} (${d.device})`}>{d.mountPoint}</span>
-                              <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                                <div className="h-full rounded-full" style={{ width: `${Math.min(d.percent || 0, 100)}%`, background: barColor(d.percent || 0) }} />
-                              </div>
-                              <span className="tabular-nums text-right whitespace-nowrap">{formatBytes(d.used)} / {formatBytes(d.total)}</span>
+                <StatBar label="RAM" percent={memFehlt ? 0 : memPercent} animate={erste} right={memFehlt ? 'n. v. (Gast-Agent nicht erreichbar)' : `${formatBytes(memUsed)} / ${formatBytes(memTotal)}`} color={m.levels.ram === 'ok' ? '#8b5cf6' : LEVEL_HEX[m.levels.ram]} icon={<MemoryStick className="w-2.5 h-2.5 text-violet-400/70" />} />
+                {disks.length === 0 ? (
+                  <StatBar label="Speicher" percent={0} animate={erste} right={diskFehlt ? 'n. v. (Gast-Agent nicht erreichbar)' : 'n. v.'} color="#06b6d4" icon={<HardDrive className="w-2.5 h-2.5 text-cyan-400/70" />} />
+                ) : (
+                  <>
+                    <StatBar label="Speicher" percent={aggPct} animate={erste} right={`${formatBytes(m.diskUsed)} / ${formatBytes(m.diskTotal)}`} color={m.levels.disk === 'ok' ? '#06b6d4' : LEVEL_HEX[m.levels.disk]} icon={<HardDrive className="w-2.5 h-2.5 text-cyan-400/70" />} />
+                    {/* Einzelne Laufwerke nur bei mehreren — bei einem wiederholte die Zeile den
+                        Summenbalken. Mobil aus: der Summenbalken genügt. */}
+                    {disks.length > 1 && (
+                      <div className="hidden sm:block space-y-1 pl-4">
+                        {disks.map(d => (
+                          <div key={d.device} className="flex items-center gap-2 text-[11px] text-white/50">
+                            <span className="font-mono text-white/60 w-14 truncate" title={`${d.mountPoint} (${d.device})`}>{d.mountPoint}</span>
+                            <div className="flex-1 h-1 rounded-full bg-white/[0.07] overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${Math.min(d.percent || 0, 100)}%`, background: barFarbe(d.percent || 0) }} />
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
+                            <span className="tabular-nums text-right whitespace-nowrap">{formatBytes(d.used)} / {formatBytes(d.total)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Footer: Uptime — immer am Kartenboden, egal wie viele Zeilen darüber stehen */}
               <div className="mt-auto pt-3">
-                <div className="pt-3 border-t border-white/[0.04] flex items-center justify-between">
-                  <span className="text-[10px] text-white/25">Uptime</span>
-                  <span className="text-[11px] text-white/40 font-mono">{formatUptime(system?.uptime)}</span>
+                <div className="pt-3 border-t border-white/[0.05] flex items-center justify-between">
+                  <span className="text-[11px] text-white/50">Uptime</span>
+                  <span className="text-[12px] text-white/60 font-mono">{formatUptime(system?.uptime)}</span>
                 </div>
               </div>
             </div>

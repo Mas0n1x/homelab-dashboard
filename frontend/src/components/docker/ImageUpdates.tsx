@@ -53,7 +53,7 @@ export function ImageUpdates() {
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Download className="w-4 h-4 text-white/40" />
+            <Download className="w-4 h-4 text-white/55" />
             <span className="text-sm font-medium">Image Updates</span>
             {updates && updates.length > 0 && (
               <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20">
@@ -72,13 +72,13 @@ export function ImageUpdates() {
         </div>
 
         {!updates && !checking && (
-          <p className="text-xs text-white/30 text-center py-4">Klicke &quot;Prüfen&quot; um nach Updates zu suchen</p>
+          <p className="text-xs text-white/50 text-center py-4">Klicke &quot;Prüfen&quot; um nach Updates zu suchen</p>
         )}
 
         {checking && (
           <div className="flex items-center justify-center gap-2 py-4">
-            <Loader2 className="w-4 h-4 animate-spin text-white/40" />
-            <span className="text-xs text-white/40">Prüfe Images...</span>
+            <Loader2 className="w-4 h-4 animate-spin text-white/55" />
+            <span className="text-xs text-white/55">Prüfe Images...</span>
           </div>
         )}
 
@@ -101,7 +101,7 @@ export function ImageUpdates() {
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">{u.containerName}</p>
-                  <p className="text-xs text-white/30 font-mono truncate">{u.image}</p>
+                  <p className="text-xs text-white/50 font-mono truncate">{u.image}</p>
                 </div>
                 <button
                   onClick={() => pullMutation.mutate(u.containerId)}

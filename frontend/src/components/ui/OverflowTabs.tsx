@@ -28,8 +28,8 @@ interface Props {
 function Count({ value, active }: { value?: number; active: boolean }) {
   if (value === undefined) return null;
   return (
-    <span className={clsx('ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full tabular-nums',
-      active ? 'bg-accent/20 text-accent-light' : 'bg-white/[0.06] text-white/40')}>
+    <span className={clsx('ml-1.5 text-[12px] px-1.5 py-0.5 rounded-full tabular-nums',
+      active ? 'bg-accent/20 text-accent-light' : 'bg-white/[0.06] text-white/55')}>
       {value}
     </span>
   );
@@ -92,7 +92,7 @@ export function OverflowTabs({ tabs, activeTab, onChange }: Props) {
               key={tab.id}
               onClick={() => onChange(tab.id)}
               className={clsx('relative px-3.5 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex-shrink-0 whitespace-nowrap flex items-center gap-1.5',
-                active ? 'text-white' : 'text-white/50 hover:text-white/80')}
+                active ? 'text-white' : 'text-white/65 hover:text-white/80')}
             >
               {active && <motion.div layoutId="overflow-tab-indicator" className="absolute inset-0 bg-white/[0.08] rounded-lg shadow-sm" transition={{ type: 'spring', stiffness: 400, damping: 30 }} />}
               <span className="relative z-10 flex items-center">
@@ -110,7 +110,7 @@ export function OverflowTabs({ tabs, activeTab, onChange }: Props) {
           <button
             onClick={() => setOpen(o => !o)}
             className={clsx('relative px-3.5 py-2 rounded-lg text-sm font-medium transition-colors duration-200 whitespace-nowrap flex items-center gap-1.5',
-              activeMore ? 'text-white bg-white/[0.08]' : 'text-white/50 hover:text-white/80')}
+              activeMore ? 'text-white bg-white/[0.08]' : 'text-white/65 hover:text-white/80')}
           >
             {activeMore ? (
               <span className="flex items-center">
@@ -140,7 +140,7 @@ export function OverflowTabs({ tabs, activeTab, onChange }: Props) {
                 key={tab.id}
                 onClick={() => { onChange(tab.id); setOpen(false); }}
                 className={clsx('w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors text-left',
-                  active ? 'bg-white/[0.08] text-white' : 'text-white/60 hover:bg-white/[0.04] hover:text-white/90')}
+                  active ? 'bg-white/[0.08] text-white' : 'text-white/70 hover:bg-white/[0.04] hover:text-white/90')}
               >
                 {Icon && <Icon className="w-4 h-4 opacity-70 flex-shrink-0" />}
                 <span className="flex-1">{tab.label}</span>

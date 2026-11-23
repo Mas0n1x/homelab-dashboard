@@ -67,10 +67,10 @@ export function DiskTreemap() {
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <HardDrive className="w-4 h-4 text-white/40" />
+            <HardDrive className="w-4 h-4 text-white/55" />
             <span className="text-sm font-medium">Docker Speicher</span>
           </div>
-          <span className="text-sm font-mono text-white/40">{formatSize(totalSize)}</span>
+          <span className="text-sm font-mono text-white/55">{formatSize(totalSize)}</span>
         </div>
 
         {/* Category bars */}
@@ -94,7 +94,7 @@ export function DiskTreemap() {
           {categories.map(cat => (
             <div key={cat.type} className="flex items-center gap-1.5">
               <div className={`w-2.5 h-2.5 rounded-sm ${TYPE_COLORS[cat.type].bg} opacity-70`} />
-              <span className="text-xs text-white/40">{cat.label}</span>
+              <span className="text-xs text-white/55">{cat.label}</span>
               <span className={`text-xs font-mono ${TYPE_COLORS[cat.type].text}`}>{formatSize(cat.total)}</span>
             </div>
           ))}
@@ -105,8 +105,8 @@ export function DiskTreemap() {
           {items.slice(0, 8).map((item, i) => (
             <div key={`${item.type}-${item.name}-${i}`} className="flex items-center gap-2">
               <div className={`w-1.5 h-4 rounded-full ${TYPE_COLORS[item.type].bg} opacity-60`} />
-              <span className="text-xs truncate flex-1 text-white/60">{item.name}</span>
-              <span className="text-xs font-mono text-white/40">{formatSize(item.size)}</span>
+              <span className="text-xs truncate flex-1 text-white/70">{item.name}</span>
+              <span className="text-xs font-mono text-white/55">{formatSize(item.size)}</span>
               <div className="w-16 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                 <div
                   className={`h-full rounded-full ${TYPE_COLORS[item.type].bg} opacity-50`}

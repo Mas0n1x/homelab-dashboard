@@ -17,12 +17,14 @@ import {
   Globe,
   Bot,
   KeyRound,
+  Bell,
   Menu, X,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useServerStore } from '@/stores/serverStore';
 import { useMailUnread } from '@/hooks/useMailUnread';
+import { useAttention } from '@/hooks/useAttention';
 import { useGameservers } from '@/hooks/useGameservers';
 import { gameIcon, stateStyle } from '@/components/gameserver/shared';
 
@@ -41,33 +43,59 @@ interface ServerSubNav {
 }
 
 const SERVER_SUB_NAV: ServerSubNav[] = [
-  { href: (id) => `/server/${id}`, label: 'Overview', icon: <Cpu className="w-4 h-4" /> },
+  { href: (id) => `/server/${id}`, label: 'Übersicht', icon: <Cpu className="w-4 h-4" /> },
   { href: (id) => `/server/${id}/docker`, label: 'Docker', icon: <Box className="w-4 h-4" /> },
   { href: (id) => `/server/${id}/logs`, label: 'Logs', icon: <FileText className="w-4 h-4" /> },
   { href: (id) => `/server/${id}/maintenance`, label: 'Wartung', icon: <Wrench className="w-4 h-4" /> },
 ];
 
-const TOOL_NAV: NavItem[] = [
-  { href: '/tasks', label: 'Aufgaben', icon: <ListChecks className="w-4 h-4" /> },
-  { href: '/status', label: 'Status', icon: <Activity className="w-4 h-4" /> },
-  { href: '/terminal', label: 'Terminal', icon: <Terminal className="w-4 h-4" /> },
-  { href: '/files', label: 'Dateien', icon: <FolderOpen className="w-4 h-4" /> },
-  { href: '/mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },
-  { href: '/minecraft', label: 'Minecraft', icon: <Gamepad2 className="w-4 h-4" /> },
-  { href: '/bots', label: 'Discord-Bots', icon: <Bot className="w-4 h-4" /> },
-  { href: '/traffic', label: 'Traffic', icon: <Globe className="w-4 h-4" /> },
-  { href: '/proxmox', label: 'Proxmox', icon: <Server className="w-4 h-4" /> },
-  { href: '/zugaenge', label: 'Zugänge', icon: <KeyRound className="w-4 h-4" /> },
+// Werkzeuge nach Aufgabe gruppiert statt als flache Liste von zehn Punkten.
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: 'Betrieb',
+    items: [
+      { href: '/alerts', label: 'Alarme', icon: <Bell className="w-4 h-4" /> },
+      { href: '/status', label: 'Status', icon: <Activity className="w-4 h-4" /> },
+      { href: '/proxmox', label: 'Proxmox', icon: <Server className="w-4 h-4" /> },
+      { href: '/traffic', label: 'Traffic', icon: <Globe className="w-4 h-4" /> },
+      { href: '/terminal', label: 'Terminal', icon: <Terminal className="w-4 h-4" /> },
+      { href: '/files', label: 'Dateien', icon: <FolderOpen className="w-4 h-4" /> },
+    ],
+  },
+  {
+    label: 'Arbeit',
+    items: [
+      { href: '/tasks', label: 'Aufgaben', icon: <ListChecks className="w-4 h-4" /> },
+      { href: '/mail', label: 'Mail', icon: <Mail className="w-4 h-4" /> },
+      { href: '/zugaenge', label: 'Zugänge', icon: <KeyRound className="w-4 h-4" /> },
+    ],
+  },
+  {
+    label: 'Spiele & Bots',
+    items: [
+      { href: '/minecraft', label: 'Minecraft', icon: <Gamepad2 className="w-4 h-4" /> },
+      { href: '/bots', label: 'Discord-Bots', icon: <Bot className="w-4 h-4" /> },
+    ],
+  },
 ];
 
 const SYSTEM_NAV: NavItem[] = [
-  { href: '/settings', label: 'Settings', icon: <Settings className="w-4 h-4" /> },
+  { href: '/settings', label: 'Einstellungen', icon: <Settings className="w-4 h-4" /> },
 ];
+
+/** Zähler an den Navigationspunkten: ungelesene Mails, offene Alarme. */
+function useNavBadges() {
+  const { total: unreadMail } = useMailUnread();
+  const { data } = useAttention();
+  const alarme = data ? data.counts.critical + data.counts.warning : 0;
+  return (href: string): number | undefined =>
+    href === '/mail' ? unreadMail : href === '/alerts' ? alarme : undefined;
+}
 
 export function Sidebar() {
   const pathname = usePathname();
   const { servers } = useServerStore();
-  const { total: unreadMail } = useMailUnread();
+  const badgeFor = useNavBadges();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedServers, setExpandedServers] = useState<Record<string, boolean>>({});
 
@@ -149,7 +177,7 @@ export function Sidebar() {
             {/* Servers Section */}
             {!collapsed && (
               <div className="px-2 mb-1">
-                <span className="text-[10px] uppercase tracking-widest text-white/25 font-medium">Server</span>
+                <span className="text-[11px] uppercase tracking-widest text-white/50 font-medium">Server</span>
               </div>
             )}
 
@@ -161,9 +189,11 @@ export function Sidebar() {
                     'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200 group',
                     isServerActive(server.id)
                       ? 'bg-white/[0.08] text-white'
-                      : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+                      : 'text-white/65 hover:text-white/80 hover:bg-white/[0.04]'
                   )}
                   title={collapsed ? server.name : undefined}
+                  aria-expanded={!!expandedServers[server.id]}
+                  aria-label={`${server.name}: Unterpunkte ${expandedServers[server.id] ? 'einklappen' : 'anzeigen'}`}
                 >
                   {/* Status dot */}
                   <div className="relative flex-shrink-0">
@@ -182,7 +212,7 @@ export function Sidebar() {
                       <span className="flex-1 text-left truncate text-[13px]">{server.name}</span>
                       <ChevronDown
                         className={clsx(
-                          'w-3 h-3 text-white/30 transition-transform duration-200',
+                          'w-3 h-3 text-white/50 transition-transform duration-200',
                           expandedServers[server.id] && 'rotate-180'
                         )}
                       />
@@ -211,7 +241,7 @@ export function Sidebar() {
                                 'flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[12px] transition-all duration-200',
                                 isActive(href)
                                   ? 'bg-white/[0.08] text-white'
-                                  : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04]'
+                                  : 'text-white/55 hover:text-white/70 hover:bg-white/[0.04]'
                               )}
                             >
                               {sub.icon}
@@ -231,23 +261,28 @@ export function Sidebar() {
             {/* Separator */}
             <div className="!my-3 mx-1 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
 
-            {/* Tools Section */}
-            {!collapsed && (
-              <div className="px-2 mb-1">
-                <span className="text-[10px] uppercase tracking-widest text-white/25 font-medium">Tools</span>
+            {/* Werkzeug-Gruppen */}
+            {NAV_GROUPS.map(group => (
+              <div key={group.label} className="space-y-1">
+                {!collapsed ? (
+                  <div className="px-2 pt-2 mb-1">
+                    <span className="text-[11px] uppercase tracking-widest text-white/50 font-medium">{group.label}</span>
+                  </div>
+                ) : (
+                  <div className="!my-2 mx-2 h-px bg-white/[0.06]" />
+                )}
+                {group.items.map(item => (
+                  <SidebarLink
+                    key={item.href}
+                    href={item.href}
+                    icon={item.icon}
+                    label={item.label}
+                    active={pathname === item.href || pathname.startsWith(item.href + '/')}
+                    collapsed={collapsed}
+                    badge={badgeFor(item.href)}
+                  />
+                ))}
               </div>
-            )}
-
-            {TOOL_NAV.map(item => (
-              <SidebarLink
-                key={item.href}
-                href={item.href}
-                icon={item.icon}
-                label={item.label}
-                active={pathname === item.href || pathname.startsWith(item.href + '/')}
-                collapsed={collapsed}
-                badge={item.href === '/mail' ? unreadMail : undefined}
-              />
             ))}
 
             {/* Separator */}
@@ -256,7 +291,7 @@ export function Sidebar() {
             {/* System Section */}
             {!collapsed && (
               <div className="px-2 mb-1">
-                <span className="text-[10px] uppercase tracking-widest text-white/25 font-medium">System</span>
+                <span className="text-[11px] uppercase tracking-widest text-white/50 font-medium">System</span>
               </div>
             )}
 
@@ -276,8 +311,9 @@ export function Sidebar() {
           <div className="flex-shrink-0 p-2 border-t border-white/[0.04]">
             <button
               onClick={toggleCollapsed}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all duration-200 text-sm"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-white/50 hover:text-white/70 hover:bg-white/[0.04] transition-all duration-200 text-sm"
               title={collapsed ? 'Sidebar erweitern' : 'Sidebar einklappen'}
+              aria-label={collapsed ? 'Sidebar erweitern' : 'Sidebar einklappen'}
             >
               {collapsed ? (
                 <ChevronRight className="w-4 h-4" />
@@ -320,7 +356,7 @@ function SidebarLink({
         'relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200',
         active
           ? 'bg-white/[0.08] text-white'
-          : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+          : 'text-white/65 hover:text-white/80 hover:bg-white/[0.04]'
       )}
       title={collapsed ? label : undefined}
     >
@@ -336,7 +372,7 @@ function SidebarLink({
         {/* Eingeklappt hat die Beschriftung keinen Platz — dann klebt der
             Zähler am Symbol, sonst steht er rechts in der Zeile. */}
         {collapsed && !!badge && badge > 0 && (
-          <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-accent text-[9px] font-bold text-white flex items-center justify-center tabular-nums">
+          <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-accent text-[10px] font-bold text-white flex items-center justify-center tabular-nums">
             {badge > 99 ? '99+' : badge}
           </span>
         )}
@@ -355,7 +391,7 @@ function SidebarLink({
         )}
       </AnimatePresence>
       {!collapsed && !!badge && badge > 0 && (
-        <span className="ml-auto flex-shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-accent/20 border border-accent/30 text-[10px] font-semibold text-accent-light flex items-center justify-center tabular-nums">
+        <span className="ml-auto flex-shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-accent/20 border border-accent/30 text-[11px] font-semibold text-accent-light flex items-center justify-center tabular-nums">
           {badge > 99 ? '99+' : badge}
         </span>
       )}
@@ -366,6 +402,7 @@ function SidebarLink({
 function MobileBottomNav({ pathname }: { pathname: string }) {
   const { servers } = useServerStore();
   const { total: unread } = useMailUnread();
+  const badgeFor = useNavBadges();
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandedServers, setExpandedServers] = useState<Record<string, boolean>>({});
   const toggleServer = (id: string) => setExpandedServers(prev => ({ ...prev, [id]: !prev[id] }));
@@ -391,7 +428,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
 
   const linkCls = (active: boolean) => clsx(
     'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors',
-    active ? 'bg-white/[0.08] text-white' : 'text-white/60 active:bg-white/[0.04]'
+    active ? 'bg-white/[0.08] text-white' : 'text-white/70 active:bg-white/[0.04]'
   );
 
   return (
@@ -407,18 +444,18 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
                 href={item.href}
                 className={clsx(
                   'relative flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors duration-200',
-                  active ? 'text-accent-light' : 'text-white/35 active:text-white/60'
+                  active ? 'text-accent-light' : 'text-white/50 active:text-white/70'
                 )}
               >
                 <span className="relative">
                   {item.icon}
                   {!!item.badge && item.badge > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-accent text-[9px] font-bold text-white flex items-center justify-center tabular-nums shadow-[0_0_8px_rgba(var(--accent-rgb),0.5)]">
+                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-accent text-[10px] font-bold text-white flex items-center justify-center tabular-nums shadow-[0_0_8px_rgba(var(--accent-rgb),0.5)]">
                       {item.badge > 99 ? '99+' : item.badge}
                     </span>
                   )}
                 </span>
-                <span className="text-[10px] font-medium">{item.label}</span>
+                <span className="text-[11px] font-medium">{item.label}</span>
                 {active && (
                   <motion.div
                     layoutId="mobile-nav-active"
@@ -433,11 +470,11 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
             onClick={() => setMenuOpen(true)}
             className={clsx(
               'flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors duration-200',
-              menuOpen ? 'text-accent-light' : 'text-white/35 active:text-white/60'
+              menuOpen ? 'text-accent-light' : 'text-white/50 active:text-white/70'
             )}
           >
             <Menu className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Menü</span>
+            <span className="text-[11px] font-medium">Menü</span>
           </button>
         </div>
       </nav>
@@ -461,7 +498,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
               <div className="relative z-10 flex flex-col max-h-[85vh]">
                 <div className="flex items-center justify-between px-5 pt-4 pb-3 flex-shrink-0">
                   <span className="text-base font-semibold">Navigation</span>
-                  <button onClick={() => setMenuOpen(false)} className="w-9 h-9 rounded-xl flex items-center justify-center text-white/50 active:bg-white/[0.06]">
+                  <button onClick={() => setMenuOpen(false)} aria-label="Menü schließen" className="w-9 h-9 rounded-xl flex items-center justify-center text-white/65 active:bg-white/[0.06]">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -470,20 +507,30 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
                 <div className="flex-1 overflow-y-auto px-3 py-3 pb-[calc(1rem+env(safe-area-inset-bottom))] space-y-4">
                   {/* Tools zuerst — die werden am häufigsten angetippt und lagen
                       vorher unterhalb der drei Server-Blöcke außerhalb des Bildes. */}
+                  {NAV_GROUPS.map(group => (
+                    <div key={group.label}>
+                      <p className="px-2 mb-1.5 text-[11px] uppercase tracking-widest text-white/50 font-medium">{group.label}</p>
+                      <div className="grid grid-cols-2 gap-1">
+                        {group.items.map(item => {
+                          const badge = badgeFor(item.href);
+                          return (
+                            <Link key={item.href} href={item.href} className={linkCls(pathname === item.href || pathname.startsWith(item.href + '/'))}>
+                              {item.icon}
+                              <span>{item.label}</span>
+                              {!!badge && badge > 0 && (
+                                <span className="ml-auto min-w-[18px] h-[18px] px-1.5 rounded-full bg-accent/20 border border-accent/30 text-[11px] font-semibold text-accent-light flex items-center justify-center tabular-nums">
+                                  {badge > 99 ? '99+' : badge}
+                                </span>
+                              )}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                   <div>
-                    <p className="px-2 mb-1.5 text-[10px] uppercase tracking-widest text-white/25 font-medium">Tools</p>
+                    <p className="px-2 mb-1.5 text-[11px] uppercase tracking-widest text-white/50 font-medium">System</p>
                     <div className="grid grid-cols-2 gap-1">
-                      {TOOL_NAV.map(item => (
-                        <Link key={item.href} href={item.href} className={linkCls(pathname === item.href || pathname.startsWith(item.href + '/'))}>
-                          {item.icon}
-                          <span>{item.label}</span>
-                          {item.href === '/mail' && unread > 0 && (
-                            <span className="ml-auto min-w-[18px] h-[18px] px-1.5 rounded-full bg-accent/20 border border-accent/30 text-[10px] font-semibold text-accent-light flex items-center justify-center tabular-nums">
-                              {unread > 99 ? '99+' : unread}
-                            </span>
-                          )}
-                        </Link>
-                      ))}
                       {SYSTEM_NAV.map(item => (
                         <Link key={item.href} href={item.href} className={linkCls(pathname === item.href)}>
                           {item.icon}<span>{item.label}</span>
@@ -497,7 +544,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
                   {/* Server: Kopfzeile führt direkt zur Übersicht, Unterpunkte
                       klappen erst auf Wunsch aus — spart drei Viertel der Höhe. */}
                   <div>
-                    <p className="px-2 mb-1.5 text-[10px] uppercase tracking-widest text-white/25 font-medium">Server</p>
+                    <p className="px-2 mb-1.5 text-[11px] uppercase tracking-widest text-white/50 font-medium">Server</p>
                     <div className="space-y-1.5">
                       {servers.map(server => {
                         const open = !!expandedServers[server.id];
@@ -509,7 +556,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
                                 className="flex items-center gap-2.5 px-3 py-2.5 flex-1 min-w-0 active:bg-white/[0.04]"
                               >
                                 <div className="relative flex-shrink-0">
-                                  <Server className="w-4 h-4 text-white/60" />
+                                  <Server className="w-4 h-4 text-white/70" />
                                   <span className={clsx('absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0a0a1a]',
                                     istErreichbar(server.status) ? 'bg-emerald-400' : 'bg-red-400')} />
                                 </div>
@@ -517,7 +564,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
                               </Link>
                               <button
                                 onClick={() => toggleServer(server.id)}
-                                className="px-3 py-3 text-white/30 active:text-white/70"
+                                className="px-3 py-3 text-white/50 active:text-white/70"
                                 aria-label={open ? 'Unterpunkte einklappen' : 'Unterpunkte anzeigen'}
                               >
                                 <ChevronDown className={clsx('w-4 h-4 transition-transform', open && 'rotate-180')} />
@@ -575,8 +622,8 @@ function GameserverNav({ pathname, collapsed }: { pathname: string; collapsed: b
       <div className="!my-3 mx-1 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
       {!collapsed && (
         <div className="px-2 mb-1 flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-widest text-white/25 font-medium">Gameserver</span>
-          <span className="text-[10px] text-white/25 tabular-nums">{running}/{all.length} online</span>
+          <span className="text-[11px] uppercase tracking-widest text-white/50 font-medium">Gameserver</span>
+          <span className="text-[11px] text-white/50 tabular-nums">{running}/{all.length} online</span>
         </div>
       )}
       <SidebarLink href="/gameserver" icon={<LayoutDashboard className="w-4 h-4" />} label="Übersicht" active={pathname === '/gameserver'} collapsed={collapsed} />
@@ -591,7 +638,7 @@ function GameserverNav({ pathname, collapsed }: { pathname: string; collapsed: b
             title={collapsed ? `${s.name} — ${st.text}` : undefined}
             className={clsx(
               'relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200',
-              active ? 'bg-white/[0.08] text-white' : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+              active ? 'bg-white/[0.08] text-white' : 'text-white/65 hover:text-white/80 hover:bg-white/[0.04]'
             )}
           >
             <div className="relative flex-shrink-0">
@@ -601,7 +648,7 @@ function GameserverNav({ pathname, collapsed }: { pathname: string; collapsed: b
             {!collapsed && (
               <>
                 <span className="flex-1 truncate text-[13px]">{s.name}</span>
-                <span className="text-[10px] text-white/25 truncate max-w-[70px]">{s.gameLabel}</span>
+                <span className="text-[11px] text-white/50 truncate max-w-[70px]">{s.gameLabel}</span>
               </>
             )}
           </Link>
@@ -616,7 +663,7 @@ function MobileGameservers({ pathname, linkCls }: { pathname: string; linkCls: (
   if (!show) return null;
   return (
     <div>
-      <p className="px-2 mb-1.5 text-[10px] uppercase tracking-widest text-white/25 font-medium">Gameserver</p>
+      <p className="px-2 mb-1.5 text-[11px] uppercase tracking-widest text-white/50 font-medium">Gameserver</p>
       <div className="grid grid-cols-2 gap-1">
         <Link href="/gameserver" className={linkCls(pathname === '/gameserver')}><LayoutDashboard className="w-4 h-4" /><span>Übersicht</span></Link>
         {others.map(s => {

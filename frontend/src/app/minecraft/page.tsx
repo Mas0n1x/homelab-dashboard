@@ -106,7 +106,7 @@ function CodeEditor({ value, onChange }: { value: string; onChange: (v: string) 
   const lines = value.split('\n').length;
   return (
     <div className="flex h-[46vh] overflow-hidden bg-black/30 rounded-b-2xl">
-      <div ref={gutterRef} className="overflow-hidden py-4 pl-3 pr-2.5 text-right text-white/20 font-mono text-[12px] leading-[1.6] select-none border-r border-white/[0.05] bg-white/[0.015]">
+      <div ref={gutterRef} className="overflow-hidden py-4 pl-3 pr-2.5 text-right text-white/50 font-mono text-[12px] leading-[1.6] select-none border-r border-white/[0.05] bg-white/[0.015]">
         {Array.from({ length: lines }, (_, i) => <div key={i}>{i + 1}</div>)}
       </div>
       <textarea value={value} onChange={e => onChange(e.target.value)} spellCheck={false}
@@ -119,7 +119,7 @@ function Avatar({ name, size = 32 }: { name: string; size?: number }) {
   // mc-heads.net liefert aktuell fuer jeden Namen nur den Steve-Kopf -> minotar zuerst, mc-heads als Reserve.
   const [stage, setStage] = useState(0);
   const px = `${size}px`;
-  if (stage > 1 || !name) return <div style={{ width: px, height: px }} className="rounded-md bg-white/[0.05] border border-white/[0.08] flex items-center justify-center"><User className="w-1/2 h-1/2 text-white/30" /></div>;
+  if (stage > 1 || !name) return <div style={{ width: px, height: px }} className="rounded-md bg-white/[0.05] border border-white/[0.08] flex items-center justify-center"><User className="w-1/2 h-1/2 text-white/50" /></div>;
   const n = encodeURIComponent(name);
   const src = stage === 0 ? `https://minotar.net/helm/${n}/${size * 2}.png` : `https://mc-heads.net/avatar/${n}/${size * 2}`;
   return <img key={stage} src={src} alt={name} onError={() => setStage(stage + 1)} style={{ width: px, height: px, imageRendering: 'pixelated' }} className="rounded-md" />;
@@ -131,10 +131,10 @@ const MAP_URL = 'https://map.mas0n1x.online';
 function StatCard({ icon: Icon, label, value, sub, percent, color }: { icon: any; label: string; value: string; sub?: string; percent?: number; color: string }) {
   return (
     <div className="glass-card rounded-2xl p-5">
-      <div className="flex items-center gap-2 mb-3"><Icon className="w-4 h-4" style={{ color }} /><span className="text-xs font-medium text-white/50">{label}</span></div>
+      <div className="flex items-center gap-2 mb-3"><Icon className="w-4 h-4" style={{ color }} /><span className="text-xs font-medium text-white/65">{label}</span></div>
       <div className="flex items-end justify-between">
         <span className="text-2xl font-bold tabular-nums" style={{ color }}>{value}</span>
-        {sub && <span className="text-[11px] text-white/30 mb-1">{sub}</span>}
+        {sub && <span className="text-[12px] text-white/50 mb-1">{sub}</span>}
       </div>
       {percent !== undefined && (
         <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden mt-3">
@@ -343,7 +343,7 @@ export default function MinecraftPage() {
     if (e.key === 'ArrowUp') { e.preventDefault(); if (!cmdHistory.length) return; histRef.current = histRef.current < 0 ? cmdHistory.length - 1 : Math.max(0, histRef.current - 1); setCommand(cmdHistory[histRef.current] || ''); }
     else if (e.key === 'ArrowDown') { e.preventDefault(); if (histRef.current < 0) return; histRef.current += 1; if (histRef.current >= cmdHistory.length) { histRef.current = -1; setCommand(''); } else setCommand(cmdHistory[histRef.current]); }
   };
-  const lineColor = (l: string) => /ERROR|SEVERE|Exception|\bFAILED\b|\bFAIL\b/i.test(l) ? 'text-red-400/90' : /WARN/i.test(l) ? 'text-amber-300/85' : /^>/.test(l) ? 'text-orange-300/90' : /\bINFO\b/.test(l) ? 'text-white/55' : 'text-white/45';
+  const lineColor = (l: string) => /ERROR|SEVERE|Exception|\bFAILED\b|\bFAIL\b/i.test(l) ? 'text-red-400/90' : /WARN/i.test(l) ? 'text-amber-300/85' : /^>/.test(l) ? 'text-orange-300/90' : /\bINFO\b/.test(l) ? 'text-white/55' : 'text-white/60';
 
   // Welt-Quick-Actions
   const quick = async (cmd: string, msg: string) => { await rcon(cmd); flash(msg); };
@@ -382,8 +382,8 @@ export default function MinecraftPage() {
   const pcmd = (name: string, cmd: string, m: string) => { rcon(cmd).then(r => flash(m + (r?.response ? `: ${stripAnsi(r.response)}` : ''))); setTimeout(loadPlayers, 700); };
   const crumbs = fmPath ? fmPath.split('/').filter(Boolean) : [];
 
-  const TimeBtn = ({ icon: Icon, label, cmd }: any) => <button onClick={() => quick(cmd, `Zeit: ${label}`)} className="flex flex-col items-center gap-1.5 rounded-xl bg-white/[0.02] border border-white/[0.06] px-3 py-3 hover:bg-white/[0.05] hover:border-amber-400/30 transition"><Icon className="w-5 h-5 text-amber-400/80" /><span className="text-[12px] text-white/60">{label}</span></button>;
-  const WeatherBtn = ({ icon: Icon, label, cmd, color }: any) => <button onClick={() => quick(cmd, `Wetter: ${label}`)} className="flex flex-col items-center gap-1.5 rounded-xl bg-white/[0.02] border border-white/[0.06] px-3 py-3 hover:bg-white/[0.05] transition" style={{ borderColor: undefined }}><Icon className="w-5 h-5" style={{ color }} /><span className="text-[12px] text-white/60">{label}</span></button>;
+  const TimeBtn = ({ icon: Icon, label, cmd }: any) => <button onClick={() => quick(cmd, `Zeit: ${label}`)} className="flex flex-col items-center gap-1.5 rounded-xl bg-white/[0.02] border border-white/[0.06] px-3 py-3 hover:bg-white/[0.05] hover:border-amber-400/30 transition"><Icon className="w-5 h-5 text-amber-400/80" /><span className="text-[12px] text-white/70">{label}</span></button>;
+  const WeatherBtn = ({ icon: Icon, label, cmd, color }: any) => <button onClick={() => quick(cmd, `Wetter: ${label}`)} className="flex flex-col items-center gap-1.5 rounded-xl bg-white/[0.02] border border-white/[0.06] px-3 py-3 hover:bg-white/[0.05] transition" style={{ borderColor: undefined }}><Icon className="w-5 h-5" style={{ color }} /><span className="text-[12px] text-white/70">{label}</span></button>;
 
   return (
     <PageTransition>
@@ -392,10 +392,10 @@ export default function MinecraftPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-2xl font-bold">Minecraft <span className="text-gradient">Server</span></motion.h1>
-            <div className="flex items-center gap-2 mt-1 text-sm text-white/40 flex-wrap">
+            <div className="flex items-center gap-2 mt-1 text-sm text-white/55 flex-wrap">
               <Circle className="w-2.5 h-2.5" style={{ fill: statusColor, color: statusColor }} /><span style={{ color: statusColor }}>{statusText}</span>
-              <span className="text-white/20">·</span><span>{activeMc ? activeMc.host : '45.133.9.70:25565'}</span>{(activeMc ? activeMc.version : 'Paper 26.2') && <><span className="text-white/20">·</span><span>{activeMc ? activeMc.version : 'Paper 26.2'}</span></>}
-              {online.max !== null && <><span className="text-white/20">·</span><span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{online.count}/{online.max}</span></>}
+              <span className="text-white/50">·</span><span>{activeMc ? activeMc.host : '45.133.9.70:25565'}</span>{(activeMc ? activeMc.version : 'Paper 26.2') && <><span className="text-white/50">·</span><span>{activeMc ? activeMc.version : 'Paper 26.2'}</span></>}
+              {online.max !== null && <><span className="text-white/50">·</span><span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{online.count}/{online.max}</span></>}
             </div>
           </div>
 
@@ -407,7 +407,7 @@ export default function MinecraftPage() {
                   const active = serverId === s.id;
                   return (
                     <button key={s.id} onClick={() => switchServer(s.id)}
-                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition ${active ? 'bg-orange-500/15 border border-orange-500/25 text-orange-200' : 'border border-transparent text-white/45 hover:text-white/80 hover:bg-white/[0.04]'}`}>
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition ${active ? 'bg-orange-500/15 border border-orange-500/25 text-orange-200' : 'border border-transparent text-white/60 hover:text-white/80 hover:bg-white/[0.04]'}`}>
                       <ServerIcon className="w-3.5 h-3.5" />
                       {s.name}
                       {active && <Circle className="w-2 h-2 ml-0.5" style={{ fill: statusColor, color: statusColor }} />}
@@ -429,7 +429,7 @@ export default function MinecraftPage() {
 
         <div className="flex items-center gap-1 border-b border-white/[0.06] overflow-x-auto">
           {TABS.map(([id, label, Icon]) => (
-            <button key={id} onClick={() => setTab(id)} className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 -mb-px whitespace-nowrap transition ${tab === id ? 'border-orange-400 text-white' : 'border-transparent text-white/40 hover:text-white/70'}`}><Icon className="w-4 h-4" /> {label}</button>
+            <button key={id} onClick={() => setTab(id)} className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 -mb-px whitespace-nowrap transition ${tab === id ? 'border-orange-400 text-white' : 'border-transparent text-white/55 hover:text-white/70'}`}><Icon className="w-4 h-4" /> {label}</button>
           ))}
         </div>
 
@@ -438,23 +438,23 @@ export default function MinecraftPage() {
           <div className="glass-card rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.06] bg-white/[0.02]">
               <div className="flex items-center gap-2">
-                <TerminalSquare className="w-4 h-4 text-white/40" />
-                <span className="text-[12px] text-white/50">Live-Konsole</span>
+                <TerminalSquare className="w-4 h-4 text-white/55" />
+                <span className="text-[12px] text-white/65">Live-Konsole</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className={`flex items-center gap-1.5 text-[11px] ${wsConnected ? 'text-emerald-300/80' : 'text-amber-300/70'}`}>
+                <span className={`flex items-center gap-1.5 text-[12px] ${wsConnected ? 'text-emerald-300/80' : 'text-amber-300/70'}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
                   {wsConnected ? 'Live' : 'Polling'}
                 </span>
-                <button onClick={() => setLogs('')} className="text-[11px] text-white/35 hover:text-white/70 transition">leeren</button>
+                <button onClick={() => setLogs('')} className="text-[12px] text-white/50 hover:text-white/70 transition">leeren</button>
               </div>
             </div>
             <div ref={logRef} className="h-[50vh] overflow-y-auto p-4 font-mono text-[12px] leading-relaxed bg-black/30">
-              {logs ? logs.split('\n').map((line, i) => <div key={i} className={`whitespace-pre-wrap break-words ${lineColor(line)}`}>{line || ' '}</div>) : <span className="text-white/40">Verbinde…</span>}
+              {logs ? logs.split('\n').map((line, i) => <div key={i} className={`whitespace-pre-wrap break-words ${lineColor(line)}`}>{line || ' '}</div>) : <span className="text-white/55">Verbinde…</span>}
             </div>
             <form onSubmit={sendCommand} className="flex items-center gap-2 border-t border-white/[0.06] p-3 bg-white/[0.02]">
               <span className="text-orange-400/70 font-mono text-sm pl-1">/</span>
-              <input value={command} onChange={e => setCommand(e.target.value)} onKeyDown={onCmdKey} placeholder="Befehl (↑/↓ für Verlauf, z. B. give Spieler diamond 64)…" className="flex-1 bg-transparent outline-none text-sm text-white/80 placeholder:text-white/25 font-mono" />
+              <input value={command} onChange={e => setCommand(e.target.value)} onKeyDown={onCmdKey} placeholder="Befehl (↑/↓ für Verlauf, z. B. give Spieler diamond 64)…" className="flex-1 bg-transparent outline-none text-sm text-white/80 placeholder:text-white/45 font-mono" />
               <button type="submit" className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm bg-orange-500/15 border border-orange-500/25 text-orange-300 hover:bg-orange-500/25 transition"><Send className="w-3.5 h-3.5" /> Senden</button>
             </form>
           </div>
@@ -471,11 +471,11 @@ export default function MinecraftPage() {
               <StatCard icon={Cpu} label="CPU-Auslastung" value={perf.cpuPercent != null ? `${perf.cpuPercent}%` : '—'} sub="des Servers" percent={perf.cpuPercent ?? 0} color="#06b6d4" />
             </div>
             <div className="glass-card rounded-2xl p-5 flex flex-wrap items-center gap-6 text-sm">
-              <div className="flex items-center gap-2"><Users className="w-4 h-4 text-white/40" /><span className="text-white/60">{online.count}{online.max !== null ? ` / ${online.max}` : ''} Spieler</span></div>
-              <div className="flex items-center gap-2"><Activity className="w-4 h-4 text-white/40" /><span className="text-white/60">{status.health === 'healthy' ? 'Gesund' : status.running ? 'Startet' : 'Gestoppt'}</span></div>
-              {status.startedAt && <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-white/40" /><span className="text-white/60">seit {fmtDate(status.startedAt)}</span></div>}
+              <div className="flex items-center gap-2"><Users className="w-4 h-4 text-white/55" /><span className="text-white/70">{online.count}{online.max !== null ? ` / ${online.max}` : ''} Spieler</span></div>
+              <div className="flex items-center gap-2"><Activity className="w-4 h-4 text-white/55" /><span className="text-white/70">{status.health === 'healthy' ? 'Gesund' : status.running ? 'Startet' : 'Gestoppt'}</span></div>
+              {status.startedAt && <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-white/55" /><span className="text-white/70">seit {fmtDate(status.startedAt)}</span></div>}
             </div>
-            <p className="text-[11px] text-white/25">Aktualisiert alle 4 Sekunden · TPS 20 = perfekter Server-Takt, MSPT = Rechenzeit pro Tick (unter 50 ms ist gut).</p>
+            <p className="text-[12px] text-white/50">Aktualisiert alle 4 Sekunden · TPS 20 = perfekter Server-Takt, MSPT = Rechenzeit pro Tick (unter 50 ms ist gut).</p>
           </div>
         )}
 
@@ -483,13 +483,13 @@ export default function MinecraftPage() {
         {tab === 'players' && (
           <div className="space-y-3">
             <div className="flex items-center gap-1 bg-white/[0.03] rounded-xl p-1 w-fit">
-              <button onClick={() => setPlayersSub('online')} className={`px-3 py-1.5 rounded-lg text-[13px] transition ${playersSub === 'online' ? 'bg-white/[0.08] text-white' : 'text-white/40 hover:text-white/70'}`}>Online ({online.count})</button>
-              <button onClick={() => setPlayersSub('known')} className={`px-3 py-1.5 rounded-lg text-[13px] transition ${playersSub === 'known' ? 'bg-white/[0.08] text-white' : 'text-white/40 hover:text-white/70'}`}>Bekannt ({known.length})</button>
+              <button onClick={() => setPlayersSub('online')} className={`px-3 py-1.5 rounded-lg text-[13px] transition ${playersSub === 'online' ? 'bg-white/[0.08] text-white' : 'text-white/55 hover:text-white/70'}`}>Online ({online.count})</button>
+              <button onClick={() => setPlayersSub('known')} className={`px-3 py-1.5 rounded-lg text-[13px] transition ${playersSub === 'known' ? 'bg-white/[0.08] text-white' : 'text-white/55 hover:text-white/70'}`}>Bekannt ({known.length})</button>
             </div>
 
             {playersSub === 'online' && (
               <div className="glass-card rounded-2xl divide-y divide-white/[0.04]">
-                {online.online.length === 0 && <p className="text-sm text-white/30 p-6 text-center">Aktuell niemand online.</p>}
+                {online.online.length === 0 && <p className="text-sm text-white/50 p-6 text-center">Aktuell niemand online.</p>}
                 {online.online.map(name => (
                   <div key={name}>
                     <div className="flex items-center gap-3 px-4 py-3 flex-wrap">
@@ -500,21 +500,21 @@ export default function MinecraftPage() {
                         {['survival', 'creative', 'adventure', 'spectator'].map(m => <option key={m} value={m} className="bg-neutral-900 capitalize">{m}</option>)}
                       </select>
                       <button onClick={() => pcmd(name, `op ${name}`, `${name} ist jetzt OP`)} title="OP geben" className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] text-amber-300/80 hover:bg-amber-500/10 transition"><Shield className="w-3.5 h-3.5" /> OP</button>
-                      <button onClick={() => pcmd(name, `heal ${name}`, `${name} geheilt`)} title="Heilen" className="p-2 rounded-lg text-white/40 hover:text-emerald-400 hover:bg-emerald-500/10 transition"><Heart className="w-4 h-4" /></button>
-                      <button onClick={() => pcmd(name, `feed ${name}`, `${name} gesättigt`)} title="Sättigen" className="p-2 rounded-lg text-white/40 hover:text-orange-300 hover:bg-orange-500/10 transition"><Drumstick className="w-4 h-4" /></button>
-                      <button onClick={() => setExpanded(expanded === name ? '' : name)} title="Mehr" className={`p-2 rounded-lg transition ${expanded === name ? 'text-white bg-white/[0.06]' : 'text-white/40 hover:text-white/70'}`}><ChevronDown className={`w-4 h-4 transition-transform ${expanded === name ? 'rotate-180' : ''}`} /></button>
-                      <button onClick={() => { if (confirm(`${name} kicken?`)) pcmd(name, `kick ${name}`, `${name} gekickt`); }} title="Kicken" className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition"><LogOut className="w-4 h-4" /></button>
+                      <button onClick={() => pcmd(name, `heal ${name}`, `${name} geheilt`)} title="Heilen" className="p-2 rounded-lg text-white/55 hover:text-emerald-400 hover:bg-emerald-500/10 transition"><Heart className="w-4 h-4" /></button>
+                      <button onClick={() => pcmd(name, `feed ${name}`, `${name} gesättigt`)} title="Sättigen" className="p-2 rounded-lg text-white/55 hover:text-orange-300 hover:bg-orange-500/10 transition"><Drumstick className="w-4 h-4" /></button>
+                      <button onClick={() => setExpanded(expanded === name ? '' : name)} title="Mehr" className={`p-2 rounded-lg transition ${expanded === name ? 'text-white bg-white/[0.06]' : 'text-white/55 hover:text-white/70'}`}><ChevronDown className={`w-4 h-4 transition-transform ${expanded === name ? 'rotate-180' : ''}`} /></button>
+                      <button onClick={() => { if (confirm(`${name} kicken?`)) pcmd(name, `kick ${name}`, `${name} gekickt`); }} title="Kicken" className="p-2 rounded-lg text-white/55 hover:text-red-400 hover:bg-red-500/10 transition"><LogOut className="w-4 h-4" /></button>
                     </div>
                     {expanded === name && (
                       <div className="px-4 pb-4 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-white/[0.01]">
                         <button onClick={() => pcmd(name, `spawn ${name}`, `${name} zum Spawn`)} className="flex items-center gap-2 rounded-lg bg-white/[0.03] border border-white/[0.06] px-3 py-2 text-[13px] text-white/70 hover:bg-white/[0.05] transition"><MapPin className="w-4 h-4 text-cyan-400/70" /> Zum Spawn teleportieren</button>
                         <button onClick={() => pcmd(name, `xp add ${name} 100 levels`, `${name} +100 Level`)} className="flex items-center gap-2 rounded-lg bg-white/[0.03] border border-white/[0.06] px-3 py-2 text-[13px] text-white/70 hover:bg-white/[0.05] transition"><Sparkles className="w-4 h-4 text-emerald-400/70" /> +100 XP-Level</button>
                         <div className="flex items-center gap-1.5">
-                          <input value={item} onChange={e => setItem(e.target.value)} placeholder="Item (z. B. diamond 64)" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[12px] text-white/80 placeholder:text-white/25 outline-none focus:border-orange-400/40" />
+                          <input value={item} onChange={e => setItem(e.target.value)} placeholder="Item (z. B. diamond 64)" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[12px] text-white/80 placeholder:text-white/45 outline-none focus:border-orange-400/40" />
                           <button onClick={() => { if (item.trim()) { pcmd(name, `give ${name} ${item.trim()}`, `Item an ${name}`); setItem(''); } }} className="p-2 rounded-lg text-orange-300/80 hover:bg-orange-500/10"><Package className="w-4 h-4" /></button>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <input value={msg} onChange={e => setMsg(e.target.value)} placeholder="Private Nachricht…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[12px] text-white/80 placeholder:text-white/25 outline-none focus:border-orange-400/40" />
+                          <input value={msg} onChange={e => setMsg(e.target.value)} placeholder="Private Nachricht…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[12px] text-white/80 placeholder:text-white/45 outline-none focus:border-orange-400/40" />
                           <button onClick={() => { if (msg.trim()) { pcmd(name, `tell ${name} ${msg.trim()}`, `Nachricht an ${name}`); setMsg(''); } }} className="p-2 rounded-lg text-orange-300/80 hover:bg-orange-500/10"><MessageSquare className="w-4 h-4" /></button>
                         </div>
                       </div>
@@ -526,24 +526,24 @@ export default function MinecraftPage() {
 
             {playersSub === 'known' && (
               <div className="glass-card rounded-2xl divide-y divide-white/[0.04]">
-                {known.length === 0 && <p className="text-sm text-white/30 p-6 text-center">Noch keine bekannten Spieler.</p>}
+                {known.length === 0 && <p className="text-sm text-white/50 p-6 text-center">Noch keine bekannten Spieler.</p>}
                 {known.map(p => (
                   <div key={p.uuid} className="flex items-center gap-3 px-4 py-3 flex-wrap">
                     <Avatar name={p.name} size={36} />
                     <div className="flex-1 min-w-[120px]">
                       <p className="text-sm text-white/85 font-medium">{p.name}</p>
-                      <p className="text-[11px] text-white/30">{p.playtimeHours != null ? `${p.playtimeHours} h gespielt` : 'noch nicht gespielt'}</p>
+                      <p className="text-[12px] text-white/50">{p.playtimeHours != null ? `${p.playtimeHours} h gespielt` : 'noch nicht gespielt'}</p>
                     </div>
-                    {p.op && <span className="text-[10px] uppercase tracking-wider text-amber-300/70 bg-amber-500/10 rounded px-1.5 py-0.5">OP</span>}
-                    {p.banned && <span className="text-[10px] uppercase tracking-wider text-red-300/70 bg-red-500/10 rounded px-1.5 py-0.5">Gebannt</span>}
+                    {p.op && <span className="text-[11px] uppercase tracking-wider text-amber-300/70 bg-amber-500/10 rounded px-1.5 py-0.5">OP</span>}
+                    {p.banned && <span className="text-[11px] uppercase tracking-wider text-red-300/70 bg-red-500/10 rounded px-1.5 py-0.5">Gebannt</span>}
                     <button onClick={() => pcmd(p.name, p.op ? `deop ${p.name}` : `op ${p.name}`, p.op ? `${p.name} kein OP mehr` : `${p.name} ist OP`)} className="rounded-lg px-2.5 py-1.5 text-[12px] text-amber-300/80 hover:bg-amber-500/10 transition">{p.op ? 'de-OP' : 'OP'}</button>
                     <button onClick={() => pcmd(p.name, p.whitelisted ? `whitelist remove ${p.name}` : `whitelist add ${p.name}`, p.whitelisted ? `${p.name} von Whitelist` : `${p.name} auf Whitelist`)} className="rounded-lg px-2.5 py-1.5 text-[12px] text-emerald-300/80 hover:bg-emerald-500/10 transition">{p.whitelisted ? 'Un-WL' : 'WL'}</button>
-                    <button onClick={() => { const c = p.banned ? `pardon ${p.name}` : `ban ${p.name}`; if (p.banned || confirm(`${p.name} bannen?`)) pcmd(p.name, c, p.banned ? `${p.name} entbannt` : `${p.name} gebannt`); setTimeout(loadKnown, 900); }} className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition" title={p.banned ? 'Entbannen' : 'Bannen'}><Ban className="w-4 h-4" /></button>
+                    <button onClick={() => { const c = p.banned ? `pardon ${p.name}` : `ban ${p.name}`; if (p.banned || confirm(`${p.name} bannen?`)) pcmd(p.name, c, p.banned ? `${p.name} entbannt` : `${p.name} gebannt`); setTimeout(loadKnown, 900); }} className="p-2 rounded-lg text-white/55 hover:text-red-400 hover:bg-red-500/10 transition" title={p.banned ? 'Entbannen' : 'Bannen'}><Ban className="w-4 h-4" /></button>
                   </div>
                 ))}
               </div>
             )}
-            <p className="text-[11px] text-white/25">Alle Aktionen wirken sofort über RCON (Server muss laufen).</p>
+            <p className="text-[12px] text-white/50">Alle Aktionen wirken sofort über RCON (Server muss laufen).</p>
           </div>
         )}
 
@@ -580,14 +580,14 @@ export default function MinecraftPage() {
               <div className="glass-card rounded-2xl p-5">
                 <div className="flex items-center gap-2 mb-4"><Globe className="w-4 h-4 text-cyan-400/70" /><h3 className="text-sm font-medium text-white/70">Aktuelle Welt</h3></div>
                 <div className="space-y-3 text-sm">
-                  <div className="flex justify-between"><span className="text-white/40">Name</span><span className="text-white/80 font-mono">{world?.name ?? '—'}</span></div>
-                  <div className="flex justify-between"><span className="text-white/40">Größe</span><span className="text-white/80 tabular-nums">{world ? fmtSize(world.size) : '—'}</span></div>
-                  <div className="flex justify-between"><span className="text-white/40">Dimensionen</span><span className="text-white/80">{world?.dimensions?.length ?? 0}</span></div>
+                  <div className="flex justify-between"><span className="text-white/55">Name</span><span className="text-white/80 font-mono">{world?.name ?? '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-white/55">Größe</span><span className="text-white/80 tabular-nums">{world ? fmtSize(world.size) : '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-white/55">Dimensionen</span><span className="text-white/80">{world?.dimensions?.length ?? 0}</span></div>
                 </div>
               </div>
               <div className="glass-card rounded-2xl p-5 border border-red-500/10">
                 <div className="flex items-center gap-2 mb-3"><AlertTriangle className="w-4 h-4 text-red-400/70" /><h3 className="text-sm font-medium text-white/70">Welt zurücksetzen</h3></div>
-                <p className="text-[13px] text-white/40 mb-4">Löscht die Welt komplett. <span className="text-red-400/70">Nicht umkehrbar!</span> Vorher Backup.</p>
+                <p className="text-[13px] text-white/55 mb-4">Löscht die Welt komplett. <span className="text-red-400/70">Nicht umkehrbar!</span> Vorher Backup.</p>
                 <button disabled={busy} onClick={resetWorld} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm bg-red-500/10 border border-red-500/25 text-red-300 hover:bg-red-500/20 disabled:opacity-30 transition"><RotateCcw className="w-4 h-4" /> Zurücksetzen</button>
               </div>
             </div>
@@ -598,18 +598,18 @@ export default function MinecraftPage() {
         {tab === 'config' && (
           <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4">
             <div className="glass-card rounded-2xl p-3 space-y-1 h-fit">
-              <p className="text-[10px] uppercase tracking-widest text-white/25 px-3 pt-1 pb-2">Dateien</p>
+              <p className="text-[11px] uppercase tracking-widest text-white/50 px-3 pt-1 pb-2">Dateien</p>
               {configs.map(f => { const pf = PLAYER_FILES[f]; const Icon = pf ? pf.icon : FileText; return (
-                <button key={f} onClick={() => loadConfig(f)} className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-[13px] font-mono truncate transition ${activeConfig === f ? 'bg-white/[0.06] text-white' : 'text-white/50 hover:bg-white/[0.03]'}`}><Icon className="w-3.5 h-3.5 opacity-40" /> {f}</button>
+                <button key={f} onClick={() => loadConfig(f)} className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-[13px] font-mono truncate transition ${activeConfig === f ? 'bg-white/[0.06] text-white' : 'text-white/65 hover:bg-white/[0.03]'}`}><Icon className="w-3.5 h-3.5 opacity-40" /> {f}</button>
               ); })}
-              {!configs.length && <p className="text-xs text-white/25 px-3 py-2">Lade…</p>}
+              {!configs.length && <p className="text-xs text-white/50 px-3 py-2">Lade…</p>}
             </div>
             <div className="glass-card rounded-2xl overflow-hidden flex flex-col">
               <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-mono text-white/60">{activeConfig || '—'}</span>
-                  {isYaml && <span className="text-[10px] uppercase tracking-wider text-cyan-300/60 bg-cyan-500/10 border border-cyan-500/15 rounded px-1.5 py-0.5">YAML</span>}
-                  {(isProps || isYaml) && <button onClick={() => setRawMode(m => !m)} className="flex items-center gap-1 text-[11px] text-white/30 hover:text-white/60 transition"><Code2 className="w-3 h-3" /> {rawMode ? 'Formular' : 'Rohtext'}</button>}
+                  <span className="text-sm font-mono text-white/70">{activeConfig || '—'}</span>
+                  {isYaml && <span className="text-[11px] uppercase tracking-wider text-cyan-300/60 bg-cyan-500/10 border border-cyan-500/15 rounded px-1.5 py-0.5">YAML</span>}
+                  {(isProps || isYaml) && <button onClick={() => setRawMode(m => !m)} className="flex items-center gap-1 text-[12px] text-white/50 hover:text-white/70 transition"><Code2 className="w-3 h-3" /> {rawMode ? 'Formular' : 'Rohtext'}</button>}
                 </div>
                 {!playerCfg && <button disabled={busy || !dirty} onClick={saveConfig} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-30 transition"><Save className="w-3.5 h-3.5" /> {savedFlash ? 'Gespeichert!' : 'Speichern'}</button>}
               </div>
@@ -617,11 +617,11 @@ export default function MinecraftPage() {
                 <div className="max-h-[52vh] overflow-y-auto p-5 space-y-6">
                   {SCHEMA.map(sec => { const Icon = sec.icon; return (
                     <div key={sec.section}>
-                      <div className="flex items-center gap-2 mb-3"><Icon className="w-4 h-4 text-orange-400/70" /><h3 className="text-xs uppercase tracking-widest text-white/40 font-medium">{sec.section}</h3></div>
+                      <div className="flex items-center gap-2 mb-3"><Icon className="w-4 h-4 text-orange-400/70" /><h3 className="text-xs uppercase tracking-widest text-white/55 font-medium">{sec.section}</h3></div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {sec.fields.map(field => { const val = props.get(field.key) ?? ''; return (
                           <div key={field.key} className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.02] border border-white/[0.05] px-3.5 py-2.5">
-                            <div className="min-w-0"><p className="text-[13px] text-white/70 truncate">{field.label}</p>{field.hint && <p className="text-[10px] text-white/25">{field.hint}</p>}</div>
+                            <div className="min-w-0"><p className="text-[13px] text-white/70 truncate">{field.label}</p>{field.hint && <p className="text-[11px] text-white/50">{field.hint}</p>}</div>
                             {field.type === 'bool' ? <Toggle checked={val === 'true'} onChange={v => setProp(field.key, v ? 'true' : 'false')} />
                               : field.type === 'select' ? <select value={val} onChange={e => setProp(field.key, e.target.value)} className="bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 py-1 text-[13px] text-white/80 outline-none focus:border-orange-400/40 capitalize">{field.options!.map(o => <option key={o} value={o} className="bg-neutral-900">{o}</option>)}</select>
                               : <input type={field.type === 'number' ? 'number' : 'text'} value={val} onChange={e => setProp(field.key, e.target.value)} className="w-32 bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 py-1 text-[13px] text-white/80 outline-none focus:border-orange-400/40 text-right" />}
@@ -634,15 +634,15 @@ export default function MinecraftPage() {
               ) : playerCfg ? (
                 <div className="p-5 space-y-4">
                   <div className="flex items-center gap-2">
-                    <input value={newPlayer} onChange={e => setNewPlayer(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPlayer()} placeholder="Spielername…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/25 outline-none focus:border-orange-400/40" />
+                    <input value={newPlayer} onChange={e => setNewPlayer(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPlayer()} placeholder="Spielername…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/45 outline-none focus:border-orange-400/40" />
                     <button disabled={busy || !newPlayer.trim()} onClick={addPlayer} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-30 transition"><UserPlus className="w-4 h-4" /> Hinzufügen</button>
                   </div>
                   <div className="space-y-2">
-                    {playerList.length === 0 && <p className="text-sm text-white/30 py-6 text-center">Keine Einträge in {playerCfg.label}.</p>}
+                    {playerList.length === 0 && <p className="text-sm text-white/50 py-6 text-center">Keine Einträge in {playerCfg.label}.</p>}
                     {playerList.map(name => (
                       <div key={name} className="flex items-center gap-3 rounded-xl bg-white/[0.02] border border-white/[0.05] px-3 py-2">
                         <Avatar name={name} /><span className="flex-1 text-sm text-white/80 font-medium truncate">{name}</span>
-                        <button onClick={() => removePlayer(name)} className="p-2 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => removePlayer(name)} className="p-2 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     ))}
                   </div>
@@ -650,7 +650,7 @@ export default function MinecraftPage() {
               ) : isYaml && !rawMode ? (
                 <YamlFormEditor key={activeConfig} content={rawContent} onChange={v => { setRawContent(v); setDirty(true); }} />
               ) : (
-                <><CodeEditor value={rawContent} onChange={v => { setRawContent(v); setDirty(true); }} /><p className="text-[11px] text-white/25 px-4 py-2 border-t border-white/[0.06]">Änderungen wirken je nach Datei erst nach einem Neustart.</p></>
+                <><CodeEditor value={rawContent} onChange={v => { setRawContent(v); setDirty(true); }} /><p className="text-[12px] text-white/50 px-4 py-2 border-t border-white/[0.06]">Änderungen wirken je nach Datei erst nach einem Neustart.</p></>
               )}
             </div>
           </div>
@@ -660,17 +660,17 @@ export default function MinecraftPage() {
         {tab === 'files' && (
           <div className="glass-card rounded-2xl overflow-hidden">
             <div className="flex items-center gap-1.5 border-b border-white/[0.06] px-4 py-2.5 text-[13px] overflow-x-auto">
-              <button onClick={() => { setFmFile(''); loadFiles(''); }} className="flex items-center gap-1 text-white/50 hover:text-white transition"><Home className="w-3.5 h-3.5" /> data</button>
+              <button onClick={() => { setFmFile(''); loadFiles(''); }} className="flex items-center gap-1 text-white/65 hover:text-white transition"><Home className="w-3.5 h-3.5" /> data</button>
               {crumbs.map((c, i) => (
                 <span key={i} className="flex items-center gap-1.5">
-                  <ChevronRight className="w-3 h-3 text-white/20" />
-                  <button onClick={() => { setFmFile(''); loadFiles(crumbs.slice(0, i + 1).join('/')); }} className="text-white/50 hover:text-white transition font-mono">{c}</button>
+                  <ChevronRight className="w-3 h-3 text-white/50" />
+                  <button onClick={() => { setFmFile(''); loadFiles(crumbs.slice(0, i + 1).join('/')); }} className="text-white/65 hover:text-white transition font-mono">{c}</button>
                 </span>
               ))}
-              {fmFile && <><ChevronRight className="w-3 h-3 text-white/20" /><span className="text-orange-300/80 font-mono">{fmFile.split('/').pop()}</span></>}
+              {fmFile && <><ChevronRight className="w-3 h-3 text-white/50" /><span className="text-orange-300/80 font-mono">{fmFile.split('/').pop()}</span></>}
               {fmFile && (
                 <div className="ml-auto flex items-center gap-3">
-                  {fmIsYaml && <button onClick={() => setFmRawMode(m => !m)} className="flex items-center gap-1 text-[11px] text-white/30 hover:text-white/60 transition"><Code2 className="w-3 h-3" /> {fmRawMode ? 'Formular' : 'Rohtext'}</button>}
+                  {fmIsYaml && <button onClick={() => setFmRawMode(m => !m)} className="flex items-center gap-1 text-[12px] text-white/50 hover:text-white/70 transition"><Code2 className="w-3 h-3" /> {fmRawMode ? 'Formular' : 'Rohtext'}</button>}
                   <button disabled={busy || !fmDirty} onClick={saveFile} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-30 transition"><Save className="w-3.5 h-3.5" /> Speichern</button>
                 </div>
               )}
@@ -689,15 +689,15 @@ export default function MinecraftPage() {
               )
             ) : (
               <div className="max-h-[52vh] overflow-y-auto divide-y divide-white/[0.03]">
-                {fmEntries.length === 0 && <p className="text-sm text-white/30 p-6 text-center">Leerer Ordner.</p>}
+                {fmEntries.length === 0 && <p className="text-sm text-white/50 p-6 text-center">Leerer Ordner.</p>}
                 {fmEntries.map(e => (
                   <button key={e.name} onClick={() => e.type === 'dir' ? loadFiles(fmPath ? `${fmPath}/${e.name}` : e.name) : e.editable ? openFile(fmPath ? `${fmPath}/${e.name}` : e.name) : null}
                     disabled={e.type === 'file' && !e.editable}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition ${e.type === 'dir' || e.editable ? 'hover:bg-white/[0.02]' : 'opacity-40 cursor-default'}`}>
-                    {e.type === 'dir' ? <Folder className="w-4 h-4 text-amber-400/70 flex-shrink-0" /> : e.editable ? <FileCode className="w-4 h-4 text-cyan-400/60 flex-shrink-0" /> : <FileText className="w-4 h-4 text-white/25 flex-shrink-0" />}
-                    <span className={`flex-1 text-[13px] font-mono truncate ${e.type === 'dir' ? 'text-white/80' : 'text-white/60'}`}>{e.name}</span>
-                    {e.type === 'file' && <span className="text-[11px] text-white/25 tabular-nums">{fmtSize(e.size)}</span>}
-                    {e.type === 'dir' && <ChevronRight className="w-4 h-4 text-white/20" />}
+                    {e.type === 'dir' ? <Folder className="w-4 h-4 text-amber-400/70 flex-shrink-0" /> : e.editable ? <FileCode className="w-4 h-4 text-cyan-400/60 flex-shrink-0" /> : <FileText className="w-4 h-4 text-white/50 flex-shrink-0" />}
+                    <span className={`flex-1 text-[13px] font-mono truncate ${e.type === 'dir' ? 'text-white/80' : 'text-white/70'}`}>{e.name}</span>
+                    {e.type === 'file' && <span className="text-[12px] text-white/50 tabular-nums">{fmtSize(e.size)}</span>}
+                    {e.type === 'dir' && <ChevronRight className="w-4 h-4 text-white/50" />}
                   </button>
                 ))}
               </div>
@@ -709,67 +709,67 @@ export default function MinecraftPage() {
         {tab === 'plugins' && (
           <div className="space-y-4">
             <div className="flex items-center gap-1 bg-white/[0.03] rounded-xl p-1 w-fit">
-              <button onClick={() => setPluginSub('installed')} className={`px-3 py-1.5 rounded-lg text-[13px] transition flex items-center gap-1.5 ${pluginSub === 'installed' ? 'bg-white/[0.08] text-white' : 'text-white/40 hover:text-white/70'}`}><Puzzle className="w-3.5 h-3.5" /> Installiert ({plugins.length})</button>
-              <button onClick={() => setPluginSub('browse')} className={`px-3 py-1.5 rounded-lg text-[13px] transition flex items-center gap-1.5 ${pluginSub === 'browse' ? 'bg-white/[0.08] text-white' : 'text-white/40 hover:text-white/70'}`}><Sparkles className="w-3.5 h-3.5" /> Entdecken</button>
+              <button onClick={() => setPluginSub('installed')} className={`px-3 py-1.5 rounded-lg text-[13px] transition flex items-center gap-1.5 ${pluginSub === 'installed' ? 'bg-white/[0.08] text-white' : 'text-white/55 hover:text-white/70'}`}><Puzzle className="w-3.5 h-3.5" /> Installiert ({plugins.length})</button>
+              <button onClick={() => setPluginSub('browse')} className={`px-3 py-1.5 rounded-lg text-[13px] transition flex items-center gap-1.5 ${pluginSub === 'browse' ? 'bg-white/[0.08] text-white' : 'text-white/55 hover:text-white/70'}`}><Sparkles className="w-3.5 h-3.5" /> Entdecken</button>
             </div>
 
             {pluginSub === 'installed' && (<>
               <div className="glass-card rounded-2xl p-4 flex items-center gap-3">
                 <Puzzle className="w-4 h-4 text-orange-400/70 flex-shrink-0" />
-                <input value={pluginUrl} onChange={e => setPluginUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && installPlugin()} placeholder="Plugin-Name (z. B. luckperms) oder Modrinth-Link…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/25 outline-none focus:border-orange-400/40" />
+                <input value={pluginUrl} onChange={e => setPluginUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && installPlugin()} placeholder="Plugin-Name (z. B. luckperms) oder Modrinth-Link…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/45 outline-none focus:border-orange-400/40" />
                 <button disabled={busy || !pluginUrl.trim()} onClick={installPlugin} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm bg-orange-500/15 border border-orange-500/25 text-orange-300 hover:bg-orange-500/25 disabled:opacity-30 transition"><Plus className="w-4 h-4" /> Installieren</button>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm text-white/40">{plugins.length} Plugin{plugins.length !== 1 ? 's' : ''}{pluginUpdates.length ? ` · ${pluginUpdates.length} Update${pluginUpdates.length !== 1 ? 's' : ''}` : ''}</p>
-                <button disabled={checkingUpdates} onClick={checkUpdates} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] bg-white/[0.04] border border-white/[0.08] text-white/60 hover:text-white/90 hover:bg-white/[0.07] disabled:opacity-40 transition"><RotateCw className={`w-3.5 h-3.5 ${checkingUpdates ? 'animate-spin' : ''}`} /> {checkingUpdates ? 'Prüfe…' : 'Nach Updates suchen'}</button>
+                <p className="text-sm text-white/55">{plugins.length} Plugin{plugins.length !== 1 ? 's' : ''}{pluginUpdates.length ? ` · ${pluginUpdates.length} Update${pluginUpdates.length !== 1 ? 's' : ''}` : ''}</p>
+                <button disabled={checkingUpdates} onClick={checkUpdates} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] bg-white/[0.04] border border-white/[0.08] text-white/70 hover:text-white/90 hover:bg-white/[0.07] disabled:opacity-40 transition"><RotateCw className={`w-3.5 h-3.5 ${checkingUpdates ? 'animate-spin' : ''}`} /> {checkingUpdates ? 'Prüfe…' : 'Nach Updates suchen'}</button>
               </div>
               <div className="glass-card rounded-2xl divide-y divide-white/[0.04]">
-                {plugins.length === 0 && <p className="text-sm text-white/30 p-5 text-center">Keine Plugins installiert.</p>}
+                {plugins.length === 0 && <p className="text-sm text-white/50 p-5 text-center">Keine Plugins installiert.</p>}
                 {plugins.map(p => {
                   const upd = pluginUpdates.find(u => u.file === p.name);
                   return (
                     <div key={p.name} className="flex items-center gap-3 px-4 py-3 flex-wrap">
-                      <Puzzle className={`w-4 h-4 flex-shrink-0 ${p.enabled ? 'text-emerald-400/70' : 'text-white/20'}`} />
+                      <Puzzle className={`w-4 h-4 flex-shrink-0 ${p.enabled ? 'text-emerald-400/70' : 'text-white/50'}`} />
                       <div className="flex-1 min-w-[120px]">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className={`text-sm font-mono truncate ${p.enabled ? 'text-white/80' : 'text-white/40'}`}>{p.name}</p>
-                          {upd && <span className="text-[10px] uppercase tracking-wider text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5">Update: {upd.latest}</span>}
+                          <p className={`text-sm font-mono truncate ${p.enabled ? 'text-white/80' : 'text-white/55'}`}>{p.name}</p>
+                          {upd && <span className="text-[11px] uppercase tracking-wider text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5">Update: {upd.latest}</span>}
                         </div>
-                        <p className="text-[11px] text-white/25">{fmtSize(p.size)} · {p.enabled ? 'aktiv' : 'deaktiviert'}</p>
+                        <p className="text-[12px] text-white/50">{fmtSize(p.size)} · {p.enabled ? 'aktiv' : 'deaktiviert'}</p>
                       </div>
                       {upd && <button disabled={pluginBusy === upd.slug} onClick={() => installBySlug(upd.slug, p.name)} className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] text-amber-200 bg-amber-500/15 border border-amber-500/25 hover:bg-amber-500/25 disabled:opacity-40 transition">{pluginBusy === upd.slug ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} Aktualisieren</button>}
                       <Toggle checked={p.enabled} onChange={() => togglePlugin(p)} />
-                      <button onClick={() => deletePlugin(p)} className="p-2 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => deletePlugin(p)} className="p-2 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   );
                 })}
               </div>
-              <p className="text-[11px] text-white/25">Gib den Modrinth-Namen (z. B. <span className="font-mono text-white/40">coreprotect</span>) oder einen direkten <span className="font-mono text-white/40">.jar</span>-Link an. Nach Installieren/Aktualisieren Neustart nötig. Plugin-Einstellungen im Tab „Dateien".</p>
+              <p className="text-[12px] text-white/50">Gib den Modrinth-Namen (z. B. <span className="font-mono text-white/55">coreprotect</span>) oder einen direkten <span className="font-mono text-white/55">.jar</span>-Link an. Nach Installieren/Aktualisieren Neustart nötig. Plugin-Einstellungen im Tab „Dateien".</p>
             </>)}
 
             {pluginSub === 'browse' && (<>
               <div className="glass-card rounded-2xl p-4 flex items-center gap-3">
                 <Sparkles className="w-4 h-4 text-orange-400/70 flex-shrink-0" />
-                <input value={browseQuery} onChange={e => setBrowseQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && browsePlugins()} placeholder="Modrinth durchsuchen (z. B. economy, protection, chat)…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/25 outline-none focus:border-orange-400/40" />
+                <input value={browseQuery} onChange={e => setBrowseQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && browsePlugins()} placeholder="Modrinth durchsuchen (z. B. economy, protection, chat)…" className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/45 outline-none focus:border-orange-400/40" />
                 <button disabled={browsing} onClick={() => browsePlugins()} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm bg-orange-500/15 border border-orange-500/25 text-orange-300 hover:bg-orange-500/25 disabled:opacity-30 transition">{browsing ? <RotateCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Suchen</button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {browseResults.length === 0 && !browsing && <p className="text-sm text-white/30 p-5 text-center md:col-span-2">Keine Treffer.</p>}
+                {browseResults.length === 0 && !browsing && <p className="text-sm text-white/50 p-5 text-center md:col-span-2">Keine Treffer.</p>}
                 {browseResults.map(r => {
                   const inst = plugins.some(p => p.name.toLowerCase().startsWith(r.slug.toLowerCase()));
                   return (
                     <div key={r.slug} className="glass-card rounded-2xl p-4 flex gap-3">
                       <div className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {r.icon ? <img src={r.icon} alt="" className="w-full h-full object-cover" /> : <Puzzle className="w-5 h-5 text-white/30" />}
+                        {r.icon ? <img src={r.icon} alt="" className="w-full h-full object-cover" /> : <Puzzle className="w-5 h-5 text-white/50" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-medium text-white/85 truncate">{r.title}</p>
-                          {r.compatible && <span className="text-[10px] text-emerald-300/70 bg-emerald-500/10 rounded px-1.5 py-0.5">26.2 ✓</span>}
+                          {r.compatible && <span className="text-[11px] text-emerald-300/70 bg-emerald-500/10 rounded px-1.5 py-0.5">26.2 ✓</span>}
                         </div>
-                        <p className="text-[11px] text-white/35 line-clamp-2 mt-0.5">{r.description}</p>
+                        <p className="text-[12px] text-white/50 line-clamp-2 mt-0.5">{r.description}</p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="text-[10px] text-white/25">{r.downloads?.toLocaleString('de-DE')} Downloads</span>
+                          <span className="text-[11px] text-white/50">{r.downloads?.toLocaleString('de-DE')} Downloads</span>
                           {inst
                             ? <span className="ml-auto text-[12px] text-emerald-300/70 flex items-center gap-1"><Circle className="w-2 h-2 fill-current" /> installiert</span>
                             : <button disabled={pluginBusy === r.slug} onClick={() => installBySlug(r.slug, r.title)} className="ml-auto flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] text-orange-200 bg-orange-500/15 border border-orange-500/25 hover:bg-orange-500/25 disabled:opacity-40 transition">{pluginBusy === r.slug ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Installieren</button>}
@@ -780,11 +780,11 @@ export default function MinecraftPage() {
                 })}
               </div>
               {browseResults.length > 0 && browseResults.length < browseTotal && (
-                <button disabled={browsing} onClick={() => browsePlugins(true)} className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white/90 hover:bg-white/[0.06] disabled:opacity-40 transition">
+                <button disabled={browsing} onClick={() => browsePlugins(true)} className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm bg-white/[0.03] border border-white/[0.08] text-white/70 hover:text-white/90 hover:bg-white/[0.06] disabled:opacity-40 transition">
                   {browsing ? <RotateCw className="w-4 h-4 animate-spin" /> : <ChevronDown className="w-4 h-4" />} Mehr laden ({browseResults.length} von {browseTotal.toLocaleString('de-DE')})
                 </button>
               )}
-              <p className="text-[11px] text-white/25">Quelle: Modrinth · passende Version für MC 26.2 wird automatisch geholt. Nach dem Installieren Server neu starten.</p>
+              <p className="text-[12px] text-white/50">Quelle: Modrinth · passende Version für MC 26.2 wird automatisch geholt. Nach dem Installieren Server neu starten.</p>
             </>)}
           </div>
         )}
@@ -793,17 +793,17 @@ export default function MinecraftPage() {
         {tab === 'backups' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-white/40">{backups.length} Backup{backups.length !== 1 ? 's' : ''} · {isPelican ? 'in Pelican' : 'auf dem VPS'}</p>
+              <p className="text-sm text-white/55">{backups.length} Backup{backups.length !== 1 ? 's' : ''} · {isPelican ? 'in Pelican' : 'auf dem VPS'}</p>
               <button disabled={busy} onClick={createBackup} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-30 transition"><Plus className="w-4 h-4" /> {busy ? 'Erstelle…' : 'Backup erstellen'}</button>
             </div>
             <div className="glass-card rounded-2xl divide-y divide-white/[0.04]">
-              {backups.length === 0 && <p className="text-sm text-white/30 p-5 text-center">Noch keine Backups.</p>}
+              {backups.length === 0 && <p className="text-sm text-white/50 p-5 text-center">Noch keine Backups.</p>}
               {backups.map(b => (
                 <div key={b.id ?? b.name} className="flex items-center gap-3 px-4 py-3">
-                  <Archive className="w-4 h-4 text-white/30 flex-shrink-0" />
-                  <div className="flex-1 min-w-0"><p className="text-sm font-mono text-white/75 truncate">{b.name}</p><p className="text-[11px] text-white/25">{fmtDate(b.created)} · {fmtSize(b.size)}</p></div>
+                  <Archive className="w-4 h-4 text-white/50 flex-shrink-0" />
+                  <div className="flex-1 min-w-0"><p className="text-sm font-mono text-white/75 truncate">{b.name}</p><p className="text-[12px] text-white/50">{fmtDate(b.created)} · {fmtSize(b.size)}</p></div>
                   <button onClick={() => restoreBackup(b)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] text-amber-300/80 hover:bg-amber-500/10 transition"><RotateCcw className="w-3.5 h-3.5" /> Wiederherstellen</button>
-                  <button onClick={() => deleteBackup(b)} className="p-2 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => deleteBackup(b)} className="p-2 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition"><Trash2 className="w-4 h-4" /></button>
                 </div>
               ))}
             </div>
@@ -823,15 +823,15 @@ export default function MinecraftPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[12px] text-white/45">Intervall (Stunden)</span>
+                  <span className="text-[12px] text-white/60">Intervall (Stunden)</span>
                   <input type="number" min={1} max={720} value={autoBackup.intervalHours} onChange={e => setAutoBackup(p => ({ ...p, intervalHours: parseInt(e.target.value) || 1 }))} onBlur={() => saveAutoBackup({})} className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 outline-none focus:border-orange-400/40" />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[12px] text-white/45">Aufbewahren (Anzahl)</span>
+                  <span className="text-[12px] text-white/60">Aufbewahren (Anzahl)</span>
                   <input type="number" min={1} max={100} value={autoBackup.retention} onChange={e => setAutoBackup(p => ({ ...p, retention: parseInt(e.target.value) || 1 }))} onBlur={() => saveAutoBackup({})} className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 outline-none focus:border-orange-400/40" />
                 </label>
               </div>
-              <p className="text-[11px] text-white/25 mt-3">
+              <p className="text-[12px] text-white/50 mt-3">
                 {autoBackup.enabled
                   ? `Aktiv · alle ${autoBackup.intervalHours} h, ${autoBackup.retention} neueste behalten${lastBackupAt ? ` · nächstes ~ ${fmtDate(new Date(lastBackupAt + autoBackup.intervalHours * 3600000).toISOString())}` : ''}`
                   : 'Deaktiviert — Backups nur manuell im Tab „Backups".'}
@@ -842,33 +842,33 @@ export default function MinecraftPage() {
             <div className="glass-card rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-4"><CalendarClock className="w-4 h-4 text-orange-400/80" /><h3 className="text-sm font-medium text-white/70">Geplante Befehle</h3></div>
               <div className="flex flex-col gap-2.5 mb-4">
-                <input value={newCmd} onChange={e => setNewCmd(e.target.value)} placeholder="Befehl (z. B. say Server-Neustart in 5 Min)" className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/25 outline-none focus:border-orange-400/40" />
+                <input value={newCmd} onChange={e => setNewCmd(e.target.value)} placeholder="Befehl (z. B. say Server-Neustart in 5 Min)" className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/45 outline-none focus:border-orange-400/40" />
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex items-center gap-1 bg-white/[0.03] rounded-lg p-1">
-                    <button onClick={() => setCmdType('daily')} className={`px-3 py-1.5 rounded-md text-[12px] transition flex items-center gap-1.5 ${cmdType === 'daily' ? 'bg-white/[0.08] text-white' : 'text-white/40 hover:text-white/70'}`}><Clock className="w-3.5 h-3.5" /> Täglich</button>
-                    <button onClick={() => setCmdType('interval')} className={`px-3 py-1.5 rounded-md text-[12px] transition flex items-center gap-1.5 ${cmdType === 'interval' ? 'bg-white/[0.08] text-white' : 'text-white/40 hover:text-white/70'}`}><Repeat className="w-3.5 h-3.5" /> Intervall</button>
+                    <button onClick={() => setCmdType('daily')} className={`px-3 py-1.5 rounded-md text-[12px] transition flex items-center gap-1.5 ${cmdType === 'daily' ? 'bg-white/[0.08] text-white' : 'text-white/55 hover:text-white/70'}`}><Clock className="w-3.5 h-3.5" /> Täglich</button>
+                    <button onClick={() => setCmdType('interval')} className={`px-3 py-1.5 rounded-md text-[12px] transition flex items-center gap-1.5 ${cmdType === 'interval' ? 'bg-white/[0.08] text-white' : 'text-white/55 hover:text-white/70'}`}><Repeat className="w-3.5 h-3.5" /> Intervall</button>
                   </div>
                   {cmdType === 'daily'
                     ? <input type="time" value={cmdTime} onChange={e => setCmdTime(e.target.value)} className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 outline-none focus:border-orange-400/40" />
-                    : <div className="flex items-center gap-1.5"><span className="text-[12px] text-white/40">alle</span><input type="number" min={1} max={10080} value={cmdMinutes} onChange={e => setCmdMinutes(parseInt(e.target.value) || 1)} className="w-24 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 outline-none focus:border-orange-400/40" /><span className="text-[12px] text-white/40">Min.</span></div>}
+                    : <div className="flex items-center gap-1.5"><span className="text-[12px] text-white/55">alle</span><input type="number" min={1} max={10080} value={cmdMinutes} onChange={e => setCmdMinutes(parseInt(e.target.value) || 1)} className="w-24 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 outline-none focus:border-orange-400/40" /><span className="text-[12px] text-white/55">Min.</span></div>}
                   <button disabled={busy || !newCmd.trim()} onClick={addSchedCmd} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm bg-orange-500/15 border border-orange-500/25 text-orange-200 hover:bg-orange-500/25 disabled:opacity-30 transition ml-auto"><Plus className="w-4 h-4" /> Anlegen</button>
                 </div>
               </div>
               <div className="rounded-xl divide-y divide-white/[0.04] bg-white/[0.01] border border-white/[0.04]">
-                {schedCmds.length === 0 && <p className="text-sm text-white/30 p-5 text-center">Noch keine geplanten Befehle.</p>}
+                {schedCmds.length === 0 && <p className="text-sm text-white/50 p-5 text-center">Noch keine geplanten Befehle.</p>}
                 {schedCmds.map(c => (
                   <div key={c.id} className="flex items-center gap-3 px-4 py-3">
                     {c.type === 'daily' ? <Clock className="w-4 h-4 text-cyan-400/60 flex-shrink-0" /> : <Repeat className="w-4 h-4 text-violet-400/60 flex-shrink-0" />}
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-mono truncate ${c.enabled ? 'text-white/80' : 'text-white/35'}`}>/{c.command}</p>
-                      <p className="text-[11px] text-white/25">{c.type === 'daily' ? `täglich um ${c.time} Uhr` : `alle ${c.minutes} Min.`}{c.lastRun ? ` · zuletzt ${fmtDate(new Date(c.lastRun).toISOString())}` : ''}</p>
+                      <p className={`text-sm font-mono truncate ${c.enabled ? 'text-white/80' : 'text-white/50'}`}>/{c.command}</p>
+                      <p className="text-[12px] text-white/50">{c.type === 'daily' ? `täglich um ${c.time} Uhr` : `alle ${c.minutes} Min.`}{c.lastRun ? ` · zuletzt ${fmtDate(new Date(c.lastRun).toISOString())}` : ''}</p>
                     </div>
                     <Toggle checked={c.enabled} onChange={() => toggleSchedCmd(c)} />
-                    <button onClick={() => deleteSchedCmd(c)} className="p-2 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => deleteSchedCmd(c)} className="p-2 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-white/25 mt-3">Befehle laufen server-seitig über RCON — auch ohne offenen Browser. Der Server muss zur Ausführung laufen.</p>
+              <p className="text-[12px] text-white/50 mt-3">Befehle laufen server-seitig über RCON — auch ohne offenen Browser. Der Server muss zur Ausführung laufen.</p>
             </div>
           </div>
         )}
@@ -883,7 +883,7 @@ export default function MinecraftPage() {
             <div className="glass-card rounded-2xl overflow-hidden bg-black/40">
               <iframe src={mapUrl} title="BlueMap" className="w-full h-[70vh] border-0" />
             </div>
-            <p className="text-[11px] text-white/25">Interaktive 3D-/2D-Karte (Overworld, Nether, End). Bleibt die Einbettung leer, blockiert der Browser gemischte Inhalte (HTTPS-Dashboard ↔ HTTP-Karte) — dann „In neuem Tab öffnen" nutzen. Dauerhafte Lösung: BlueMap über eine eigene HTTPS-Subdomain (Cloudflare-Tunnel).</p>
+            <p className="text-[12px] text-white/50">Interaktive 3D-/2D-Karte (Overworld, Nether, End). Bleibt die Einbettung leer, blockiert der Browser gemischte Inhalte (HTTPS-Dashboard ↔ HTTP-Karte) — dann „In neuem Tab öffnen" nutzen. Dauerhafte Lösung: BlueMap über eine eigene HTTPS-Subdomain (Cloudflare-Tunnel).</p>
           </div>
         )}
       </div>

@@ -44,20 +44,20 @@ export function PerformancePanel({ api, server }: { api: Api; server: GameServer
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="glass-card rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-3 text-xs text-white/50"><Activity className="w-4 h-4 text-cyan-400" /> CPU-Verlauf</div>
+          <div className="flex items-center gap-2 mb-3 text-xs text-white/65"><Activity className="w-4 h-4 text-cyan-400" /> CPU-Verlauf</div>
           <Sparkline data={hist.map(h => h.cpu)} color="#06b6d4" height={90} min={0} max={Math.max(cpuMax, ...hist.map(h => h.cpu))} />
-          {hist.length < 2 && <p className="text-[11px] text-white/25 mt-2">Der Verlauf füllt sich, solange diese Seite offen ist.</p>}
+          {hist.length < 2 && <p className="text-[12px] text-white/50 mt-2">Der Verlauf füllt sich, solange diese Seite offen ist.</p>}
         </div>
         <div className="glass-card rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-3 text-xs text-white/50"><MemoryStick className="w-4 h-4 text-violet-400" /> Speicher-Verlauf</div>
+          <div className="flex items-center gap-2 mb-3 text-xs text-white/65"><MemoryStick className="w-4 h-4 text-violet-400" /> Speicher-Verlauf</div>
           <Sparkline data={hist.map(h => h.memory)} color="#8b5cf6" height={90} min={0} max={memLimit || undefined} />
         </div>
       </div>
 
       <div className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-        <div className="flex items-center gap-2"><ArrowDownUp className="w-4 h-4 text-white/40" /><span className="text-white/50">Netzwerk</span><span className="text-white/70 tabular-nums ml-auto sm:ml-2">↓ {fmtSize(s?.rx || 0)} · ↑ {fmtSize(s?.tx || 0)}</span></div>
-        <div className="flex items-center gap-2"><span className="text-white/50">Adresse</span><span className="font-mono text-white/70">{server.host || '–'}</span></div>
-        <div className="flex items-center gap-2"><span className="text-white/50">Limits</span><span className="text-white/70">{server.limits.memory ? `${zahl(server.limits.memory / 1024, 1)} GB RAM` : '∞ RAM'} · {server.limits.cpu ? `${server.limits.cpu} % CPU` : '∞ CPU'}</span></div>
+        <div className="flex items-center gap-2"><ArrowDownUp className="w-4 h-4 text-white/55" /><span className="text-white/65">Netzwerk</span><span className="text-white/70 tabular-nums ml-auto sm:ml-2">↓ {fmtSize(s?.rx || 0)} · ↑ {fmtSize(s?.tx || 0)}</span></div>
+        <div className="flex items-center gap-2"><span className="text-white/65">Adresse</span><span className="font-mono text-white/70">{server.host || '–'}</span></div>
+        <div className="flex items-center gap-2"><span className="text-white/65">Limits</span><span className="text-white/70">{server.limits.memory ? `${zahl(server.limits.memory / 1024, 1)} GB RAM` : '∞ RAM'} · {server.limits.cpu ? `${server.limits.cpu} % CPU` : '∞ CPU'}</span></div>
       </div>
     </div>
   );

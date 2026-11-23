@@ -87,10 +87,10 @@ export default function SharePage() {
           <div className="flex flex-col items-center text-center gap-3 py-4">
             <AlertTriangle className="w-10 h-10 text-amber-400/70" />
             <h1 className="text-lg font-semibold text-white/90">Link nicht verfügbar</h1>
-            <p className="text-sm text-white/50">{fehler}</p>
+            <p className="text-sm text-white/65">{fehler}</p>
           </div>
         ) : !info ? (
-          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-white/30" /></div>
+          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-white/50" /></div>
         ) : (
           <div className="space-y-5">
             <div className="flex flex-col items-center text-center gap-3">
@@ -99,13 +99,13 @@ export default function SharePage() {
               </div>
               <div className="min-w-0 w-full">
                 <h1 className="text-lg font-semibold text-white/90 break-words">{info.name}</h1>
-                <p className="text-sm text-white/40 mt-1">{groesse(info.size)}</p>
+                <p className="text-sm text-white/55 mt-1">{groesse(info.size)}</p>
               </div>
             </div>
 
             {info.needsPassword && (
               <label className="block space-y-1.5">
-                <span className="flex items-center gap-1.5 text-xs text-white/40"><Lock className="w-3 h-3" /> Passwort</span>
+                <span className="flex items-center gap-1.5 text-xs text-white/55"><Lock className="w-3 h-3" /> Passwort</span>
                 <input
                   type="password"
                   value={passwort}
@@ -133,7 +133,7 @@ export default function SharePage() {
               {gestartet ? 'Erneut herunterladen' : 'Herunterladen'}
             </button>
 
-            <div className="flex items-center justify-center gap-1.5 text-xs text-white/30">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-white/50">
               <Clock className="w-3 h-3" />
               {info.expiresAt ? `Verfügbar bis ${ablauf(info.expiresAt)}` : 'Ohne Ablaufdatum'}
               {info.restDownloads != null && ` · noch ${info.restDownloads} ${info.restDownloads === 1 ? 'Download' : 'Downloads'}`}

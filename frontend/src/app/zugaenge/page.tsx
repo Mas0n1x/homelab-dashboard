@@ -60,7 +60,7 @@ export default function ZugaengePage() {
           </div>
           <div className="min-w-0">
             <h1 className="text-xl font-semibold leading-none">Zugänge</h1>
-            <p className="text-sm text-white/40 mt-1 truncate">Mit einem Klick als Admin angemeldet</p>
+            <p className="text-sm text-white/55 mt-1 truncate">Mit einem Klick als Admin angemeldet</p>
           </div>
         </div>
 
@@ -81,7 +81,7 @@ export default function ZugaengePage() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold leading-tight">{ziel.name}</p>
-                    <p className="text-xs text-white/40 mt-0.5 truncate">{ziel.beschreibung}</p>
+                    <p className="text-xs text-white/55 mt-0.5 truncate">{ziel.beschreibung}</p>
                   </div>
                 </div>
 

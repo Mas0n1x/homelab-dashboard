@@ -87,11 +87,11 @@ function ServiceTile({ svc, onOpen }: { svc: StatusService; onOpen: () => void }
             'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
             svc.vanished ? 'bg-white/[0.05]' : isUp ? 'bg-accent/10' : 'bg-red-500/10',
           )}>
-            <Icon className={clsx('w-5 h-5', svc.vanished ? 'text-white/30' : isUp ? 'text-accent-light' : 'text-red-400')} />
+            <Icon className={clsx('w-5 h-5', svc.vanished ? 'text-white/50' : isUp ? 'text-accent-light' : 'text-red-400')} />
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {svc.source === 'docker' && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center gap-0.5">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center gap-0.5">
                 <Zap className="w-2.5 h-2.5" />Auto
               </span>
             )}
@@ -106,21 +106,21 @@ function ServiceTile({ svc, onOpen }: { svc: StatusService; onOpen: () => void }
           <div className="flex items-center gap-1.5 min-w-0">
             <p className={clsx('text-sm font-semibold truncate', svc.vanished && 'line-through')}>{svc.name}</p>
             {svc.isNew && (
-              <span className="flex items-center gap-0.5 flex-shrink-0 px-1.5 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-400/30 text-[9px] font-semibold text-cyan-300 uppercase tracking-wide">
+              <span className="flex items-center gap-0.5 flex-shrink-0 px-1.5 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-400/30 text-[10px] font-semibold text-cyan-300 uppercase tracking-wide">
                 <Sparkles className="w-2.5 h-2.5" /> Neu
               </span>
             )}
           </div>
-          <p className="text-[10px] text-white/30 truncate mt-0.5">{svc.category}</p>
+          <p className="text-[11px] text-white/50 truncate mt-0.5">{svc.category}</p>
           {host && (
-            <div className="flex items-center gap-1 mt-1.5 text-[11px] text-white/40 font-mono truncate">
+            <div className="flex items-center gap-1 mt-1.5 text-[12px] text-white/55 font-mono truncate">
               <span className="truncate">{host}</span>
               {(svc.publicUrl || svc.url) && !svc.vanished && (
                 <a
                   href={svc.publicUrl || svc.url || undefined}
                   target="_blank" rel="noreferrer"
                   onClick={e => e.stopPropagation()}
-                  className="text-white/20 hover:text-white/70 transition-colors flex-shrink-0"
+                  className="text-white/50 hover:text-white/70 transition-colors flex-shrink-0"
                   title="Dienst öffnen"
                 >
                   <ExternalLink className="w-3 h-3" />
@@ -133,14 +133,14 @@ function ServiceTile({ svc, onOpen }: { svc: StatusService; onOpen: () => void }
         <div className="pt-2 border-t border-white/[0.05] flex items-center justify-between text-xs tabular-nums">
           <span className={clsx(
             'font-semibold',
-            uptime === null ? 'text-white/30'
+            uptime === null ? 'text-white/50'
               : uptime >= 99 ? 'text-emerald-400'
               : uptime >= 80 ? 'text-amber-400'
               : 'text-red-400',
           )}>
             {svc.vanished ? 'entfernt' : uptime !== null ? `${uptime}% · 24h` : '–'}
           </span>
-          <span className="text-white/40">{svc.avgResponseTime ? `${svc.avgResponseTime} ms` : ''}</span>
+          <span className="text-white/55">{svc.avgResponseTime ? `${svc.avgResponseTime} ms` : ''}</span>
         </div>
       </div>
     </button>
@@ -153,26 +153,26 @@ function ServiceForm({ form, setForm, onSubmit, pending, submitLabel }: {
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-xs text-white/40 block mb-1.5">Name</label>
+        <label className="text-xs text-white/55 block mb-1.5">Name</label>
         <input className="glass-input w-full" placeholder="Dienstname" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
       </div>
       <div>
-        <label className="text-xs text-white/40 block mb-1.5">URL</label>
+        <label className="text-xs text-white/55 block mb-1.5">URL</label>
         <input className="glass-input w-full" placeholder="https://..." value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} />
       </div>
       <div>
-        <label className="text-xs text-white/40 block mb-1.5">Beschreibung</label>
+        <label className="text-xs text-white/55 block mb-1.5">Beschreibung</label>
         <input className="glass-input w-full" placeholder="Optional" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-white/40 block mb-1.5">Icon</label>
+          <label className="text-xs text-white/55 block mb-1.5">Icon</label>
           <select className="glass-input w-full" value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })}>
             {ICON_OPTIONS.map(icon => <option key={icon} value={icon}>{icon}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-xs text-white/40 block mb-1.5">Kategorie</label>
+          <label className="text-xs text-white/55 block mb-1.5">Kategorie</label>
           <input className="glass-input w-full" placeholder="Kategorie" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} />
         </div>
       </div>
@@ -252,7 +252,7 @@ export default function StatusPage() {
             <h1 className="text-2xl font-bold">
               Service <span className="text-gradient">Status</span>
             </h1>
-            <p className="text-sm text-white/40 mt-1">
+            <p className="text-sm text-white/55 mt-1">
               Dienste erscheinen automatisch beim Deploy und verschwinden, sobald sie vom Server sind
             </p>
           </div>
@@ -264,7 +264,7 @@ export default function StatusPage() {
                   onClick={() => setDays(r.days)}
                   className={clsx(
                     'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                    days === r.days ? 'bg-white/[0.09] text-white' : 'text-white/40 hover:text-white/70',
+                    days === r.days ? 'bg-white/[0.09] text-white' : 'text-white/55 hover:text-white/70',
                   )}
                 >
                   {r.label}
@@ -273,7 +273,7 @@ export default function StatusPage() {
             </div>
             <button
               onClick={() => refetch()}
-              className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white/40 hover:text-white/80 transition-colors"
+              className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white/55 hover:text-white/80 transition-colors"
               title="Neu laden"
             >
               <RefreshCw className={clsx('w-4 h-4', isFetching && 'animate-spin')} />
@@ -302,7 +302,7 @@ export default function StatusPage() {
                 : allOk ? 'Alle Systeme betriebsbereit'
                 : `${summary.down} von ${summary.total} Diensten offline`}
             </p>
-            <p className="text-xs text-white/40 mt-0.5">
+            <p className="text-xs text-white/55 mt-0.5">
               {summary.up} online · {summary.total} überwacht · {summary.servers} Server
             </p>
           </div>
@@ -329,18 +329,18 @@ export default function StatusPage() {
         {groups.map(g => (
           <div key={g.server.id}>
             <div className="flex items-center gap-2 mb-3 flex-wrap">
-              <Server className="w-4 h-4 text-white/40 flex-shrink-0" />
+              <Server className="w-4 h-4 text-white/55 flex-shrink-0" />
               <h2 className="text-sm font-semibold">{g.server.name}</h2>
-              <span className="text-xs text-white/30">{g.services.length} Dienste</span>
+              <span className="text-xs text-white/50">{g.services.length} Dienste</span>
               {g.stale && (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-400/25 text-[10px] text-amber-300">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-400/25 text-[11px] text-amber-300">
                   <Clock className="w-2.5 h-2.5" />
                   Erkennung {relativeTime(g.lastDiscovery)}
                 </span>
               )}
               <button
                 onClick={() => { setAddFor(g.server.id); setAddForm(EMPTY_FORM); }}
-                className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs text-white/50 hover:text-white/90 hover:bg-white/[0.06] transition-colors"
+                className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs text-white/65 hover:text-white/90 hover:bg-white/[0.06] transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" /> Dienst hinzufügen
               </button>
@@ -348,7 +348,7 @@ export default function StatusPage() {
 
             {g.services.length === 0 ? (
               <GlassCard>
-                <p className="relative z-10 py-6 text-center text-sm text-white/30">
+                <p className="relative z-10 py-6 text-center text-sm text-white/50">
                   Keine Dienste erkannt — läuft auf diesem Server gerade nichts?
                 </p>
               </GlassCard>
@@ -363,7 +363,7 @@ export default function StatusPage() {
         ))}
 
         {!isLoading && groups.length === 0 && (
-          <p className="text-sm text-white/30 text-center py-8">Keine Server angebunden.</p>
+          <p className="text-sm text-white/50 text-center py-8">Keine Server angebunden.</p>
         )}
       </div>
 
@@ -379,9 +379,9 @@ export default function StatusPage() {
               <span className="text-sm text-white/70">
                 {detail.vanished ? 'Nicht mehr auf dem Server gefunden' : detail.current !== false ? 'Online' : 'Offline'}
               </span>
-              <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-white/40 border border-white/10">{detail.category}</span>
+              <span className="ml-auto text-[11px] px-1.5 py-0.5 rounded bg-white/[0.05] text-white/55 border border-white/10">{detail.category}</span>
               {detail.source === 'docker' && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center gap-0.5">
+                <span className="text-[11px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center gap-0.5">
                   <Zap className="w-2.5 h-2.5" />Auto
                 </span>
               )}
@@ -397,45 +397,45 @@ export default function StatusPage() {
               </a>
             )}
 
-            {detail.description && <p className="text-sm text-white/50">{detail.description}</p>}
+            {detail.description && <p className="text-sm text-white/65">{detail.description}</p>}
 
             <div className="grid grid-cols-3 gap-3">
               <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] text-center">
                 <p className={clsx('text-lg font-bold', (detail.uptime24h ?? 0) >= 99 ? 'text-emerald-400' : (detail.uptime24h ?? 0) >= 80 ? 'text-amber-400' : 'text-red-400')}>
                   {detail.uptime24h !== null ? `${detail.uptime24h}%` : '–'}
                 </p>
-                <p className="text-[10px] text-white/30 mt-1">Uptime 24h</p>
+                <p className="text-[11px] text-white/50 mt-1">Uptime 24h</p>
               </div>
               <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] text-center">
                 <p className="text-lg font-bold text-white/80">
                   {detail.uptime7d !== null ? `${detail.uptime7d}%` : '–'}
                 </p>
-                <p className="text-[10px] text-white/30 mt-1">Uptime 7 T</p>
+                <p className="text-[11px] text-white/50 mt-1">Uptime 7 T</p>
               </div>
               <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] text-center">
                 <p className="text-lg font-bold text-white/80">
                   {detail.avgResponseTime ? `${detail.avgResponseTime} ms` : '–'}
                 </p>
-                <p className="text-[10px] text-white/30 mt-1">Ø Antwortzeit</p>
+                <p className="text-[11px] text-white/50 mt-1">Ø Antwortzeit</p>
               </div>
             </div>
 
             <div>
-              <p className="text-[10px] text-white/30 mb-1.5">Verlauf ({days} Tage) · zuletzt geprüft {relativeTime(detail.lastCheck)}</p>
+              <p className="text-[11px] text-white/50 mb-1.5">Verlauf ({days} Tage) · zuletzt geprüft {relativeTime(detail.lastCheck)}</p>
               <UptimeBars timeline={detail.timeline} className="h-10" />
             </div>
 
             <div className="flex flex-wrap gap-2 pt-2 border-t border-white/[0.05]">
               <button
                 onClick={() => openEdit(detail)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-white/60 hover:text-white/90 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-white/70 hover:text-white/90 transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5" /> Bearbeiten
               </button>
               {detail.source === 'docker' && !detail.vanished && (
                 <button
                   onClick={() => hideMutation.mutate(detail)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-white/60 hover:text-white/90 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs text-white/70 hover:text-white/90 transition-colors"
                 >
                   <EyeOff className="w-3.5 h-3.5" /> Ausblenden
                 </button>

@@ -85,7 +85,7 @@ export function EmailReader({ folders }: EmailReaderProps) {
   if (isLoading) {
     return (
       <div className="glass-card p-8 text-center">
-        <div className="animate-pulse text-white/30 text-sm">Lade E-Mail...</div>
+        <div className="animate-pulse text-white/50 text-sm">Lade E-Mail...</div>
       </div>
     );
   }
@@ -93,7 +93,7 @@ export function EmailReader({ folders }: EmailReaderProps) {
   if (!emailData) {
     return (
       <div className="glass-card p-8 text-center">
-        <p className="text-white/30 text-sm">E-Mail nicht gefunden</p>
+        <p className="text-white/50 text-sm">E-Mail nicht gefunden</p>
       </div>
     );
   }
@@ -158,22 +158,22 @@ export function EmailReader({ folders }: EmailReaderProps) {
         <h2 className="text-lg font-semibold mb-3">{emailData.subject || '(Kein Betreff)'}</h2>
         <div className="space-y-1 text-sm">
           <div className="flex gap-2">
-            <span className="text-white/40 w-12 shrink-0">Von:</span>
+            <span className="text-white/55 w-12 shrink-0">Von:</span>
             <span className="text-white/80">{emailData.from?.map(formatAddress).join(', ') || 'Unbekannt'}</span>
           </div>
           <div className="flex gap-2">
-            <span className="text-white/40 w-12 shrink-0">An:</span>
-            <span className="text-white/60">{emailData.to?.map(formatAddress).join(', ')}</span>
+            <span className="text-white/55 w-12 shrink-0">An:</span>
+            <span className="text-white/70">{emailData.to?.map(formatAddress).join(', ')}</span>
           </div>
           {emailData.cc?.length > 0 && (
             <div className="flex gap-2">
-              <span className="text-white/40 w-12 shrink-0">CC:</span>
-              <span className="text-white/60">{emailData.cc.map(formatAddress).join(', ')}</span>
+              <span className="text-white/55 w-12 shrink-0">CC:</span>
+              <span className="text-white/70">{emailData.cc.map(formatAddress).join(', ')}</span>
             </div>
           )}
           <div className="flex gap-2">
-            <span className="text-white/40 w-12 shrink-0">Datum:</span>
-            <span className="text-white/60">{formatDate(emailData.receivedAt)}</span>
+            <span className="text-white/55 w-12 shrink-0">Datum:</span>
+            <span className="text-white/70">{formatDate(emailData.receivedAt)}</span>
           </div>
         </div>
       </div>
@@ -196,7 +196,7 @@ export function EmailReader({ folders }: EmailReaderProps) {
         ) : textContent ? (
           <pre className="whitespace-pre-wrap text-sm text-white/70 font-sans">{textContent}</pre>
         ) : (
-          <p className="text-white/30 text-sm">Kein Inhalt</p>
+          <p className="text-white/50 text-sm">Kein Inhalt</p>
         )}
       </div>
 
@@ -204,8 +204,8 @@ export function EmailReader({ folders }: EmailReaderProps) {
       {emailData.attachments?.length > 0 && (
         <div className="glass-card p-4">
           <div className="flex items-center gap-2 mb-3">
-            <Paperclip className="w-4 h-4 text-white/40" />
-            <span className="text-sm text-white/60">{emailData.attachments.length} Anhäng{emailData.attachments.length === 1 ? '' : 'e'}</span>
+            <Paperclip className="w-4 h-4 text-white/55" />
+            <span className="text-sm text-white/70">{emailData.attachments.length} Anhäng{emailData.attachments.length === 1 ? '' : 'e'}</span>
           </div>
           <div className="space-y-1.5">
             {emailData.attachments.map((att) => (
@@ -216,9 +216,9 @@ export function EmailReader({ folders }: EmailReaderProps) {
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 p-2 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] transition-all text-sm"
               >
-                <Download className="w-4 h-4 text-white/40 shrink-0" />
+                <Download className="w-4 h-4 text-white/55 shrink-0" />
                 <span className="flex-1 truncate text-white/70">{att.name || 'Unbenannt'}</span>
-                <span className="text-[10px] text-white/30 shrink-0">
+                <span className="text-[11px] text-white/50 shrink-0">
                   {att.size > 1048576
                     ? `${zahl(att.size / 1048576, 1)} MB`
                     : `${Math.round(att.size / 1024)} KB`}

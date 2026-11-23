@@ -48,7 +48,7 @@ export function TimerBar() {
                     {formatDuration(elapsed)}
                   </span>
                   {running.project && (
-                    <span className="flex items-center gap-1 text-[10px] text-white/35 truncate">
+                    <span className="flex items-center gap-1 text-[11px] text-white/50 truncate">
                       <Folder className="w-2.5 h-2.5 flex-shrink-0" />
                       <span className="truncate">{running.project}</span>
                     </span>

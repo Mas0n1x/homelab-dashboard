@@ -67,7 +67,7 @@ export default function PortfolioPage() {
     paid: 'text-emerald-400',
     open: 'text-amber-400',
     overdue: 'text-red-400',
-    cancelled: 'text-white/30',
+    cancelled: 'text-white/50',
   };
 
   const invoiceStatusLabels: Record<string, string> = {
@@ -156,7 +156,7 @@ export default function PortfolioPage() {
             {revenueData.map((item) => (
               <div key={item.name}>
                 <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-white/50">{item.name}</span>
+                  <span className="text-white/65">{item.name}</span>
                   <span className="text-white/70 font-medium">{formatCurrency(item.value)}</span>
                 </div>
                 <div className="h-3 bg-white/5 rounded-full overflow-hidden">
@@ -181,18 +181,18 @@ export default function PortfolioPage() {
               <div key={req.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{req.name}</p>
-                  <p className="text-xs text-white/30">{req.project_type} | {req.budget}</p>
+                  <p className="text-xs text-white/50">{req.project_type} | {req.budget}</p>
                 </div>
                 <div className="text-right flex-shrink-0 ml-3">
-                  <span className={`text-xs font-medium ${statusColors[req.status] || 'text-white/40'}`}>
+                  <span className={`text-xs font-medium ${statusColors[req.status] || 'text-white/55'}`}>
                     {statusLabels[req.status] || req.status}
                   </span>
-                  <p className="text-[10px] text-white/20">{formatTimeAgo(req.created_at)}</p>
+                  <p className="text-[11px] text-white/50">{formatTimeAgo(req.created_at)}</p>
                 </div>
               </div>
             ))}
             {(!requests || requests.length === 0) && (
-              <p className="text-sm text-white/30 text-center py-4">Keine Anfragen vorhanden</p>
+              <p className="text-sm text-white/50 text-center py-4">Keine Anfragen vorhanden</p>
             )}
           </div>
         </GlassCard>
@@ -208,19 +208,19 @@ export default function PortfolioPage() {
                   <div className="w-1.5 h-1.5 rounded-full bg-accent-light mt-1.5 flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm text-white/70">{act.description}</p>
-                    <p className="text-[10px] text-white/25">{formatTimeAgo(act.created_at)}</p>
+                    <p className="text-[11px] text-white/50">{formatTimeAgo(act.created_at)}</p>
                   </div>
                 </div>
               ))}
               {activities.length === 0 && (
-                <p className="text-sm text-white/30 text-center py-4">Keine Aktivitäten</p>
+                <p className="text-sm text-white/50 text-center py-4">Keine Aktivitäten</p>
               )}
           </div>
         </GlassCard>
 
         <GlassCard delay={0.4}>
           <div className="flex items-center gap-2 mb-4">
-            <Receipt className="w-4 h-4 text-white/40" />
+            <Receipt className="w-4 h-4 text-white/55" />
             <h3 className="text-sm font-semibold">Rechnungen</h3>
           </div>
           <div className="space-y-2 max-h-[280px] overflow-y-auto">
@@ -228,18 +228,18 @@ export default function PortfolioPage() {
               <div key={inv.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{inv.invoice_number || `#${inv.id}`}</p>
-                  <p className="text-xs text-white/30">{inv.customer_name}</p>
+                  <p className="text-xs text-white/50">{inv.customer_name}</p>
                 </div>
                 <div className="text-right flex-shrink-0 ml-3">
                   <p className="text-sm font-medium">{formatCurrency(inv.amount)}</p>
-                  <span className={`text-[10px] font-medium ${invoiceStatusColors[inv.status] || 'text-white/40'}`}>
+                  <span className={`text-[11px] font-medium ${invoiceStatusColors[inv.status] || 'text-white/55'}`}>
                     {invoiceStatusLabels[inv.status] || inv.status}
                   </span>
                 </div>
               </div>
             ))}
             {(!invoices || invoices.length === 0) && (
-              <p className="text-sm text-white/30 text-center py-4">Keine Rechnungen vorhanden</p>
+              <p className="text-sm text-white/50 text-center py-4">Keine Rechnungen vorhanden</p>
             )}
           </div>
         </GlassCard>
@@ -248,9 +248,9 @@ export default function PortfolioPage() {
       {/* Customers */}
       <GlassCard delay={0.45}>
         <div className="flex items-center gap-2 mb-4">
-          <Users className="w-4 h-4 text-white/40" />
+          <Users className="w-4 h-4 text-white/55" />
           <h3 className="text-sm font-semibold">Kunden</h3>
-          <span className="text-xs text-white/30 ml-auto">{(customers || []).length} gesamt</span>
+          <span className="text-xs text-white/50 ml-auto">{(customers || []).length} gesamt</span>
         </div>
         <div className="space-y-2 max-h-[320px] overflow-y-auto">
           {(customers || []).map((cust) => (
@@ -258,7 +258,7 @@ export default function PortfolioPage() {
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{cust.name}</p>
                 {cust.company && (
-                  <p className="text-xs text-white/40 flex items-center gap-1">
+                  <p className="text-xs text-white/55 flex items-center gap-1">
                     <Building className="w-3 h-3" />
                     {cust.company}
                   </p>
@@ -266,13 +266,13 @@ export default function PortfolioPage() {
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 {cust.email && (
-                  <span className="text-xs text-white/30 flex items-center gap-1">
+                  <span className="text-xs text-white/50 flex items-center gap-1">
                     <Mail className="w-3 h-3" />
                     {cust.email}
                   </span>
                 )}
                 {cust.phone && (
-                  <span className="text-xs text-white/30 flex items-center gap-1">
+                  <span className="text-xs text-white/50 flex items-center gap-1">
                     <Phone className="w-3 h-3" />
                     {cust.phone}
                   </span>
@@ -281,7 +281,7 @@ export default function PortfolioPage() {
             </div>
           ))}
           {(!customers || customers.length === 0) && (
-            <p className="text-sm text-white/30 text-center py-4">Keine Kunden vorhanden</p>
+            <p className="text-sm text-white/50 text-center py-4">Keine Kunden vorhanden</p>
           )}
         </div>
       </GlassCard>

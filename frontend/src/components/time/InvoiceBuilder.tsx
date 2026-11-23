@@ -102,30 +102,30 @@ export function InvoiceBuilder() {
     <div className="space-y-4">
       <GlassCard>
         <div className="flex items-center gap-2 mb-3">
-          <Receipt className="w-3.5 h-3.5 text-white/40" />
-          <h3 className="text-xs uppercase tracking-widest text-white/25 font-medium">Rechnungsentwurf</h3>
+          <Receipt className="w-3.5 h-3.5 text-white/55" />
+          <h3 className="text-xs uppercase tracking-widest text-white/50 font-medium">Rechnungsentwurf</h3>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <label className="block">
-            <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Projekt</span>
+            <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Projekt</span>
             <select className="glass-input py-2 w-full" value={projekt} onChange={e => setProjekt(e.target.value)}>
               <option value="">Projekt wählen …</option>
               {projekte.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </label>
           <label className="block">
-            <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Von</span>
+            <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Von</span>
             <input type="date" className="glass-input py-2 w-full" value={von} onChange={e => setVon(e.target.value)} />
           </label>
           <label className="block">
-            <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Bis</span>
+            <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Bis</span>
             <input type="date" className="glass-input py-2 w-full" value={bis} onChange={e => setBis(e.target.value)} />
           </label>
         </div>
 
         <label className="block mt-2">
-          <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Hinweis auf der Rechnung</span>
+          <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Hinweis auf der Rechnung</span>
           <input className="glass-input py-2 w-full" value={notiz} onChange={e => setNotiz(e.target.value)} placeholder="optional" />
         </label>
 
@@ -243,15 +243,15 @@ function InvoiceSheet({ draft }: { draft: InvoiceDraft }) {
         <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
           <div className="text-[12px] leading-relaxed">
             <p className="font-semibold text-[14px]">{draft.issuer.name}</p>
-            <p className="whitespace-pre-line text-white/60">{draft.issuer.address}</p>
-            {draft.issuer.email && <p className="text-white/60">{draft.issuer.email}</p>}
-            {draft.issuer.taxId && <p className="text-white/60">Steuernr.: {draft.issuer.taxId}</p>}
+            <p className="whitespace-pre-line text-white/70">{draft.issuer.address}</p>
+            {draft.issuer.email && <p className="text-white/70">{draft.issuer.email}</p>}
+            {draft.issuer.taxId && <p className="text-white/70">Steuernr.: {draft.issuer.taxId}</p>}
           </div>
           <div className="text-[12px] sm:text-right space-y-0.5">
             <p className="text-lg font-semibold">Rechnung</p>
-            <p className="text-white/60">Nr. {draft.invoiceNumber}</p>
-            <p className="text-white/60">Datum: {datum(draft.issuedAt)}</p>
-            <p className="text-white/60">Fällig: {datum(draft.dueAt)}</p>
+            <p className="text-white/70">Nr. {draft.invoiceNumber}</p>
+            <p className="text-white/70">Datum: {datum(draft.issuedAt)}</p>
+            <p className="text-white/70">Fällig: {datum(draft.dueAt)}</p>
           </div>
         </div>
 
@@ -259,13 +259,13 @@ function InvoiceSheet({ draft }: { draft: InvoiceDraft }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[12px]">
           <div>
-            <p className="text-white/35 uppercase tracking-widest text-[10px] mb-1">Kunde</p>
+            <p className="text-white/50 uppercase tracking-widest text-[11px] mb-1">Kunde</p>
             <p className="font-medium">{draft.customer || '— kein Kunde hinterlegt —'}</p>
           </div>
           <div className="sm:text-right">
-            <p className="text-white/35 uppercase tracking-widest text-[10px] mb-1">Leistungszeitraum</p>
+            <p className="text-white/50 uppercase tracking-widest text-[11px] mb-1">Leistungszeitraum</p>
             <p>{datum(draft.period.from)} – {datum(draft.period.to)}</p>
-            <p className="text-white/50">Projekt: {draft.project}</p>
+            <p className="text-white/65">Projekt: {draft.project}</p>
           </div>
         </div>
 
@@ -273,7 +273,7 @@ function InvoiceSheet({ draft }: { draft: InvoiceDraft }) {
         <div className="overflow-x-auto">
           <table className="w-full text-[12px] min-w-[420px]">
             <thead>
-              <tr className="text-white/35 uppercase tracking-widest text-[10px] border-b border-white/[0.08]">
+              <tr className="text-white/50 uppercase tracking-widest text-[11px] border-b border-white/[0.08]">
                 <th className="text-left font-medium py-2">Leistung</th>
                 <th className="text-right font-medium py-2 w-20">Stunden</th>
                 <th className="text-right font-medium py-2 w-24">Satz</th>
@@ -285,7 +285,7 @@ function InvoiceSheet({ draft }: { draft: InvoiceDraft }) {
                 <tr key={i} className="border-b border-white/[0.05]">
                   <td className="py-2.5 pr-3">
                     <p>{p.label}</p>
-                    <p className="text-[10px] text-white/30 mt-0.5">
+                    <p className="text-[11px] text-white/50 mt-0.5">
                       {p.entries} {p.entries === 1 ? 'Abschnitt' : 'Abschnitte'}
                       {p.dates.length > 0 && ` · ${datum(p.dates[0])}${p.dates.length > 1 ? ` – ${datum(p.dates[p.dates.length - 1])}` : ''}`}
                     </p>
@@ -303,12 +303,12 @@ function InvoiceSheet({ draft }: { draft: InvoiceDraft }) {
         <div className="flex justify-end">
           <div className="w-full sm:w-72 space-y-1.5 text-[12px]">
             <div className="flex justify-between">
-              <span className="text-white/50">Nettobetrag</span>
+              <span className="text-white/65">Nettobetrag</span>
               <span className="tabular-nums">{formatMoney(draft.totals.net, draft.currency)}</span>
             </div>
             {!draft.smallBusiness && (
               <div className="flex justify-between">
-                <span className="text-white/50">Umsatzsteuer {draft.totals.vatRate} %</span>
+                <span className="text-white/65">Umsatzsteuer {draft.totals.vatRate} %</span>
                 <span className="tabular-nums">{formatMoney(draft.totals.vat, draft.currency)}</span>
               </div>
             )}
@@ -320,14 +320,14 @@ function InvoiceSheet({ draft }: { draft: InvoiceDraft }) {
         </div>
 
         {draft.smallBusiness && (
-          <p className="text-[11px] text-white/45">
+          <p className="text-[12px] text-white/60">
             Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.
           </p>
         )}
 
-        {draft.note && <p className="text-[12px] text-white/60 whitespace-pre-line">{draft.note}</p>}
+        {draft.note && <p className="text-[12px] text-white/70 whitespace-pre-line">{draft.note}</p>}
 
-        <p className="text-[11px] text-white/35">
+        <p className="text-[12px] text-white/50">
           Zahlbar ohne Abzug bis {datum(draft.dueAt)}.
         </p>
       </div>

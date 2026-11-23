@@ -93,7 +93,7 @@ function Field({ label, value, onChange, placeholder, type = 'text', mono }: {
 }) {
   return (
     <label className="block">
-      <span className="text-[12px] text-white/45 mb-1.5 block">{label}</span>
+      <span className="text-[12px] text-white/60 mb-1.5 block">{label}</span>
       <input
         type={type}
         value={value}
@@ -175,7 +175,7 @@ export default function PortfolioBotPage() {
     <PageTransition>
       <div className="max-w-5xl mx-auto md:py-2">
         {/* Breadcrumb + header */}
-        <Link href="/bots" className="inline-flex items-center gap-1.5 text-[13px] text-white/40 hover:text-white/70 mb-4 transition-colors">
+        <Link href="/bots" className="inline-flex items-center gap-1.5 text-[13px] text-white/55 hover:text-white/70 mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Alle Bots
         </Link>
 
@@ -191,12 +191,12 @@ export default function PortfolioBotPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-semibold">Portfolio-Bot</h1>
-                <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[11px] font-medium ${connected ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300/80'}`}>
+                <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[12px] font-medium ${connected ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300/80'}`}>
                   <Circle className={`w-2 h-2 ${connected ? 'fill-emerald-400 text-emerald-400' : 'fill-red-400 text-red-400'}`} />
                   {connected ? 'Online' : 'Offline'}
                 </span>
               </div>
-              <div className="text-[12px] text-white/40 truncate">
+              <div className="text-[12px] text-white/55 truncate">
                 {connected && status?.guild ? `${status.guild.name} · ` : ''}
                 {status?.username || 'Mas0n1x Development'}
               </div>
@@ -205,7 +205,7 @@ export default function PortfolioBotPage() {
 
           <div className="flex items-center gap-4">
             {connected && (
-              <div className="hidden sm:flex items-center gap-4 text-[12px] text-white/45">
+              <div className="hidden sm:flex items-center gap-4 text-[12px] text-white/60">
                 <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> {status?.memberCount ?? 0}</span>
                 <span className="flex items-center gap-1.5"><Activity className="w-4 h-4" /> {status?.ping ?? 0} ms</span>
                 <span>↑ {fmtUptime(status?.uptime)}</span>
@@ -228,7 +228,7 @@ export default function PortfolioBotPage() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] whitespace-nowrap transition-colors ${tab === t.id ? 'bg-white/[0.08] text-white' : 'text-white/45 hover:text-white/75 hover:bg-white/[0.04]'}`}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] whitespace-nowrap transition-colors ${tab === t.id ? 'bg-white/[0.08] text-white' : 'text-white/60 hover:text-white/75 hover:bg-white/[0.04]'}`}
             >
               <t.icon className="w-4 h-4" /> {t.label}
             </button>
@@ -236,7 +236,7 @@ export default function PortfolioBotPage() {
         </div>
 
         {loading ? (
-          <div className="glass-card rounded-2xl p-8 flex items-center justify-center text-white/40">
+          <div className="glass-card rounded-2xl p-8 flex items-center justify-center text-white/55">
             <Loader2 className="w-5 h-5 animate-spin mr-2" /> Lade Konfiguration…
           </div>
         ) : (
@@ -255,7 +255,7 @@ export default function PortfolioBotPage() {
                   </div>
                   {Array.isArray(status?.availableGuilds) && status.availableGuilds.length > 0 ? (
                     <label className="block">
-                      <span className="text-[12px] text-white/45 mb-1.5 block">Server</span>
+                      <span className="text-[12px] text-white/60 mb-1.5 block">Server</span>
                       <select
                         value={cfg.guild_id || ''}
                         onChange={e => set('guild_id', e.target.value)}
@@ -294,7 +294,7 @@ export default function PortfolioBotPage() {
                 <div className={`glass-card rounded-2xl p-5 space-y-3 transition-opacity ${cfg.modlog_enabled === 'false' ? 'opacity-40' : ''}`}>
                   <div className="mb-1">
                     <h2 className="text-sm font-semibold text-white/70">Was das Moderation-Log erfasst</h2>
-                    <p className="text-[12px] text-white/40 mt-0.5">
+                    <p className="text-[12px] text-white/55 mt-0.5">
                       {cfg.modlog_enabled === 'false'
                         ? 'Das Moderation-Log ist oben abgeschaltet — diese Schalter greifen erst danach.'
                         : 'Gilt für den Kanal unter „Kanäle → Moderation-Log".'}
@@ -424,7 +424,7 @@ export default function PortfolioBotPage() {
               <div className="space-y-4">
                 <div className="glass-card rounded-2xl p-5 space-y-4">
                   <h2 className="text-sm font-semibold text-white/70">Homelab-Anbindung (Serverstatus)</h2>
-                  <p className="text-[12px] text-white/40">Läuft die Bot-Runtime im selben Compose-Netz, reicht die interne URL (z.B. <code className="text-white/60">http://backend:3001</code>).</p>
+                  <p className="text-[12px] text-white/55">Läuft die Bot-Runtime im selben Compose-Netz, reicht die interne URL (z.B. <code className="text-white/70">http://backend:3001</code>).</p>
                   <Field label="Dashboard-API-URL" value={cfg.homelab_api_url || ''} onChange={v => set('homelab_api_url', v)} placeholder="http://backend:3001" mono />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="Benutzer" value={cfg.homelab_user || ''} onChange={v => set('homelab_user', v)} />
@@ -451,8 +451,8 @@ export default function PortfolioBotPage() {
                 <div className="glass-card rounded-2xl p-5 space-y-4">
                   <div>
                     <h2 className="text-sm font-semibold text-white/70">Server-Status im Discord</h2>
-                    <p className="text-[12px] text-white/40 mt-0.5">
-                      Der Status kommt von mcstatus.io. Die gepostete Nachricht aktualisiert sich selbst — im Discord geht das auch mit <code className="text-white/60">/minecraft</code>.
+                    <p className="text-[12px] text-white/55 mt-0.5">
+                      Der Status kommt von mcstatus.io. Die gepostete Nachricht aktualisiert sich selbst — im Discord geht das auch mit <code className="text-white/70">/minecraft</code>.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -542,7 +542,7 @@ function TicketPanelPoster({ dir, busy, onPost }: { dir: Directory; busy: boolea
   return (
     <div className="glass-card rounded-2xl p-5">
       <h3 className="text-sm font-semibold text-white/70 mb-1">Ticket-Panel posten</h3>
-      <p className="text-[12px] text-white/40 mb-4">Postet die Auswahl mit den Kategorie-Buttons in einen Kanal.</p>
+      <p className="text-[12px] text-white/55 mb-4">Postet die Auswahl mit den Kategorie-Buttons in einen Kanal.</p>
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-end">
         <ChannelPicker label="Ziel-Kanal" value={channelId} onChange={setChannelId} dir={dir} />
         <ActionBtn busy={busy} onClick={() => channelId && onPost(channelId)} icon={Send} label="Panel posten" />
@@ -617,7 +617,7 @@ function GithubTab({ cfg, set, saveConfig, busy, setBusy, flash }: {
             {repos.map(r => (
               <div key={r.full_name} className="flex items-center justify-between px-3 py-1.5 rounded-lg hover:bg-white/[0.03] text-[13px]">
                 <span className="text-white/70 truncate">{r.full_name}</span>
-                <span className={`text-[11px] px-2 py-0.5 rounded-md ${r.selected ? 'bg-emerald-500/10 text-emerald-300' : 'bg-white/[0.05] text-white/40'}`}>
+                <span className={`text-[12px] px-2 py-0.5 rounded-md ${r.selected ? 'bg-emerald-500/10 text-emerald-300' : 'bg-white/[0.05] text-white/55'}`}>
                   {r.selected ? 'aktiv' : 'aus'}
                 </span>
               </div>
@@ -657,14 +657,14 @@ function LogsTab({ flash }: { flash: (ok: boolean, msg: string) => void }) {
         </div>
       </div>
       {loading ? (
-        <div className="text-white/40 text-sm py-6 text-center"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Lade…</div>
+        <div className="text-white/55 text-sm py-6 text-center"><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Lade…</div>
       ) : logs.length === 0 ? (
-        <div className="text-white/30 text-sm py-6 text-center">Keine Einträge.</div>
+        <div className="text-white/50 text-sm py-6 text-center">Keine Einträge.</div>
       ) : (
         <div className="max-h-[55vh] overflow-y-auto space-y-1 scrollbar-hide font-mono text-[12px]">
           {logs.map((l, i) => (
             <div key={l.id ?? i} className="flex gap-3 px-3 py-1.5 rounded-lg hover:bg-white/[0.03]">
-              <span className="text-white/30 whitespace-nowrap">{l.created_at?.slice(5, 16) || ''}</span>
+              <span className="text-white/50 whitespace-nowrap">{l.created_at?.slice(5, 16) || ''}</span>
               <span className="text-accent-light/70 whitespace-nowrap">{l.type}</span>
               <span className="text-white/55 truncate">{typeof l.details === 'string' ? l.details : JSON.stringify(l.details)}</span>
             </div>

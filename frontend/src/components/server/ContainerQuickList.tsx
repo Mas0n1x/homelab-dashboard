@@ -56,8 +56,8 @@ export function ContainerQuickList({ containers, serverId }: ContainerQuickListP
           </div>
           <div className="flex items-center gap-2 text-xs">
             <span className="text-emerald-400">{running.length} running</span>
-            <span className="text-white/20">|</span>
-            <span className="text-white/30">{stopped.length} stopped</span>
+            <span className="text-white/50">|</span>
+            <span className="text-white/50">{stopped.length} stopped</span>
           </div>
         </div>
 
@@ -68,7 +68,7 @@ export function ContainerQuickList({ containers, serverId }: ContainerQuickListP
               {Array.from(byCategory.get(category)!.entries()).map(([project, ctrs]) => (
                 <div key={project}>
                   {project !== 'Standalone' && (
-                    <div className="text-[10px] uppercase tracking-wider text-white/20 mt-1.5 mb-1 px-2">{project}</div>
+                    <div className="text-[11px] uppercase tracking-wider text-white/50 mt-1.5 mb-1 px-2">{project}</div>
                   )}
                   {ctrs.map(container => (
                     <div
@@ -86,7 +86,7 @@ export function ContainerQuickList({ containers, serverId }: ContainerQuickListP
                             <button
                               onClick={() => handleAction(container.id, 'restart')}
                               disabled={loading[container.id]}
-                              className="p-1 rounded hover:bg-white/[0.06] text-white/30 hover:text-amber-400 transition-colors"
+                              className="p-1 rounded hover:bg-white/[0.06] text-white/50 hover:text-amber-400 transition-colors"
                               title="Restart"
                             >
                               <RotateCcw className="w-3 h-3" />
@@ -94,7 +94,7 @@ export function ContainerQuickList({ containers, serverId }: ContainerQuickListP
                             <button
                               onClick={() => handleAction(container.id, 'stop')}
                               disabled={loading[container.id]}
-                              className="p-1 rounded hover:bg-white/[0.06] text-white/30 hover:text-red-400 transition-colors"
+                              className="p-1 rounded hover:bg-white/[0.06] text-white/50 hover:text-red-400 transition-colors"
                               title="Stop"
                             >
                               <Square className="w-3 h-3" />
@@ -104,7 +104,7 @@ export function ContainerQuickList({ containers, serverId }: ContainerQuickListP
                           <button
                             onClick={() => handleAction(container.id, 'start')}
                             disabled={loading[container.id]}
-                            className="p-1 rounded hover:bg-white/[0.06] text-white/30 hover:text-emerald-400 transition-colors"
+                            className="p-1 rounded hover:bg-white/[0.06] text-white/50 hover:text-emerald-400 transition-colors"
                             title="Start"
                           >
                             <Play className="w-3 h-3" />

@@ -45,7 +45,7 @@ export default function ServerLayout({ children }: { children: React.ReactNode }
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <p className="text-white/40 text-sm">Server nicht gefunden</p>
+          <p className="text-white/55 text-sm">Server nicht gefunden</p>
           <Link href="/" className="text-accent-light text-sm mt-2 inline-block hover:underline">
             Zurück zur Fleet-Übersicht
           </Link>
@@ -77,8 +77,8 @@ export default function ServerLayout({ children }: { children: React.ReactNode }
               key={tab.id}
               href={`${basePath}${tab.path}`}
               className={clsx(
-                'relative flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-sm font-medium transition-colors whitespace-nowrap',
-                isActive ? 'text-white' : 'text-white/40 hover:text-white/70'
+                'relative flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 text-[12px] sm:text-sm font-medium transition-colors whitespace-nowrap',
+                isActive ? 'text-white' : 'text-white/55 hover:text-white/70'
               )}
             >
               <Icon className="w-4 h-4" />

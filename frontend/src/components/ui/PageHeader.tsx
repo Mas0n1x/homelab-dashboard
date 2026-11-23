@@ -31,7 +31,7 @@ export function PageHeader({ title, subtitle, icon, actions }: PageHeaderProps) 
         <div className="min-w-0">
           <h1 className="text-lg sm:text-2xl font-bold text-gradient truncate">{title}</h1>
           {/* Untertitel mobil einzeilig halten, sonst schiebt er die Aktionen weg */}
-          {subtitle && <p className="text-[11px] sm:text-sm text-white/40 mt-0.5 truncate sm:whitespace-normal">{subtitle}</p>}
+          {subtitle && <p className="text-[12px] sm:text-sm text-white/55 mt-0.5 truncate sm:whitespace-normal">{subtitle}</p>}
         </div>
       </div>
       {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}

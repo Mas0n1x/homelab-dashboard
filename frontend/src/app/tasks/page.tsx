@@ -421,8 +421,8 @@ export default function TasksPage() {
       >
         {list.length === 0 ? (
           <div className={clsx('text-center', dropZone ? 'py-10' : 'py-8')}>
-            <Inbox className="w-6 h-6 mx-auto mb-2 text-white/10" />
-            <p className="text-xs text-white/25">{emptyText}</p>
+            <Inbox className="w-6 h-6 mx-auto mb-2 text-white/50" />
+            <p className="text-xs text-white/50">{emptyText}</p>
           </div>
         ) : (
           list.map((task, i) => (
@@ -485,13 +485,13 @@ export default function TasksPage() {
         >
           <span className={clsx('w-2 h-2 rounded-full', STATUS_META.done.dot)} />
           Erledigt
-          <span className="text-xs text-white/25 font-normal">{doneTasks.length}</span>
-          <ChevronDown className={clsx('w-3.5 h-3.5 text-white/30 transition-transform', doneOpen && 'rotate-180')} />
+          <span className="text-xs text-white/50 font-normal">{doneTasks.length}</span>
+          <ChevronDown className={clsx('w-3.5 h-3.5 text-white/50 transition-transform', doneOpen && 'rotate-180')} />
         </button>
         {doneTasks.length > 0 && doneOpen && (
           <button
             onClick={() => { if (confirm('Alle erledigten Aufgaben löschen?')) clearDoneMutation.mutate(); }}
-            className="ml-auto flex items-center gap-1.5 text-[11px] text-white/30 hover:text-red-300 transition-colors py-1"
+            className="ml-auto flex items-center gap-1.5 text-[12px] text-white/50 hover:text-red-300 transition-colors py-1"
           >
             <Trash2 className="w-3.5 h-3.5" />
             Aufräumen
@@ -536,7 +536,7 @@ export default function TasksPage() {
             onClick={() => setSection(b.id)}
             className={clsx(
               'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] transition-colors',
-              section === b.id ? 'bg-white/[0.08] text-white' : 'text-white/40 hover:text-white/75',
+              section === b.id ? 'bg-white/[0.08] text-white' : 'text-white/55 hover:text-white/75',
             )}
           >
             {b.icon}
@@ -571,9 +571,9 @@ export default function TasksPage() {
               <span className="hidden sm:inline">Anlegen</span>
             </button>
           </div>
-          <p className="text-[10px] text-white/25 mt-2">
-            <span className="text-white/40">@Projekt</span> · <span className="text-white/40">!hoch</span> ·{' '}
-            <span className="text-white/40">heute/morgen</span> werden erkannt
+          <p className="text-[11px] text-white/50 mt-2">
+            <span className="text-white/55">@Projekt</span> · <span className="text-white/55">!hoch</span> ·{' '}
+            <span className="text-white/55">heute/morgen</span> werden erkannt
           </p>
 
           {counts.all > 0 && (
@@ -588,7 +588,7 @@ export default function TasksPage() {
                     style={{ width: `${percentDone}%` }}
                   />
                 </div>
-                <span className="text-[11px] text-white/35 tabular-nums flex-shrink-0">
+                <span className="text-[12px] text-white/50 tabular-nums flex-shrink-0">
                   {counts.done}/{counts.all} erledigt
                 </span>
               </div>
@@ -605,11 +605,11 @@ export default function TasksPage() {
                         'flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[12px] transition-colors',
                         active
                           ? CHIP_STYLES[chip.id]
-                          : 'bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/70 hover:border-white/[0.12]'
+                          : 'bg-white/[0.02] border-white/[0.06] text-white/55 hover:text-white/70 hover:border-white/[0.12]'
                       )}
                     >
                       {chip.label}
-                      <span className={clsx('tabular-nums text-[11px]', active ? 'opacity-80' : 'text-white/25')}>
+                      <span className={clsx('tabular-nums text-[12px]', active ? 'opacity-80' : 'text-white/50')}>
                         {chip.count}
                       </span>
                     </button>
@@ -634,7 +634,7 @@ export default function TasksPage() {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25 pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
               <input
                 className="glass-input w-full pl-9 pr-8"
                 placeholder="Suchen..."
@@ -644,7 +644,7 @@ export default function TasksPage() {
               {search && (
                 <button
                   onClick={() => setSearch('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/25 hover:text-white/60"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/50 hover:text-white/70"
                   aria-label="Suche leeren"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -658,14 +658,14 @@ export default function TasksPage() {
                 'flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-sm transition-colors',
                 showFilters || activeFilters > 0
                   ? 'bg-accent/12 border-accent/30 text-accent-light'
-                  : 'bg-white/[0.03] border-white/[0.06] text-white/45 hover:text-white/75'
+                  : 'bg-white/[0.03] border-white/[0.06] text-white/60 hover:text-white/75'
               )}
               title="Filter und Sortierung"
             >
               <SlidersHorizontal className="w-4 h-4" />
               <span className="hidden sm:inline">Filter</span>
               {activeFilters > 0 && (
-                <span className="text-[10px] tabular-nums w-4 h-4 rounded-full bg-accent/25 flex items-center justify-center">
+                <span className="text-[11px] tabular-nums w-4 h-4 rounded-full bg-accent/25 flex items-center justify-center">
                   {activeFilters}
                 </span>
               )}
@@ -683,7 +683,7 @@ export default function TasksPage() {
                   aria-label={v.title}
                   className={clsx(
                     'w-9 h-9 flex items-center justify-center rounded-lg transition-colors',
-                    view === v.id ? 'bg-white/[0.08] text-white' : 'text-white/35 hover:text-white/70'
+                    view === v.id ? 'bg-white/[0.08] text-white' : 'text-white/50 hover:text-white/70'
                   )}
                 >
                   {v.icon}
@@ -703,7 +703,7 @@ export default function TasksPage() {
               >
                 <div className="rounded-2xl bg-white/[0.02] border border-white/[0.05] p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                   <label className="block">
-                    <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Projekt</span>
+                    <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Projekt</span>
                     <select className="glass-input py-2 w-full" value={projectFilter} onChange={e => setProjectFilter(e.target.value)}>
                       <option value="">Alle Projekte</option>
                       {projects.map(p => <option key={p} value={p}>{p}</option>)}
@@ -711,7 +711,7 @@ export default function TasksPage() {
                   </label>
 
                   <label className="block">
-                    <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Priorität</span>
+                    <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Priorität</span>
                     <select
                       className="glass-input py-2 w-full"
                       value={priorityFilter}
@@ -723,7 +723,7 @@ export default function TasksPage() {
                   </label>
 
                   <label className="block">
-                    <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Sortierung</span>
+                    <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Sortierung</span>
                     <select className="glass-input py-2 w-full" value={sort} onChange={e => changeSort(e.target.value as SortMode)}>
                       {(Object.keys(SORT_LABELS) as SortMode[]).map(m => (
                         <option key={m} value={m}>{SORT_LABELS[m]}</option>
@@ -732,7 +732,7 @@ export default function TasksPage() {
                   </label>
 
                   <label className={clsx('block', view === 'board' && 'opacity-40')}>
-                    <span className="block text-[10px] uppercase tracking-widest text-white/25 mb-1">Gruppierung</span>
+                    <span className="block text-[11px] uppercase tracking-widest text-white/50 mb-1">Gruppierung</span>
                     <select
                       className="glass-input py-2 w-full"
                       value={group}
@@ -748,7 +748,7 @@ export default function TasksPage() {
                   {activeFilters > 0 && (
                     <button
                       onClick={resetFilters}
-                      className="sm:col-span-2 lg:col-span-4 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12px] text-white/40 hover:text-white/80 hover:bg-white/[0.04] transition-colors"
+                      className="sm:col-span-2 lg:col-span-4 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12px] text-white/55 hover:text-white/80 hover:bg-white/[0.04] transition-colors"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       Filter zurücksetzen
@@ -760,14 +760,14 @@ export default function TasksPage() {
           </AnimatePresence>
         </div>
 
-        {isLoading && <p className="text-sm text-white/30 text-center py-8">Lade Aufgaben...</p>}
+        {isLoading && <p className="text-sm text-white/50 text-center py-8">Lade Aufgaben...</p>}
 
         {!isLoading && tasks.length === 0 && (
           <GlassCard delay={0.2}>
             <div className="py-10 text-center">
-              <ListChecks className="w-8 h-8 mx-auto mb-3 text-white/10" />
-              <p className="text-sm text-white/40">Noch keine Aufgaben</p>
-              <p className="text-xs text-white/25 mt-1">Oben eintragen und mit Enter anlegen.</p>
+              <ListChecks className="w-8 h-8 mx-auto mb-3 text-white/50" />
+              <p className="text-sm text-white/55">Noch keine Aufgaben</p>
+              <p className="text-xs text-white/50 mt-1">Oben eintragen und mit Enter anlegen.</p>
             </div>
           </GlassCard>
         )}
@@ -775,8 +775,8 @@ export default function TasksPage() {
         {!isLoading && tasks.length > 0 && filtered.length === 0 && (
           <GlassCard delay={0.2}>
             <div className="py-10 text-center">
-              <Search className="w-8 h-8 mx-auto mb-3 text-white/10" />
-              <p className="text-sm text-white/40">Keine Aufgabe passt zum Filter</p>
+              <Search className="w-8 h-8 mx-auto mb-3 text-white/50" />
+              <p className="text-sm text-white/55">Keine Aufgabe passt zum Filter</p>
               <button
                 onClick={() => { setQuickFilter('all'); setSearch(''); resetFilters(); }}
                 className="text-xs text-accent-light/80 hover:text-accent-light mt-2"
@@ -794,7 +794,7 @@ export default function TasksPage() {
                 <div className="flex items-center gap-2 mb-2.5 px-1">
                   <span className={clsx('w-2 h-2 rounded-full flex-shrink-0', g.dot)} />
                   <h2 className="text-sm font-semibold truncate">{g.label}</h2>
-                  <span className="text-xs text-white/25 flex-shrink-0">{g.tasks.length}</span>
+                  <span className="text-xs text-white/50 flex-shrink-0">{g.tasks.length}</span>
                 </div>
                 <GlassCard delay={0.15 + i * 0.04}>
                   {renderList(g.tasks, g.emptyText, g.status)}
@@ -820,11 +820,11 @@ export default function TasksPage() {
                     <div className="flex items-center gap-2 mb-3">
                       <span className={clsx('w-2 h-2 rounded-full', STATUS_META[status].dot)} />
                       <h2 className="text-sm font-semibold">{STATUS_META[status].label}</h2>
-                      <span className="text-xs text-white/25">{list.length}</span>
+                      <span className="text-xs text-white/50">{list.length}</span>
                       {status === 'done' && list.length > 0 && (
                         <button
                           onClick={() => { if (confirm('Alle erledigten Aufgaben löschen?')) clearDoneMutation.mutate(); }}
-                          className="ml-auto p-1.5 rounded-lg text-white/20 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                          className="ml-auto p-1.5 rounded-lg text-white/50 hover:text-red-300 hover:bg-red-500/10 transition-colors"
                           title="Erledigte aufräumen"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -850,7 +850,7 @@ export default function TasksPage() {
         {/* Warum lässt sich nichts ziehen? In beiden Ansichten sagen, statt den
             Nutzer raten zu lassen. */}
         {isDesktop && !dragEnabled && filtered.length > 0 && (
-          <p className="text-[11px] text-white/25 text-center">
+          <p className="text-[12px] text-white/50 text-center">
             {sort !== 'manual'
               ? <>Zum Umsortieren per Drag &amp; Drop die Sortierung auf „{SORT_LABELS.manual}" stellen.</>
               : <>Drag &amp; Drop gibt es in der Board-Ansicht oder bei Gruppierung nach Status.</>}

@@ -184,7 +184,7 @@ export default function DockerPage() {
       <div className="flex flex-wrap items-center gap-3">
         <StatusBadge status="running" label={`${running} laufend`} size="md" />
         <StatusBadge status="stopped" label={`${stopped} gestoppt`} size="md" />
-        <span className="text-sm text-white/30">{dockerInfo?.images || 0} Images | Docker v{dockerInfo?.dockerVersion || '?'}</span>
+        <span className="text-sm text-white/50">{dockerInfo?.images || 0} Images | Docker v{dockerInfo?.dockerVersion || '?'}</span>
       </div>
 
       {/* Tabs */}
@@ -221,14 +221,14 @@ export default function DockerPage() {
                   onClick={() => toggleProject(projectName)}
                   className="flex-1 min-w-0 flex items-center gap-3 p-3.5 hover:bg-white/[0.02] transition-colors text-left"
                 >
-                  {expandedProjects.has(projectName) ? <ChevronDown className="w-4 h-4 text-white/40 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-white/40 flex-shrink-0" />}
+                  {expandedProjects.has(projectName) ? <ChevronDown className="w-4 h-4 text-white/55 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-white/55 flex-shrink-0" />}
                   <span className="font-medium truncate">{projectLabel(projectName, gameServerNames)}</span>
-                  <span className="text-xs text-white/30 flex-shrink-0 hidden sm:inline">{projectContainers.length} Container</span>
+                  <span className="text-xs text-white/50 flex-shrink-0 hidden sm:inline">{projectContainers.length} Container</span>
                   <span className={clsx('text-xs flex-shrink-0', projRunning === projectContainers.length ? 'text-emerald-400' : 'text-amber-400')}>{projRunning} laufend</span>
                 </button>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {links.slice(0, 2).map(l => (
-                    <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" title={l.name} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/70 transition-all">
+                    <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" title={l.name} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/50 hover:text-white/70 transition-all">
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   ))}
@@ -270,7 +270,7 @@ export default function DockerPage() {
                             <span className={clsx('w-2 h-2 rounded-full flex-shrink-0', c.state === 'running' ? 'bg-emerald-400' : 'bg-red-400')} />
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate">{c.name}</p>
-                              <p className="text-xs text-white/30 truncate font-mono">{c.image}</p>
+                              <p className="text-xs text-white/50 truncate font-mono">{c.image}</p>
                             </div>
                           </div>
 
@@ -316,7 +316,7 @@ export default function DockerPage() {
 
                             <button
                               onClick={() => viewLogs(c.id, c.name)}
-                              className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-all"
+                              className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/50 hover:text-white/70 transition-all"
                               title="Logs"
                             >
                               <FileText className="w-3.5 h-3.5" />
@@ -345,7 +345,7 @@ export default function DockerPage() {
               <div key={img.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{img.repoTags?.[0] || '<none>'}</p>
-                  <p className="text-xs text-white/30 font-mono">{img.shortId} | {zahl(img.size / 1024 / 1024, 0)} MB</p>
+                  <p className="text-xs text-white/50 font-mono">{img.shortId} | {zahl(img.size / 1024 / 1024, 0)} MB</p>
                 </div>
                 {img.inUse && <span className="text-xs text-emerald-400">In Verwendung</span>}
               </div>
@@ -362,7 +362,7 @@ export default function DockerPage() {
               <div key={vol.name} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{vol.name}</p>
-                  <p className="text-xs text-white/30">{vol.driver} | {vol.scope}</p>
+                  <p className="text-xs text-white/50">{vol.driver} | {vol.scope}</p>
                 </div>
                 {vol.inUse && <span className="text-xs text-emerald-400">In Verwendung</span>}
               </div>
@@ -379,12 +379,12 @@ export default function DockerPage() {
               <div key={net.id} className="py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">{net.name}</p>
-                  <span className="text-xs text-white/30">{net.driver}</span>
+                  <span className="text-xs text-white/50">{net.driver}</span>
                 </div>
                 {net.containers?.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-1.5">
                     {net.containers.map((c: any) => (
-                      <span key={c.id} className="text-xs px-2 py-0.5 rounded-full bg-white/[0.04] text-white/50">{c.name}</span>
+                      <span key={c.id} className="text-xs px-2 py-0.5 rounded-full bg-white/[0.04] text-white/65">{c.name}</span>
                     ))}
                   </div>
                 )}
@@ -400,7 +400,7 @@ export default function DockerPage() {
           <div className="relative z-10 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-white/30 text-xs uppercase tracking-wider border-b border-white/[0.06]">
+                <tr className="text-white/50 text-xs uppercase tracking-wider border-b border-white/[0.06]">
                   <th className="text-left py-2 px-3">Port</th>
                   <th className="text-left py-2 px-3">Container</th>
                   <th className="text-left py-2 px-3">Status</th>
@@ -413,7 +413,7 @@ export default function DockerPage() {
                     <td className="py-2 px-3 font-mono text-accent-light">{p.publicPort}</td>
                     <td className="py-2 px-3">{p.containerName}</td>
                     <td className="py-2 px-3"><StatusBadge status={p.containerState} /></td>
-                    <td className="py-2 px-3 text-white/40 font-mono">{p.privatePort}/{p.type}</td>
+                    <td className="py-2 px-3 text-white/55 font-mono">{p.privatePort}/{p.type}</td>
                   </tr>
                 ))}
               </tbody>
@@ -446,7 +446,7 @@ export default function DockerPage() {
         <div className="flex justify-end gap-3">
           <button
             onClick={() => setConfirmModal(prev => ({ ...prev, open: false }))}
-            className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/60 transition-colors"
+            className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/70 transition-colors"
           >
             Abbrechen
           </button>

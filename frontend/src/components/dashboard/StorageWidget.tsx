@@ -41,21 +41,21 @@ export function StorageWidget() {
     <GlassCard delay={0.24} hover className="h-full">
       <div className="relative z-10">
         <div className="flex items-center gap-2 mb-2">
-          <HardDrive className="w-3.5 h-3.5 text-white/40" />
+          <HardDrive className="w-3.5 h-3.5 text-white/55" />
           <span className="stat-label">Speicher</span>
         </div>
         {total === 0 ? (
           <div>
-            <p className="text-lg font-semibold text-white/40">–</p>
-            <p className="text-[11px] text-white/30 mt-1">Keine Speicherdaten verfügbar</p>
+            <p className="text-lg font-semibold text-white/55">–</p>
+            <p className="text-[12px] text-white/50 mt-1">Keine Speicherdaten verfügbar</p>
           </div>
         ) : (
           <>
             <div className="flex items-baseline gap-1">
               <span className="stat-value" style={{ color }}>{zahl(percent, 0)}</span>
-              <span className="text-white/40 text-sm">%</span>
+              <span className="text-white/55 text-sm">%</span>
             </div>
-            <p className="text-[11px] text-white/30 mt-1">{fmt(used)} / {fmt(total)} belegt · fleetweit</p>
+            <p className="text-[12px] text-white/50 mt-1">{fmt(used)} / {fmt(total)} belegt · fleetweit</p>
             <div className="mt-2 pt-2 border-t border-white/[0.06]">
               <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
                 <motion.div
@@ -66,7 +66,7 @@ export function StorageWidget() {
                   transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
                 />
               </div>
-              <p className="text-[10px] text-white/25 mt-1.5">{fmt(total - used)} frei</p>
+              <p className="text-[11px] text-white/50 mt-1.5">{fmt(total - used)} frei</p>
             </div>
           </>
         )}

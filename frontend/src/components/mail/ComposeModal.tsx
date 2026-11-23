@@ -203,14 +203,14 @@ function ComposeDialog() {
             {composeMode === 'forward' && 'Weiterleiten'}
           </h3>
           <button onClick={() => setComposeOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10">
-            <X className="w-4 h-4 text-white/60" />
+            <X className="w-4 h-4 text-white/70" />
           </button>
         </div>
 
         {/* Form */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <div>
-            <label className="text-[10px] text-white/40 mb-1 block">Von</label>
+            <label className="text-[11px] text-white/55 mb-1 block">Von</label>
             <select
               value={fromEmail}
               onChange={(e) => {
@@ -228,7 +228,7 @@ function ComposeDialog() {
             </select>
           </div>
           <div>
-            <label className="text-[10px] text-white/40 mb-1 block">An</label>
+            <label className="text-[11px] text-white/55 mb-1 block">An</label>
             <input
               type="text"
               value={to}
@@ -239,7 +239,7 @@ function ComposeDialog() {
             />
           </div>
           <div>
-            <label className="text-[10px] text-white/40 mb-1 block">CC</label>
+            <label className="text-[11px] text-white/55 mb-1 block">CC</label>
             <input
               type="text"
               value={cc}
@@ -249,7 +249,7 @@ function ComposeDialog() {
             />
           </div>
           <div>
-            <label className="text-[10px] text-white/40 mb-1 block">Betreff</label>
+            <label className="text-[11px] text-white/55 mb-1 block">Betreff</label>
             <input
               type="text"
               value={subject}
@@ -259,7 +259,7 @@ function ComposeDialog() {
             />
           </div>
           <div className="flex-1">
-            <label className="text-[10px] text-white/40 mb-1 block">Nachricht</label>
+            <label className="text-[11px] text-white/55 mb-1 block">Nachricht</label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
@@ -273,14 +273,14 @@ function ComposeDialog() {
             <div className="space-y-1.5">
               {attachments.map((att, i) => (
                 <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm">
-                  <Paperclip className="w-3.5 h-3.5 text-white/40 shrink-0" />
-                  <span className="flex-1 truncate text-white/60">{att.name}</span>
-                  <span className="text-[10px] text-white/30">{Math.round(att.size / 1024)} KB</span>
+                  <Paperclip className="w-3.5 h-3.5 text-white/55 shrink-0" />
+                  <span className="flex-1 truncate text-white/70">{att.name}</span>
+                  <span className="text-[11px] text-white/50">{Math.round(att.size / 1024)} KB</span>
                   <button
                     onClick={() => setAttachments(prev => prev.filter((_, j) => j !== i))}
                     className="p-0.5 rounded hover:bg-white/10"
                   >
-                    <Trash2 className="w-3 h-3 text-white/30" />
+                    <Trash2 className="w-3 h-3 text-white/50" />
                   </button>
                 </div>
               ))}

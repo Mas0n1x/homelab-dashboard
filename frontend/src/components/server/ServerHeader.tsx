@@ -39,7 +39,7 @@ export function ServerHeader({ server, data }: ServerHeaderProps) {
         <div>
           <h1 className="text-xl font-bold">{server.name}</h1>
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-white/40">{server.host}</span>
+            <span className="text-white/55">{server.host}</span>
             <span className={clsx(
               'flex items-center gap-1 text-xs font-medium',
               isOnline ? 'text-emerald-400' : 'text-red-400'
@@ -63,7 +63,7 @@ export function ServerHeader({ server, data }: ServerHeaderProps) {
               color={system.temperature[0].value > 75 ? 'text-red-400' : system.temperature[0].value > 60 ? 'text-amber-400' : 'text-emerald-400'} />
           )}
           {system.uptime && (
-            <QuickStat icon={<Clock className="w-3.5 h-3.5" />} label="Uptime" value={formatUptime(system.uptime)} color="text-white/60" />
+            <QuickStat icon={<Clock className="w-3.5 h-3.5" />} label="Uptime" value={formatUptime(system.uptime)} color="text-white/70" />
           )}
         </div>
       )}
@@ -74,9 +74,9 @@ export function ServerHeader({ server, data }: ServerHeaderProps) {
 function QuickStat({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-white/30">{icon}</span>
+      <span className="text-white/50">{icon}</span>
       <div>
-        <p className="text-[10px] text-white/25 uppercase tracking-wider">{label}</p>
+        <p className="text-[11px] text-white/50 uppercase tracking-wider">{label}</p>
         <p className={clsx('text-sm font-semibold tabular-nums', color)}>{value}</p>
       </div>
     </div>

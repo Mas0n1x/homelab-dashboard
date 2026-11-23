@@ -70,14 +70,14 @@ export function FleetActions() {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {result && (
-        <span className={clsx('flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full border', result.ok ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400')}>
+        <span className={clsx('flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full border', result.ok ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400')}>
           <CheckCircle2 className="w-3 h-3" /> {result.text}
         </span>
       )}
       <button
         onClick={() => updateMutation.mutate()}
         disabled={busy || servers.length === 0}
-        className="flex items-center gap-1.5 text-[11px] text-white/50 hover:text-white/90 disabled:opacity-40 transition-colors px-2.5 py-1.5 rounded-lg bg-white/[0.03] sm:bg-transparent border border-white/[0.06] sm:border-transparent hover:bg-white/[0.06]"
+        className="flex items-center gap-1.5 text-[12px] text-white/65 hover:text-white/90 disabled:opacity-40 transition-colors px-2.5 py-1.5 rounded-lg bg-white/[0.03] sm:bg-transparent border border-white/[0.06] sm:border-transparent hover:bg-white/[0.06]"
       >
         {updateMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PackageCheck className="w-3.5 h-3.5" />}
         Updates prüfen
@@ -85,7 +85,7 @@ export function FleetActions() {
       <button
         onClick={() => setConfirmPrune(true)}
         disabled={busy || servers.length === 0}
-        className="flex items-center gap-1.5 text-[11px] text-white/50 hover:text-white/90 disabled:opacity-40 transition-colors px-2.5 py-1.5 rounded-lg bg-white/[0.03] sm:bg-transparent border border-white/[0.06] sm:border-transparent hover:bg-white/[0.06]"
+        className="flex items-center gap-1.5 text-[12px] text-white/65 hover:text-white/90 disabled:opacity-40 transition-colors px-2.5 py-1.5 rounded-lg bg-white/[0.03] sm:bg-transparent border border-white/[0.06] sm:border-transparent hover:bg-white/[0.06]"
       >
         <Sparkles className="w-3.5 h-3.5" />
         Docker aufräumen
@@ -93,7 +93,7 @@ export function FleetActions() {
 
       <Modal isOpen={confirmPrune} onClose={() => setConfirmPrune(false)} title="Docker aufräumen?" size="sm">
         <div className="space-y-4">
-          <p className="text-sm text-white/60">
+          <p className="text-sm text-white/70">
             Entfernt auf <span className="text-white/90 font-medium">allen {servers.length} Servern</span>: gestoppte Container, ungenutzte Images und ungenutzte Netzwerke.
           </p>
           <p className="text-xs text-emerald-400/80">Volumes (Daten) bleiben unberührt.</p>

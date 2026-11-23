@@ -157,22 +157,22 @@ export function GitHubWidget() {
               <a href={user.html_url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:text-accent-light transition-colors">
                 {user.name || user.login}
               </a>
-              <span className="text-[10px] text-white/30 font-mono">@{user.login}</span>
+              <span className="text-[11px] text-white/50 font-mono">@{user.login}</span>
             </div>
-            {user.bio && <p className="text-xs text-white/40 mt-0.5 line-clamp-1">{user.bio}</p>}
-            <div className="flex items-center gap-3 mt-1 text-[10px] text-white/30">
+            {user.bio && <p className="text-xs text-white/55 mt-0.5 line-clamp-1">{user.bio}</p>}
+            <div className="flex items-center gap-3 mt-1 text-[11px] text-white/50">
               {user.location && (
                 <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" />{user.location}</span>
               )}
               {user.blog && (
-                <a href={user.blog.startsWith('http') ? user.blog : `https://${user.blog}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 hover:text-white/50">
+                <a href={user.blog.startsWith('http') ? user.blog : `https://${user.blog}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 hover:text-white/65">
                   <LinkIcon className="w-2.5 h-2.5" />{user.blog.replace(/^https?:\/\//, '')}
                 </a>
               )}
               <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />Seit {memberSince}</span>
             </div>
           </div>
-          <a href={user.html_url} target="_blank" rel="noopener noreferrer" className="text-white/20 hover:text-white/50 transition-colors">
+          <a href={user.html_url} target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-white/65 transition-colors">
             <svg className="w-5 h-5" viewBox="0 0 16 16" fill="currentColor">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
             </svg>
@@ -183,19 +183,19 @@ export function GitHubWidget() {
         <div className="grid grid-cols-4 gap-2 mb-4">
           <div className="text-center p-2 rounded-lg bg-white/[0.02]">
             <span className="text-sm font-bold text-white/90 block"><AnimatedNumber value={user.public_repos} /></span>
-            <span className="text-[9px] text-white/30 uppercase tracking-wider">Repos</span>
+            <span className="text-[10px] text-white/50 uppercase tracking-wider">Repos</span>
           </div>
           <div className="text-center p-2 rounded-lg bg-white/[0.02]">
             <span className="text-sm font-bold text-amber-400 block"><AnimatedNumber value={totalStars} /></span>
-            <span className="text-[9px] text-white/30 uppercase tracking-wider">Stars</span>
+            <span className="text-[10px] text-white/50 uppercase tracking-wider">Stars</span>
           </div>
           <div className="text-center p-2 rounded-lg bg-white/[0.02]">
             <span className="text-sm font-bold text-white/90 block"><AnimatedNumber value={totalForks} /></span>
-            <span className="text-[9px] text-white/30 uppercase tracking-wider">Forks</span>
+            <span className="text-[10px] text-white/50 uppercase tracking-wider">Forks</span>
           </div>
           <div className="text-center p-2 rounded-lg bg-white/[0.02]">
             <span className="text-sm font-bold text-white/90 block"><AnimatedNumber value={user.followers} /></span>
-            <span className="text-[9px] text-white/30 uppercase tracking-wider">Follower</span>
+            <span className="text-[10px] text-white/50 uppercase tracking-wider">Follower</span>
           </div>
         </div>
 
@@ -214,9 +214,9 @@ export function GitHubWidget() {
             </div>
             <div className="flex flex-wrap gap-x-3 gap-y-0.5">
               {topLanguages.map(([lang, size]) => (
-                <span key={lang} className="flex items-center gap-1 text-[10px] text-white/40">
+                <span key={lang} className="flex items-center gap-1 text-[11px] text-white/55">
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: LANG_COLORS[lang] || '#888' }} />
-                  {lang} <span className="text-white/20">{zahl((size / totalSize) * 100, 0)}%</span>
+                  {lang} <span className="text-white/50">{zahl((size / totalSize) * 100, 0)}%</span>
                 </span>
               ))}
             </div>
@@ -226,7 +226,7 @@ export function GitHubWidget() {
         {/* Repos */}
         {repos && repos.length > 0 && (
           <div className="mb-4">
-            <span className="text-[10px] text-white/30 uppercase tracking-wider mb-2 block">Repositories</span>
+            <span className="text-[11px] text-white/50 uppercase tracking-wider mb-2 block">Repositories</span>
             <div className="space-y-1">
               {repos.map(repo => (
                 <a
@@ -239,26 +239,26 @@ export function GitHubWidget() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className="text-xs font-medium truncate group-hover:text-accent-light transition-colors">{repo.name}</p>
-                      <ExternalLink className="w-2.5 h-2.5 text-white/0 group-hover:text-white/30 transition-colors flex-shrink-0" />
+                      <ExternalLink className="w-2.5 h-2.5 text-white/0 group-hover:text-white/50 transition-colors flex-shrink-0" />
                     </div>
                     {repo.description && (
-                      <p className="text-[10px] text-white/25 truncate mt-0.5">{repo.description}</p>
+                      <p className="text-[11px] text-white/50 truncate mt-0.5">{repo.description}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {repo.language && (
                       <span className="flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: LANG_COLORS[repo.language] || '#888' }} />
-                        <span className="text-[10px] text-white/30">{repo.language}</span>
+                        <span className="text-[11px] text-white/50">{repo.language}</span>
                       </span>
                     )}
                     {repo.stargazers_count > 0 && (
-                      <span className="flex items-center gap-0.5 text-[10px] text-amber-400/60">
+                      <span className="flex items-center gap-0.5 text-[11px] text-amber-400/60">
                         <Star className="w-2.5 h-2.5" />{repo.stargazers_count}
                       </span>
                     )}
                     {repo.forks_count > 0 && (
-                      <span className="flex items-center gap-0.5 text-[10px] text-white/25">
+                      <span className="flex items-center gap-0.5 text-[11px] text-white/50">
                         <GitFork className="w-2.5 h-2.5" />{repo.forks_count}
                       </span>
                     )}
@@ -272,15 +272,15 @@ export function GitHubWidget() {
         {/* Recent Activity */}
         {recentEvents.length > 0 && (
           <div>
-            <span className="text-[10px] text-white/30 uppercase tracking-wider mb-2 block">Letzte Aktivität</span>
+            <span className="text-[11px] text-white/50 uppercase tracking-wider mb-2 block">Letzte Aktivität</span>
             <div className="space-y-1">
               {recentEvents.map(event => (
-                <div key={event.id} className="flex items-center gap-2 py-1 text-[10px]">
-                  <span className="px-1.5 py-0.5 rounded bg-white/[0.04] text-white/40 font-mono">
+                <div key={event.id} className="flex items-center gap-2 py-1 text-[11px]">
+                  <span className="px-1.5 py-0.5 rounded bg-white/[0.04] text-white/55 font-mono">
                     {EVENT_LABELS[event.type] || event.type.replace('Event', '')}
                   </span>
-                  <span className="text-white/50 truncate flex-1">{event.repo.name.replace(`${GITHUB_USER}/`, '')}</span>
-                  <span className="text-white/20 flex-shrink-0">{timeAgo(event.created_at)}</span>
+                  <span className="text-white/65 truncate flex-1">{event.repo.name.replace(`${GITHUB_USER}/`, '')}</span>
+                  <span className="text-white/50 flex-shrink-0">{timeAgo(event.created_at)}</span>
                 </div>
               ))}
             </div>

@@ -90,17 +90,17 @@ export function CalendarWidget() {
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <button onClick={prev} className="p-1 rounded hover:bg-white/[0.06] text-white/40 hover:text-white/70 transition-colors">
+            <button onClick={prev} className="p-1 rounded hover:bg-white/[0.06] text-white/55 hover:text-white/70 transition-colors">
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="text-sm font-medium w-36 text-center">{MONTHS[month - 1]} {year}</span>
-            <button onClick={next} className="p-1 rounded hover:bg-white/[0.06] text-white/40 hover:text-white/70 transition-colors">
+            <button onClick={next} className="p-1 rounded hover:bg-white/[0.06] text-white/55 hover:text-white/70 transition-colors">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
           <button
             onClick={() => { setSelectedDate(todayStr); setShowAdd(true); }}
-            className="p-1 rounded hover:bg-white/[0.06] text-white/40 hover:text-accent-light transition-colors"
+            className="p-1 rounded hover:bg-white/[0.06] text-white/55 hover:text-accent-light transition-colors"
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -109,7 +109,7 @@ export function CalendarWidget() {
         {/* Weekday headers */}
         <div className="grid grid-cols-7 gap-0.5 mb-1">
           {WEEKDAYS.map(d => (
-            <div key={d} className="text-[9px] text-white/30 text-center font-medium py-0.5">{d}</div>
+            <div key={d} className="text-[10px] text-white/50 text-center font-medium py-0.5">{d}</div>
           ))}
         </div>
 
@@ -126,8 +126,8 @@ export function CalendarWidget() {
               <button
                 key={day}
                 onClick={() => { setSelectedDate(dateStr); if (dayEvents.length === 0) setShowAdd(true); }}
-                className={`relative p-1 rounded-md text-center text-[11px] transition-all hover:bg-white/[0.06] ${
-                  isToday ? 'bg-accent/20 text-accent-light font-bold ring-1 ring-accent/30' : 'text-white/60'
+                className={`relative p-1 rounded-md text-center text-[12px] transition-all hover:bg-white/[0.06] ${
+                  isToday ? 'bg-accent/20 text-accent-light font-bold ring-1 ring-accent/30' : 'text-white/70'
                 }`}
               >
                 {day}
@@ -146,18 +146,18 @@ export function CalendarWidget() {
         {/* Upcoming Events */}
         {upcomingEvents.length > 0 && (
           <div className="mt-3 pt-3 border-t border-white/[0.04] space-y-1.5">
-            <span className="text-[10px] text-white/30 uppercase tracking-wider">Nächste Termine</span>
+            <span className="text-[11px] text-white/50 uppercase tracking-wider">Nächste Termine</span>
             {upcomingEvents.map(e => (
               <div key={e.id} className="flex items-center gap-2 group">
                 <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${COLOR_MAP[e.color] || 'bg-indigo-500'}`} />
-                <span className="text-[10px] font-mono text-white/30 w-10 flex-shrink-0">
+                <span className="text-[11px] font-mono text-white/50 w-10 flex-shrink-0">
                   {e.date === todayStr ? 'Heute' : new Date(e.date + 'T00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
                 </span>
-                {e.time && <span className="text-[10px] text-white/20 font-mono w-10 flex-shrink-0">{e.time}</span>}
-                <span className={`text-xs truncate flex-1 ${COLOR_TEXT[e.color] || 'text-white/60'}`}>{e.title}</span>
+                {e.time && <span className="text-[11px] text-white/50 font-mono w-10 flex-shrink-0">{e.time}</span>}
+                <span className={`text-xs truncate flex-1 ${COLOR_TEXT[e.color] || 'text-white/70'}`}>{e.title}</span>
                 <button
                   onClick={() => deleteMutation.mutate(e.id)}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-500/10 text-white/50 hover:text-red-400 transition-all"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -170,10 +170,10 @@ export function CalendarWidget() {
         {showAdd && (
           <div className="mt-3 pt-3 border-t border-white/[0.04] space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-white/50">
+              <span className="text-xs text-white/65">
                 Neuer Termin - {new Date(selectedDate + 'T00:00').toLocaleDateString('de-DE', { day: '2-digit', month: 'long' })}
               </span>
-              <button onClick={() => setShowAdd(false)} className="p-0.5 rounded hover:bg-white/[0.06] text-white/30">
+              <button onClick={() => setShowAdd(false)} className="p-0.5 rounded hover:bg-white/[0.06] text-white/50">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>

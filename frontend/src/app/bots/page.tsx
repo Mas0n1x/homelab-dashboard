@@ -55,12 +55,12 @@ export default function BotsOverviewPage() {
             </div>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-semibold">Discord-Bots</h1>
-              <p className="text-[11px] sm:text-sm text-white/40 truncate">Zentrale Steuerung aller Bots an einem Ort.</p>
+              <p className="text-[12px] sm:text-sm text-white/55 truncate">Zentrale Steuerung aller Bots an einem Ort.</p>
             </div>
           </div>
           <button
             onClick={load}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white/50 hover:text-white/80 hover:bg-white/[0.04] transition-colors flex-shrink-0"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white/65 hover:text-white/80 hover:bg-white/[0.04] transition-colors flex-shrink-0"
             title="Aktualisieren"
           >
             <RefreshCw className="w-4 h-4" />
@@ -86,7 +86,7 @@ export default function BotsOverviewPage() {
               <BotCard key={b.id} bot={b} delay={i * 0.05} />
             ))}
             {bots.length === 0 && (
-              <div className="col-span-full glass-card rounded-2xl p-8 text-center text-white/40 text-sm">
+              <div className="col-span-full glass-card rounded-2xl p-8 text-center text-white/55 text-sm">
                 Keine Bots gefunden. Ist die Bot-Runtime erreichbar (BOT_RUNTIME_URL / BOT_RUNTIME_TOKEN)?
               </div>
             )}
@@ -114,16 +114,16 @@ function BotCard({ bot, delay }: { bot: BotOverviewEntry; delay: number }) {
             <img src={bot.status.avatar} alt="" className="w-10 h-10 rounded-xl" />
           ) : (
             <div className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center">
-              <Bot className="w-5 h-5 text-white/40" />
+              <Bot className="w-5 h-5 text-white/55" />
             </div>
           )}
           <div className="min-w-0">
             <div className="font-medium text-[15px] truncate">{bot.name}</div>
-            {bot.status?.username && <div className="text-[11px] text-white/35 truncate">{bot.status.username}</div>}
+            {bot.status?.username && <div className="text-[12px] text-white/50 truncate">{bot.status.username}</div>}
           </div>
         </div>
         <span
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium flex-shrink-0 ${
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[12px] font-medium flex-shrink-0 ${
             connected ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300/80'
           }`}
         >
@@ -132,9 +132,9 @@ function BotCard({ bot, delay }: { bot: BotOverviewEntry; delay: number }) {
         </span>
       </div>
 
-      <p className="text-[12px] text-white/40 leading-relaxed flex-1 mb-4">{bot.description}</p>
+      <p className="text-[12px] text-white/55 leading-relaxed flex-1 mb-4">{bot.description}</p>
 
-      <div className="flex items-center gap-4 text-[11px] text-white/45 mb-4">
+      <div className="flex items-center gap-4 text-[12px] text-white/60 mb-4">
         {connected && (
           <>
             <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> {bot.status?.memberCount ?? 0}</span>
@@ -143,7 +143,7 @@ function BotCard({ bot, delay }: { bot: BotOverviewEntry; delay: number }) {
           </>
         )}
         {!connected && bot.status?.error && <span className="text-red-300/60 truncate">{bot.status.error}</span>}
-        {bot.external && <span className="ml-auto flex items-center gap-1 text-white/30"><ExternalLink className="w-3 h-3" /> extern</span>}
+        {bot.external && <span className="ml-auto flex items-center gap-1 text-white/50"><ExternalLink className="w-3 h-3" /> extern</span>}
       </div>
 
       {hasPanel ? (
@@ -152,7 +152,7 @@ function BotCard({ bot, delay }: { bot: BotOverviewEntry; delay: number }) {
           <ChevronRight className="w-4 h-4" />
         </div>
       ) : (
-        <div className="flex items-center justify-between text-[13px] text-white/30">
+        <div className="flex items-center justify-between text-[13px] text-white/50">
           <span>Kein Steuerpanel</span>
         </div>
       )}

@@ -166,7 +166,7 @@ export default function FilesPage() {
               <FolderOpen className="w-5 h-5 text-cyan-400" />
               Dateien
             </h1>
-            <p className="text-sm text-white/40 mt-0.5 flex items-center gap-1.5">
+            <p className="text-sm text-white/55 mt-0.5 flex items-center gap-1.5">
               <ShieldAlert className="w-3.5 h-3.5 text-amber-400/70" />
               Direkter Zugriff auf das Dateisystem des Server-Hosts
             </p>
@@ -184,7 +184,7 @@ export default function FilesPage() {
                     'flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm border transition-all',
                     active
                       ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                      : 'bg-white/[0.03] border-white/[0.08] text-white/60 hover:text-white/90 hover:bg-white/[0.06]'
+                      : 'bg-white/[0.03] border-white/[0.08] text-white/70 hover:text-white/90 hover:bg-white/[0.06]'
                   )}
                 >
                   <span className="relative flex-shrink-0">
@@ -205,18 +205,18 @@ export default function FilesPage() {
             <button
               onClick={goUp}
               disabled={pathSegments.length === 0}
-              className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white/90 disabled:opacity-30 transition-colors"
+              className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white/90 disabled:opacity-30 transition-colors"
               title="Übergeordneter Ordner"
             >
               <ArrowUp className="w-4 h-4" />
             </button>
 
             {/* Breadcrumb */}
-            <div className="flex items-center gap-1 text-sm text-white/50 overflow-x-auto flex-1 min-w-0">
+            <div className="flex items-center gap-1 text-sm text-white/65 overflow-x-auto flex-1 min-w-0">
               <button onClick={() => navigate('/')} className="hover:text-white/90 transition-colors font-mono px-1">/</button>
               {pathSegments.map((seg, i) => (
                 <span key={i} className="flex items-center gap-1 flex-shrink-0">
-                  <span className="text-white/20">/</span>
+                  <span className="text-white/50">/</span>
                   <button
                     onClick={() => navigate('/' + pathSegments.slice(0, i + 1).join('/'))}
                     className="hover:text-white/90 transition-colors font-mono"
@@ -229,13 +229,13 @@ export default function FilesPage() {
 
             <button
               onClick={() => setSharesOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white/90 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white/90 transition-colors"
             >
               <Link2 className="w-3.5 h-3.5" /> Freigaben
             </button>
             <button
               onClick={() => setNewFolder(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white/90 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white/90 transition-colors"
             >
               <FolderPlus className="w-3.5 h-3.5" /> Neuer Ordner
             </button>
@@ -262,22 +262,22 @@ export default function FilesPage() {
         <GlassCard padding={false}>
           <div className="relative z-10">
             {!activeId ? (
-              <div className="flex flex-col items-center justify-center py-16 text-white/30 gap-3">
-                <FolderOpen className="w-12 h-12 text-white/10" />
+              <div className="flex flex-col items-center justify-center py-16 text-white/50 gap-3">
+                <FolderOpen className="w-12 h-12 text-white/50" />
                 <p className="text-sm">Wähle einen Server</p>
               </div>
             ) : isLoading ? (
               <div className="flex items-center justify-center py-16">
-                <Loader2 className="w-6 h-6 animate-spin text-white/30" />
+                <Loader2 className="w-6 h-6 animate-spin text-white/50" />
               </div>
             ) : isError ? (
-              <div className="flex flex-col items-center justify-center py-16 text-white/30 gap-2 px-4 text-center">
+              <div className="flex flex-col items-center justify-center py-16 text-white/50 gap-2 px-4 text-center">
                 <AlertTriangle className="w-8 h-8 text-red-400/50" />
                 <p className="text-sm text-red-400/80">{(listError as Error)?.message || 'Verzeichnis konnte nicht gelesen werden'}</p>
               </div>
             ) : !data?.entries.length ? (
-              <div className="flex flex-col items-center justify-center py-16 text-white/30 gap-2">
-                <Folder className="w-10 h-10 text-white/10" />
+              <div className="flex flex-col items-center justify-center py-16 text-white/50 gap-2">
+                <Folder className="w-10 h-10 text-white/50" />
                 <p className="text-sm">Ordner ist leer</p>
               </div>
             ) : (
@@ -288,7 +288,7 @@ export default function FilesPage() {
                       <td className="py-2.5 pl-4 pr-2 w-8">
                         {entry.type === 'dir'
                           ? <Folder className="w-4 h-4 text-cyan-400/70" />
-                          : <FileIcon className="w-4 h-4 text-white/30" />}
+                          : <FileIcon className="w-4 h-4 text-white/50" />}
                       </td>
                       <td className="py-2.5 pr-2">
                         <button
@@ -298,10 +298,10 @@ export default function FilesPage() {
                           {entry.name}
                         </button>
                       </td>
-                      <td className="py-2.5 pr-2 text-white/30 text-xs whitespace-nowrap hidden sm:table-cell">
+                      <td className="py-2.5 pr-2 text-white/50 text-xs whitespace-nowrap hidden sm:table-cell">
                         {entry.type !== 'dir' ? formatBytes(entry.size) : ''}
                       </td>
-                      <td className="py-2.5 pr-2 text-white/30 text-xs whitespace-nowrap hidden md:table-cell">
+                      <td className="py-2.5 pr-2 text-white/50 text-xs whitespace-nowrap hidden md:table-cell">
                         {entry.mtime ? formatDateTime(new Date(entry.mtime).toISOString()) : ''}
                       </td>
                       <td className="py-2.5 pr-4 text-right whitespace-nowrap">
@@ -310,17 +310,17 @@ export default function FilesPage() {
                             <button
                               onClick={() => setShareTarget({ serverId: activeId, path: `${(data?.path || activePath || '/').replace(/\/$/, '')}/${entry.name}`, name: entry.name })}
                               title="Per Link teilen"
-                              className="p-1.5 rounded-lg text-white/40 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                              className="p-1.5 rounded-lg text-white/55 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
                             >
                               <Share2 className="w-3.5 h-3.5" />
                             </button>
                           )}
                           {entry.type !== 'dir' && (
-                            <button onClick={() => download(entry)} title="Herunterladen" className="p-1.5 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/10 transition-colors">
+                            <button onClick={() => download(entry)} title="Herunterladen" className="p-1.5 rounded-lg text-white/55 hover:text-white/80 hover:bg-white/10 transition-colors">
                               <Download className="w-3.5 h-3.5" />
                             </button>
                           )}
-                          <button onClick={() => remove(entry)} title="Löschen" className="p-1.5 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                          <button onClick={() => remove(entry)} title="Löschen" className="p-1.5 rounded-lg text-white/55 hover:text-red-400 hover:bg-red-500/10 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -339,7 +339,7 @@ export default function FilesPage() {
         {editing?.binary ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <AlertTriangle className="w-8 h-8 text-amber-400/70" />
-            <p className="text-sm text-white/60">Binärdatei — im Editor nicht darstellbar.</p>
+            <p className="text-sm text-white/70">Binärdatei — im Editor nicht darstellbar.</p>
             <button
               onClick={() => { const e = data?.entries.find(en => en.name === editing.name); if (e) download(e); }}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-accent/15 hover:bg-accent/25 text-accent-light transition-colors"
@@ -349,7 +349,7 @@ export default function FilesPage() {
           </div>
         ) : editing ? (
           <div className="space-y-3">
-            <p className="text-[10px] text-white/25 font-mono">{editing.path}</p>
+            <p className="text-[11px] text-white/50 font-mono">{editing.path}</p>
             <textarea
               value={editing.content}
               onChange={e => setEditing({ ...editing, content: e.target.value })}
@@ -357,7 +357,7 @@ export default function FilesPage() {
               spellCheck={false}
             />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setEditing(null)} className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/60 transition-colors">
+              <button onClick={() => setEditing(null)} className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/70 transition-colors">
                 Abbrechen
               </button>
               <button
@@ -388,7 +388,7 @@ export default function FilesPage() {
             className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white/80 outline-none focus:border-accent/30 transition-colors"
           />
           <div className="flex justify-end gap-2">
-            <button onClick={() => setNewFolder(false)} className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/60 transition-colors">
+            <button onClick={() => setNewFolder(false)} className="px-4 py-2 text-sm rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white/70 transition-colors">
               Abbrechen
             </button>
             <button onClick={createFolder} disabled={!folderName.trim()} className="px-4 py-2 text-sm rounded-lg bg-accent/20 hover:bg-accent/30 text-accent-light font-medium transition-colors disabled:opacity-30">

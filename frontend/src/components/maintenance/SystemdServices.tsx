@@ -32,18 +32,18 @@ export function SystemdServices({ serverId }: SystemdServicesProps) {
         </div>
         <div>
           <h3 className="text-sm font-medium">Systemd Services</h3>
-          <p className="text-[10px] text-white/30">Via Glances Monitoring</p>
+          <p className="text-[11px] text-white/50">Via Glances Monitoring</p>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="py-6 text-center text-white/20 text-xs">Lade Services...</div>
+        <div className="py-6 text-center text-white/50 text-xs">Lade Services...</div>
       ) : error ? (
         <div className="py-6 text-center text-red-400/60 text-xs">Fehler: {(error as Error).message}</div>
       ) : !services || services.length === 0 ? (
-        <div className="py-6 text-center text-white/20 text-xs">
+        <div className="py-6 text-center text-white/50 text-xs">
           <p>Keine überwachten Services</p>
-          <p className="text-[10px] text-white/10 mt-1">Services in der Glances-Konfiguration hinzufügen</p>
+          <p className="text-[11px] text-white/50 mt-1">Services in der Glances-Konfiguration hinzufügen</p>
         </div>
       ) : (
         <div className="space-y-1.5">
@@ -56,17 +56,17 @@ export function SystemdServices({ serverId }: SystemdServicesProps) {
               )}
               <span className="text-xs font-medium flex-1 truncate">{service.name}</span>
               {service.cpu > 0 && (
-                <span className="text-[10px] text-white/30 tabular-nums">
+                <span className="text-[11px] text-white/50 tabular-nums">
                   CPU {zahl(service.cpu, 1)}%
                 </span>
               )}
               {service.mem > 0 && (
-                <span className="text-[10px] text-white/30 tabular-nums">
+                <span className="text-[11px] text-white/50 tabular-nums">
                   MEM {zahl(service.mem, 1)}%
                 </span>
               )}
               <span className={clsx(
-                'text-[10px] px-1.5 py-0.5 rounded-full',
+                'text-[11px] px-1.5 py-0.5 rounded-full',
                 service.status === 'running' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
               )}>
                 {service.status}

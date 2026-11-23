@@ -13,9 +13,13 @@ import { Cpu, MemoryStick, Network, HardDrive, TrendingUp } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { HistoryChart } from '@/components/monitoring/HistoryChart';
 import * as api from '@/lib/api';
-import type { MetricSample } from '@/lib/types';
+import type { MetricSample, MetricRange, MetricRangePoint } from '@/lib/types';
 
-const RANGES = [{ label: '1 h', min: 60 }, { label: '6 h', min: 360 }, { label: '24 h', min: 1440 }];
+// Kurze Zeiträume aus Rohdaten (30 s), lange aus Stundenwerten (bis 90 Tage).
+const RANGES: { label: string; key: MetricRange }[] = [
+  { label: '1 h', key: '1h' }, { label: '6 h', key: '6h' }, { label: '24 h', key: '24h' },
+  { label: '7 T', key: '7d' }, { label: '30 T', key: '30d' }, { label: '90 T', key: '90d' },
+];
 
 function fmtRate(bytes: number) {
   if (!bytes || bytes < 1) return '0 B/s';
@@ -46,12 +50,12 @@ function diskForecast(samples: MetricSample[]): { text: string; warn: boolean } 
 }
 
 export function MetricsHistoryPanel({ serverId }: { serverId: string }) {
-  const [minutes, setMinutes] = useState(360);
+  const [range, setRange] = useState<MetricRange>('6h');
 
-  const { data: metrics } = useQuery<MetricSample[]>({
-    queryKey: ['metrics-panel', serverId, minutes],
-    queryFn: () => api.getMetrics(serverId, minutes) as Promise<MetricSample[]>,
-    refetchInterval: 30000,
+  const { data: rangeData } = useQuery<{ range: MetricRange; points: MetricRangePoint[] }>({
+    queryKey: ['metrics-panel', serverId, range],
+    queryFn: () => api.getMetricsRange(serverId, range),
+    refetchInterval: range === '90d' || range === '30d' || range === '7d' ? 300000 : 30000,
   });
   // Prognose über ein langes Fenster (48h), unabhängig vom gewählten Zoom.
   const { data: forecastData } = useQuery<MetricSample[]>({
@@ -60,7 +64,7 @@ export function MetricsHistoryPanel({ serverId }: { serverId: string }) {
     refetchInterval: 300000,
   });
 
-  const m = metrics ?? [];
+  const m = rangeData?.points ?? [];
   const cpu = m.map(x => x.cpu ?? 0);
   const mem = m.map(x => x.mem ?? 0);
   const rx = m.map(x => x.rx ?? 0);
@@ -76,13 +80,13 @@ export function MetricsHistoryPanel({ serverId }: { serverId: string }) {
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-white/40" />
+            <TrendingUp className="w-4 h-4 text-white/55" />
             <h3 className="text-sm font-semibold">Verlauf</h3>
           </div>
           <div className="flex gap-1">
             {RANGES.map(r => (
-              <button key={r.min} onClick={() => setMinutes(r.min)}
-                className={clsx('px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all', minutes === r.min ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/40 hover:text-white/70')}>
+              <button key={r.key} onClick={() => setRange(r.key)} aria-pressed={range === r.key}
+                className={clsx('px-2.5 py-1 rounded-lg text-[12px] font-medium transition-all', range === r.key ? 'bg-accent/20 border border-accent/30 text-accent-light' : 'bg-white/[0.03] border border-white/10 text-white/55 hover:text-white/70')}>
                 {r.label}
               </button>
             ))}
@@ -91,14 +95,14 @@ export function MetricsHistoryPanel({ serverId }: { serverId: string }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div>
-            <div className="flex items-center gap-3 mb-1.5 text-[11px]">
+            <div className="flex items-center gap-3 mb-1.5 text-[12px]">
               <span className="flex items-center gap-1 text-emerald-400"><Cpu className="w-3 h-3" /> CPU {Math.round(cpu[cpu.length - 1] ?? 0)}%</span>
               <span className="flex items-center gap-1 text-violet-400"><MemoryStick className="w-3 h-3" /> RAM {Math.round(mem[mem.length - 1] ?? 0)}%</span>
             </div>
             <HistoryChart gridPercent max={100} series={[{ label: 'CPU', color: '#10b981', data: cpu }, { label: 'RAM', color: '#8b5cf6', data: mem }]} />
           </div>
           <div>
-            <div className="flex items-center gap-3 mb-1.5 text-[11px]">
+            <div className="flex items-center gap-3 mb-1.5 text-[12px]">
               <span className="flex items-center gap-1 text-emerald-400/80"><Network className="w-3 h-3" /> ↓ {fmtRate(curRx)}</span>
               <span className="flex items-center gap-1 text-blue-400/80">↑ {fmtRate(curTx)}</span>
             </div>
@@ -108,13 +112,13 @@ export function MetricsHistoryPanel({ serverId }: { serverId: string }) {
 
         {/* Speicher-Prognose */}
         <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center justify-between">
-          <span className="flex items-center gap-2 text-xs text-white/50"><HardDrive className="w-3.5 h-3.5" /> Speicher-Prognose ({Math.round(curDisk)}% belegt)</span>
+          <span className="flex items-center gap-2 text-xs text-white/65"><HardDrive className="w-3.5 h-3.5" /> Speicher-Prognose ({Math.round(curDisk)}% belegt)</span>
           {forecast ? (
-            <span className={clsx('text-xs font-medium', forecast.warn ? 'text-amber-400' : 'text-white/60')}>
+            <span className={clsx('text-xs font-medium', forecast.warn ? 'text-amber-400' : 'text-white/70')}>
               {forecast.text === 'stabil' ? 'Trend stabil' : `voll in ${forecast.text}`}
             </span>
           ) : (
-            <span className="text-xs text-white/30">Sammle Daten…</span>
+            <span className="text-xs text-white/50">Sammle Daten…</span>
           )}
         </div>
       </div>

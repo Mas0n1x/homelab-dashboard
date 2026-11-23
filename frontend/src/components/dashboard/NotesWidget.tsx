@@ -80,11 +80,11 @@ export function NotesWidget() {
           <div className="flex items-center gap-2">
             <StickyNote className="w-4 h-4 text-amber-400/50" />
             <span className="text-sm font-medium">Notizen</span>
-            <span className="text-[10px] text-white/20">{notes.length}</span>
+            <span className="text-[11px] text-white/50">{notes.length}</span>
           </div>
           <button
             onClick={() => setShowAdd(!showAdd)}
-            className="p-1 rounded hover:bg-white/[0.06] text-white/40 hover:text-accent-light transition-colors"
+            className="p-1 rounded hover:bg-white/[0.06] text-white/55 hover:text-accent-light transition-colors"
           >
             {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           </button>
@@ -115,8 +115,8 @@ export function NotesWidget() {
         {/* Notes list */}
         {notes.length === 0 ? (
           <div className="py-4 text-center">
-            <StickyNote className="w-6 h-6 mx-auto mb-1.5 text-white/10" />
-            <p className="text-xs text-white/30">Keine Notizen</p>
+            <StickyNote className="w-6 h-6 mx-auto mb-1.5 text-white/50" />
+            <p className="text-xs text-white/50">Keine Notizen</p>
           </div>
         ) : (
           <div className="space-y-2 max-h-80 overflow-y-auto">
@@ -134,7 +134,7 @@ export function NotesWidget() {
                     {editingId === note.id ? (
                       <div className="mt-1.5">
                         <textarea
-                          className="glass-input w-full text-[11px] min-h-[40px] resize-none"
+                          className="glass-input w-full text-[12px] min-h-[40px] resize-none"
                           value={editContent}
                           onChange={e => setEditContent(e.target.value)}
                           autoFocus
@@ -143,7 +143,7 @@ export function NotesWidget() {
                           <button onClick={() => updateMutation.mutate({ id: note.id, data: { content: editContent } })} className="p-1 rounded hover:bg-accent/20 text-accent-light">
                             <Check className="w-3 h-3" />
                           </button>
-                          <button onClick={() => setEditingId(null)} className="p-1 rounded hover:bg-white/[0.06] text-white/30">
+                          <button onClick={() => setEditingId(null)} className="p-1 rounded hover:bg-white/[0.06] text-white/50">
                             <X className="w-3 h-3" />
                           </button>
                         </div>
@@ -151,7 +151,7 @@ export function NotesWidget() {
                     ) : (
                       note.content && (
                         <p
-                          className="text-[11px] text-white/40 mt-1 line-clamp-3 cursor-pointer hover:text-white/60 transition-colors whitespace-pre-wrap"
+                          className="text-[12px] text-white/55 mt-1 line-clamp-3 cursor-pointer hover:text-white/70 transition-colors whitespace-pre-wrap"
                           onClick={() => { setEditingId(note.id); setEditContent(note.content); }}
                         >
                           {note.content}
@@ -162,11 +162,11 @@ export function NotesWidget() {
                   <div className="flex items-center gap-0.5 flex-shrink-0">
                     <button
                       onClick={() => updateMutation.mutate({ id: note.id, data: { pinned: !note.pinned } })}
-                      className={`p-1 rounded transition-all ${note.pinned ? 'text-amber-400 hover:bg-amber-500/10' : 'text-white/20 hover:text-white/40 hover:bg-white/[0.04]'}`}
+                      className={`p-1 rounded transition-all ${note.pinned ? 'text-amber-400 hover:bg-amber-500/10' : 'text-white/50 hover:text-white/55 hover:bg-white/[0.04]'}`}
                     >
                       <Pin className="w-3 h-3" />
                     </button>
-                    <button onClick={() => deleteMutation.mutate(note.id)} className="p-1 rounded hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-all">
+                    <button onClick={() => deleteMutation.mutate(note.id)} className="p-1 rounded hover:bg-red-500/10 text-white/50 hover:text-red-400 transition-all">
                       <X className="w-3 h-3" />
                     </button>
                   </div>

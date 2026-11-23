@@ -96,7 +96,7 @@ export function CodeEditor({ value, onChange }: { value: string; onChange: (v: s
   const lines = value.split('\n').length;
   return (
     <div className="flex h-[46vh] overflow-hidden bg-black/30 rounded-b-2xl">
-      <div ref={gutterRef} className="overflow-hidden py-4 pl-3 pr-2.5 text-right text-white/20 font-mono text-[12px] leading-[1.6] select-none border-r border-white/[0.05] bg-white/[0.015]">
+      <div ref={gutterRef} className="overflow-hidden py-4 pl-3 pr-2.5 text-right text-white/50 font-mono text-[12px] leading-[1.6] select-none border-r border-white/[0.05] bg-white/[0.015]">
         {Array.from({ length: lines }, (_, i) => <div key={i}>{i + 1}</div>)}
       </div>
       <textarea value={value} onChange={e => onChange(e.target.value)} spellCheck={false}
@@ -109,10 +109,10 @@ export function CodeEditor({ value, onChange }: { value: string; onChange: (v: s
 export function StatCard({ icon: Icon, label, value, sub, percent, color }: { icon: any; label: string; value: string; sub?: string; percent?: number; color: string }) {
   return (
     <div className="glass-card rounded-2xl p-5">
-      <div className="flex items-center gap-2 mb-3"><Icon className="w-4 h-4" style={{ color }} /><span className="text-xs font-medium text-white/50">{label}</span></div>
+      <div className="flex items-center gap-2 mb-3"><Icon className="w-4 h-4" style={{ color }} /><span className="text-xs font-medium text-white/65">{label}</span></div>
       <div className="flex items-end justify-between">
         <span className="text-2xl font-bold tabular-nums" style={{ color }}>{value}</span>
-        {sub && <span className="text-[11px] text-white/30 mb-1">{sub}</span>}
+        {sub && <span className="text-[12px] text-white/50 mb-1">{sub}</span>}
       </div>
       {percent !== undefined && (
         <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden mt-3">
@@ -124,4 +124,4 @@ export function StatCard({ icon: Icon, label, value, sub, percent, color }: { ic
 }
 
 export const btnPrimary = 'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] bg-orange-500/15 border border-orange-500/25 text-orange-300 hover:bg-orange-500/25 disabled:opacity-40 transition';
-export const inputCls = 'bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/25 outline-none focus:border-orange-400/40';
+export const inputCls = 'bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/45 outline-none focus:border-orange-400/40';
