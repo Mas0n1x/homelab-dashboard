@@ -128,18 +128,23 @@ async function sendWebhook(channel, payload) {
 // steht — das erzeugte Alarm+Entwarnung im Minutentakt. Erst ein Ausschlag
 // über mehrere aufeinanderfolgende Zyklen hinweg gilt als echt.
 const REQUIRED_HIGH_STREAK = 3; // ~90s anhaltend über der Schwelle
-const REQUIRED_OK_STREAK = 2;   // ~60s anhaltend wieder normal
+const REQUIRED_OK_STREAK = 4;   // ~120s anhaltend wieder normal
+const REALERT_COOLDOWN_MIN = 15; // nach Entwarnung 15 Min keine neue Alarm-Meldung desselben Typs
 const streaks = new Map(); // key: `${channel.id}:${stateEvent}` -> { high, ok }
 
 async function handleThreshold(db, channel, opts) {
+  // isOk (optional): echte Hysterese — Entwarnung erst unterhalb der tieferen ok-Schwelle.
+  // Werte dazwischen (Totband) ändern den Zustand nicht und zählen weder als hoch noch als ok.
   const { event, scope = '', subject = '', isHigh, alert, recovery } = opts;
+  const isOk = opts.isOk === undefined ? !isHigh : !!opts.isOk;
   const stateEvent = [event, scope, subject].filter(Boolean).join('::');
   const okEvent = `${stateEvent}::ok`;
 
   const streakKey = `${channel.id}:${stateEvent}`;
   const streak = streaks.get(streakKey) || { high: 0, ok: 0 };
   if (isHigh) { streak.high += 1; streak.ok = 0; }
-  else { streak.ok += 1; streak.high = 0; }
+  else if (isOk) { streak.ok += 1; streak.high = 0; }
+  else { streak.high = 0; streak.ok = 0; } // Totband
   streaks.set(streakKey, streak);
 
   const lastAlert = db.prepare(
@@ -151,9 +156,13 @@ async function handleThreshold(db, channel, opts) {
 
   const alerting = !!lastAlert && (!lastOk || lastAlert.sent_at > lastOk.sent_at);
 
-  if (isHigh && !alerting && streak.high >= REQUIRED_HIGH_STREAK) {
+  // Cooldown: nach einer Entwarnung nicht sofort wieder alarmieren (Flapping-Schutz).
+  const inCooldown = !alerting && !!lastOk &&
+    !!db.prepare("SELECT 1 FROM alert_history WHERE channel_id = ? AND event_type = ? AND sent_at > datetime('now', ?)").get(channel.id, okEvent, `-${REALERT_COOLDOWN_MIN} minutes`);
+
+  if (isHigh && !alerting && !inCooldown && streak.high >= REQUIRED_HIGH_STREAK) {
     await sendWebhook(channel, { event: stateEvent, ...alert(subject) });
-  } else if (!isHigh && alerting && recovery && streak.ok >= REQUIRED_OK_STREAK) {
+  } else if (isOk && alerting && recovery && streak.ok >= REQUIRED_OK_STREAK) {
     await sendWebhook(channel, { event: okEvent, ...recovery(subject) });
   }
 }
@@ -252,6 +261,7 @@ export async function checkAlerts(data) {
         event: 'cpu_high',
         scope,
         isHigh: v > TH.cpu.high,
+        isOk: v < TH.cpu.ok,
         alert: () => ({
           title: '🔥 CPU-Auslastung hoch',
           message: `Die CPU-Auslastung liegt bei **${fmtPct(v)}**.`,
@@ -275,6 +285,7 @@ export async function checkAlerts(data) {
         event: 'ram_high',
         scope,
         isHigh: v > TH.ram.high,
+        isOk: v < TH.ram.ok,
         alert: () => ({
           title: '💾 RAM-Auslastung hoch',
           message: `Der Arbeitsspeicher liegt bei **${fmtPct(v)}**.`,
@@ -303,6 +314,7 @@ export async function checkAlerts(data) {
           scope,
           subject: d.mountPoint || d.device || 'disk',
           isHigh: v > TH.disk.high,
+          isOk: v < TH.disk.ok,
           alert: (subj) => ({
             title: '🗄️ Speicherplatz knapp',
             message: `Die Partition **${subj}** ist zu **${fmtPct(v)}** belegt.`,
@@ -330,6 +342,7 @@ export async function checkAlerts(data) {
         event: 'temp_high',
         scope,
         isHigh: maxTemp > TH.temp.high,
+        isOk: maxTemp < TH.temp.ok,
         alert: () => ({
           title: '🌡️ CPU-Temperatur hoch',
           message: `Die höchste gemessene Temperatur liegt bei **${maxTemp.toFixed(1)} °C**.`,
