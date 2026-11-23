@@ -253,6 +253,24 @@ let bestellCache = null;
 const BESTELL_TTL = 5 * 60 * 1000;
 
 /**
+ * Zählt eine Bestellung noch? Stornierte und voll erstattete fallen heraus.
+ *
+ * Etsy führt eine stornierte Bestellung weiter als `is_paid: true` und
+ * `is_shipped: false` — der Filter `was_paid=true&was_shipped=false` liefert sie
+ * deshalb für immer wieder mit, obwohl nichts mehr zu tun ist. Erkennbar ist sie
+ * am `status` („Canceled") und an einer erfolgreichen Rückerstattung über den
+ * vollen Betrag.
+ */
+export function istAktiv(r) {
+  if (String(r.status || '').toLowerCase().startsWith('cancel')) return false;
+  const gesamt = Number(r.grandtotal?.amount ?? 0);
+  const erstattet = (r.refunds || [])
+    .filter(x => String(x.status || '').toUpperCase() === 'SUCCESS')
+    .reduce((s, x) => s + Number(x.amount?.amount ?? 0), 0);
+  return !(gesamt > 0 && erstattet >= gesamt);
+}
+
+/**
  * Offene Bestellungen: bezahlt, aber noch nicht verschickt — genau das, was
  * noch Arbeit bedeutet. Dazu die Umsätze der letzten 30 Tage.
  */
@@ -283,7 +301,10 @@ export async function holeBestellungen({ force = false } = {}) {
     tokens.accessToken,
   ).catch(() => ({ results: [] }));
 
-  const bestellungen = (offen.results || []).map(r => ({
+  const offeneAktiv = (offen.results || []).filter(istAktiv);
+  const letzteAktiv = (letzte.results || []).filter(istAktiv);
+
+  const bestellungen = offeneAktiv.map(r => ({
     receiptId: r.receipt_id,
     buyer: r.name || r.buyer_email || 'Unbekannt',
     total: Number(r.grandtotal?.amount ?? 0) / Number(r.grandtotal?.divisor || 100),
@@ -294,7 +315,7 @@ export async function holeBestellungen({ force = false } = {}) {
     country: r.country_iso || null,
   }));
 
-  const umsatz30 = (letzte.results || []).reduce(
+  const umsatz30 = letzteAktiv.reduce(
     (s, r) => s + Number(r.grandtotal?.amount ?? 0) / Number(r.grandtotal?.divisor || 100), 0,
   );
 
@@ -302,10 +323,11 @@ export async function holeBestellungen({ force = false } = {}) {
     connected: true,
     shopId,
     shopName: tokens.shopName || null,
-    openCount: offen.count ?? bestellungen.length,
+    // Etsys `count` zählt Stornierte mit — deshalb die gefilterte Liste.
+    openCount: bestellungen.length,
     orders: bestellungen,
     revenue30d: parseFloat(umsatz30.toFixed(2)),
-    orders30d: (letzte.results || []).length,
+    orders30d: letzteAktiv.length,
     currency: bestellungen[0]?.currency || 'EUR',
     fetchedAt: new Date().toISOString(),
   };
