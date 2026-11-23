@@ -50,9 +50,9 @@ import * as gameservers from './services/gameservers.js';
 import statusRoutes from './routes/status.js';
 import timeRoutes from './routes/time.js';
 import etsyRoutes, { createEtsyCallback } from './routes/etsy.js';
-import { checkAlerts, sendStatusReport, checkForecastAlerts, notifyImageUpdates } from './services/alerting.js';
+import { checkAlerts, sendStatusReport, checkForecastAlerts, notifyImageUpdates, checkMemoryTrendAlerts } from './services/alerting.js';
 import { runDueBackups, enforceBackupRetention } from './services/backup.js';
-import { recordMetric, pruneMetrics } from './services/metrics.js';
+import { recordMetric, pruneMetrics, rollupHourly } from './services/metrics.js';
 import { recordDiskDaily, pruneDiskDaily, getDiskForecast } from './services/diskForecast.js';
 import { checkFleetImageUpdates } from './services/imageUpdates.js';
 import metricsRoutes from './routes/metrics.js';
@@ -770,6 +770,9 @@ setInterval(makeJob('alerting', () => forEachServer(async (server) => {
             disk: dcap ? (dused / dcap) * 100 : null,
             rx: net.reduce((s, n) => s + (n.rxRate || 0), 0),
             tx: net.reduce((s, n) => s + (n.txRate || 0), 0),
+            temp: (systemStats.temperature || []).length
+              ? Math.max(...systemStats.temperature.map(t => Number(t.value) || 0))
+              : null,
           });
           // Zusätzlich ein Tageswert in absoluten Bytes — Grundlage der
           // Füllstand-Prognose. metrics_history wird nach 48 Stunden geleert
@@ -880,6 +883,14 @@ const pruefePrognose = makeJob('disk-forecast-alerts', async () => {
 setTimeout(pruefePrognose, 3 * 60 * 1000);
 setInterval(pruefePrognose, 15 * 60 * 1000);
 
+// Background: Stundenwerte fortschreiben + RAM-Trend beobachten (alle 15 Minuten)
+const pflegeLangzeit = makeJob('metrics-rollup', async () => {
+  rollupHourly(3);
+  await checkMemoryTrendAlerts();
+});
+setTimeout(pflegeLangzeit, 4 * 60 * 1000);
+setInterval(pflegeLangzeit, 15 * 60 * 1000);
+
 // Background: Geplante Backups prüfen (alle 5 Minuten; Fälligkeit anhand Intervall)
 setInterval(() => {
   runDueBackups().catch(error => console.error('Scheduled backup error:', error.message));
@@ -891,7 +902,8 @@ setInterval(() => {
 function runDataCleanup() {
   try {
     cleanupOldUptimeData();
-    pruneMetrics(48); // Metrik-Verlauf: 48h behalten
+    rollupHourly(47); // vor dem Aufräumen (47: das erste Fenster liegt so sicher noch voll in den Rohdaten): Rohdaten zu Stundenwerten verdichten
+    pruneMetrics(48); // Rohdaten 48 h, Stundenwerte 90 Tage
     pruneDiskDaily(); // Tageswerte der Platte: gut ein Jahr behalten
     const removedBackups = enforceBackupRetention();
     if (removedBackups > 0) {

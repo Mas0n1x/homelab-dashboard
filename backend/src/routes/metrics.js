@@ -4,7 +4,7 @@
  * Licensed under the MIT License.
  */
 import { Router } from 'express';
-import { getMetrics } from '../services/metrics.js';
+import { getMetrics, getMetricsRange, getMemoryTrends } from '../services/metrics.js';
 import { getDiskForecast } from '../services/diskForecast.js';
 
 const router = Router();
@@ -18,6 +18,24 @@ router.get('/disk-forecast', (req, res) => {
     res.json(getDiskForecast(days));
   } catch (error) {
     res.status(500).json({ error: 'Prognose fehlgeschlagen', message: error.message });
+  }
+});
+
+// RAM-Grundbedarf-Trend je Server (Speicherleck-Erkennung). Vor '/:serverId'.
+router.get('/memory-trends', (req, res) => {
+  try {
+    res.json(getMemoryTrends());
+  } catch (error) {
+    res.status(500).json({ error: 'Trend fehlgeschlagen', message: error.message });
+  }
+});
+
+// Verlauf mit wählbarem Zeitraum: 1h, 6h, 24h (Rohdaten) · 7d, 30d, 90d (Stundenwerte)
+router.get('/:serverId/range', (req, res) => {
+  try {
+    res.json(getMetricsRange(req.params.serverId, String(req.query.range || '24h')));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch metrics', message: error.message });
   }
 });
 

@@ -3,7 +3,9 @@
  * Copyright (c) 2024-2026 DEV Mas0n1x.
  * Licensed under the MIT License.
  */
+import * as webpush from 'web-push';
 import { getDb } from './database.js';
+import { getMemoryTrends } from './metrics.js';
 
 // ── Discord-Embed-Branding ───────────────────────────────────────
 // Zentrale Optik für alle Alerts: einheitlicher Absender, verfeinerte
@@ -50,6 +52,7 @@ const EVENT_CATEGORY = {
   backup_completed: 'Backup · Erfolg',
   backup_failed: 'Backup · Fehler',
   disk_forecast: 'Speicher · Prognose',
+  ram_trend: 'System · RAM-Trend',
   image_updates: 'Docker · Updates',
   test: 'Verbindungstest',
 };
@@ -58,12 +61,90 @@ function categoryFromEvent(event) {
   return EVENT_CATEGORY[base] || 'Homelab';
 }
 
+// ── Web-Push (PWA) ───────────────────────────────────────────────
+// Jedes Gerät, das sich anmeldet, wird als Kanal vom Typ `webpush` abgelegt
+// (webhook_url = Subscription-JSON). Damit gelten Ereignis-Auswahl, Verlauf und
+// Testknopf genauso wie für Discord/Telegram.
+let vapidReady = null;
+function vapid() {
+  if (vapidReady) return vapidReady;
+  const db = getDb();
+  const row = db.prepare("SELECT value FROM settings WHERE key = 'vapid_keys'").get();
+  let keys = row?.value ? JSON.parse(row.value) : null;
+  if (!keys) {
+    keys = webpush.generateVAPIDKeys();
+    db.prepare("INSERT INTO settings (key, value) VALUES ('vapid_keys', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify(keys));
+  }
+  // Der Betreff geht an den Push-Dienst des Browsers (Google/Mozilla/Apple) —
+  // bewusst neutral, keine eigene Adresse.
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:admin@example.com', keys.publicKey, keys.privateKey);
+  vapidReady = keys;
+  return keys;
+}
+
+export function getVapidPublicKey() {
+  return vapid().publicKey;
+}
+
+function klartext(s) {
+  return String(s || '').replace(/\*\*/g, '').replace(/`/g, '').replace(/\n+/g, ' · ').substring(0, 240);
+}
+
+async function sendPush(channel, payload) {
+  vapid();
+  let sub;
+  try { sub = JSON.parse(channel.webhook_url); } catch { throw new Error('Ungültige Push-Anmeldung'); }
+  const sev = severityFromColor(payload.color);
+  const nachricht = JSON.stringify({
+    title: klartext(payload.title).substring(0, 80),
+    body: klartext(payload.message),
+    tag: payload.event || 'homelab',
+    severity: sev,
+    url: '/alerts',
+  });
+  try {
+    await webpush.sendNotification(sub, nachricht, { TTL: 3600, urgency: sev === 'critical' ? 'high' : 'normal' });
+  } catch (error) {
+    // 404/410: Gerät hat sich abgemeldet oder die Anmeldung ist abgelaufen — Kanal aufräumen.
+    if (error.statusCode === 404 || error.statusCode === 410) {
+      try { deleteChannel(channel.id); } catch { /* egal */ }
+    }
+    throw error;
+  }
+}
+
+export function subscribePush({ subscription, name, events }) {
+  if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+    throw new Error('Ungültige Push-Anmeldung');
+  }
+  const db = getDb();
+  const vorhanden = db.prepare("SELECT id, webhook_url FROM alert_channels WHERE type = 'webpush'").all()
+    .find(c => { try { return JSON.parse(c.webhook_url).endpoint === subscription.endpoint; } catch { return false; } });
+  const ereignisse = Array.isArray(events) && events.length ? events : PUSH_STANDARD_EVENTS;
+  if (vorhanden) {
+    db.prepare('UPDATE alert_channels SET webhook_url = ?, name = ?, enabled = 1 WHERE id = ?')
+      .run(JSON.stringify(subscription), String(name || 'Gerät').substring(0, 60), vorhanden.id);
+    return { id: vorhanden.id, updated: true };
+  }
+  const id = `alert-push-${Date.now()}`;
+  db.prepare('INSERT INTO alert_channels (id, type, name, webhook_url, events) VALUES (?, ?, ?, ?, ?)')
+    .run(id, 'webpush', String(name || 'Gerät').substring(0, 60), JSON.stringify(subscription), JSON.stringify(ereignisse));
+  return { id, updated: false };
+}
+
+const PUSH_STANDARD_EVENTS = [
+  'cpu_high', 'ram_high', 'disk_high', 'temp_high', 'container_crash',
+  'service_offline', 'backup_failed', 'disk_forecast', 'ram_trend',
+];
+
 // Send webhook notification.
 // payload: { event, title, message, color, fields?: [{name,value,inline}], footer?, record? (default true) }
 async function sendWebhook(channel, payload) {
   try {
     let body;
-    if (channel.type === 'discord') {
+    if (channel.type === 'webpush') {
+      await sendPush(channel, payload);
+    } else if (channel.type === 'discord') {
       const sev = SEVERITY[severityFromColor(payload.color)] || SEVERITY.info;
       const category = categoryFromEvent(payload.event);
 
@@ -95,11 +176,13 @@ async function sendWebhook(channel, payload) {
       body = { text: `*${payload.title}*\n${payload.message}${extra}`, parse_mode: 'Markdown' };
     }
 
-    await fetch(channel.webhook_url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    if (channel.type !== 'webpush') {
+      await fetch(channel.webhook_url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    }
 
     if (payload.record !== false) {
       const db = getDb();
@@ -241,25 +324,162 @@ export function getThresholds() {
 // Server ab, eine Zahl ersetzt die "high"-Schwelle (ok = high - gap).
 // Gedacht für Server, die dauerhaft nahe der Schwelle laufen (z. B. NAS-VM).
 const OK_GAP = { cpu: 10, ram: 10, disk: 5, temp: 10 };
-function getServerOverrides(serverId) {
+const OVERRIDE_METRIKEN = ['cpu', 'ram', 'disk', 'temp'];
+
+function leseSetting(key, standard) {
   try {
-    const row = getDb().prepare("SELECT value FROM settings WHERE key = 'alert_overrides'").get();
-    return (row?.value && JSON.parse(row.value)[serverId]) || {};
+    const row = getDb().prepare('SELECT value FROM settings WHERE key = ?').get(key);
+    return row?.value ? JSON.parse(row.value) : standard;
   } catch {
-    return {};
+    return standard;
   }
+}
+function schreibeSetting(key, wert) {
+  getDb().prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
+    .run(key, JSON.stringify(wert));
+}
+
+export function getAllOverrides() {
+  const o = leseSetting('alert_overrides', {});
+  return o && typeof o === 'object' ? o : {};
+}
+
+function getServerOverrides(serverId) {
+  return getAllOverrides()[serverId] || {};
+}
+
+/** Overrides komplett ersetzen; ungültige Einträge werden verworfen. */
+export function setAllOverrides(eingabe) {
+  const sauber = {};
+  for (const [serverId, werte] of Object.entries(eingabe || {})) {
+    if (typeof serverId !== 'string' || !serverId || serverId.length > 64 || !werte || typeof werte !== 'object') continue;
+    const e = {};
+    for (const k of OVERRIDE_METRIKEN) {
+      const v = werte[k];
+      if (v === null) e[k] = null;
+      else if (typeof v === 'number' && v > 0 && v <= 200) e[k] = v;
+    }
+    if (Object.keys(e).length) sauber[serverId] = e;
+  }
+  schreibeSetting('alert_overrides', sauber);
+  return sauber;
+}
+
+// ── Wartungsfenster ──────────────────────────────────────────────
+// Während eines Fensters laufen die Messungen weiter (Live-Zustand), es gehen
+// aber keine Benachrichtigungen raus — für geplante Neustarts, Updates, Umbauten.
+export function getMaintenance() {
+  const liste = leseSetting('alert_maintenance', []);
+  const jetzt = Date.now();
+  return (Array.isArray(liste) ? liste : []).filter(w => new Date(w.until).getTime() > jetzt);
+}
+
+export function addMaintenance({ serverId, minutes, reason }) {
+  const min = Math.min(7 * 24 * 60, Math.max(5, parseInt(minutes, 10) || 60));
+  const fenster = {
+    id: `wf-${Date.now()}`,
+    serverId: typeof serverId === 'string' && serverId ? serverId.substring(0, 64) : '*',
+    until: new Date(Date.now() + min * 60000).toISOString(),
+    reason: String(reason || '').substring(0, 120),
+    createdAt: new Date().toISOString(),
+  };
+  schreibeSetting('alert_maintenance', [...getMaintenance(), fenster]);
+  return fenster;
+}
+
+export function removeMaintenance(id) {
+  schreibeSetting('alert_maintenance', getMaintenance().filter(w => w.id !== id));
+}
+
+export function maintenanceFor(serverId) {
+  return getMaintenance().find(w => w.serverId === '*' || w.serverId === serverId) || null;
+}
+
+// ── Live-Zustand ─────────────────────────────────────────────────
+// Unabhängig von Kanälen und Wartungsfenstern: was ist JETZT auffällig? Gleiche
+// Streak-/Hysterese-Regeln wie bei den Benachrichtigungen, damit Karte und
+// Alarm dasselbe meinen (vorher rechnete die Karte allein aus dem Rohwert und
+// blinkte rot, wo nie ein Alarm kam).
+const live = new Map(); // serverId -> Map(key -> Eintrag)
+const METRIK_LABEL = { cpu: 'CPU', ram: 'RAM', disk: 'Speicher', temp: 'Temperatur' };
+
+function trackLive(data, TH, muted) {
+  const serverId = data.serverId;
+  if (!serverId || !data.systemStats) return;
+  const m = live.get(serverId) || new Map();
+  live.set(serverId, m);
+  const gesehen = new Set();
+
+  const upd = (metric, subject, value, th) => {
+    const key = subject ? `${metric}::${subject}` : metric;
+    gesehen.add(key);
+    const e = m.get(key) || { metric, subject: subject || null, high: 0, ok: 0, active: false, since: null };
+    if (value > th.high) { e.high += 1; e.ok = 0; }
+    else if (value < th.ok) { e.ok += 1; e.high = 0; }
+    else { e.high = 0; e.ok = 0; }
+    if (!e.active && e.high >= REQUIRED_HIGH_STREAK) { e.active = true; e.since = new Date().toISOString(); }
+    if (e.active && e.ok >= REQUIRED_OK_STREAK) { e.active = false; e.since = null; }
+    e.value = value;
+    e.limit = th.high;
+    m.set(key, e);
+  };
+
+  const stats = data.systemStats;
+  if (!muted.has('cpu')) upd('cpu', null, data.cpuPercent || 0, TH.cpu);
+  if (!muted.has('ram')) upd('ram', null, data.memPercent || 0, TH.ram);
+  if (!muted.has('disk')) {
+    for (const d of stats.disk || []) upd('disk', d.mountPoint || d.device || 'disk', Number(d.percent) || 0, TH.disk);
+  }
+  const temps = stats.temperature || [];
+  if (temps.length && !muted.has('temp')) upd('temp', null, Math.max(...temps.map(t => Number(t.value) || 0)), TH.temp);
+
+  for (const key of [...m.keys()]) if (!gesehen.has(key)) m.delete(key);
+}
+
+function effektiveSchwellen(serverId) {
+  const TH = { ...getThresholds() };
+  const muted = new Set();
+  for (const [k, v] of Object.entries(getServerOverrides(serverId))) {
+    if (!TH[k]) continue;
+    if (v === null) muted.add(k);
+    else if (typeof v === 'number' && v > 0 && v <= 200) TH[k] = { high: v, ok: Math.max(0, v - OK_GAP[k]) };
+  }
+  return { TH, muted };
+}
+
+/** Übersicht für Fleet-Karten, Attention-Center und Alarm-Seite. */
+export function getAlertOverview() {
+  const servers = getDb().prepare('SELECT id, name FROM servers').all();
+  const out = {};
+  for (const s of servers) {
+    const { TH, muted } = effektiveSchwellen(s.id);
+    const wartung = maintenanceFor(s.id);
+    const aktiv = [...(live.get(s.id)?.values() || [])].filter(e => e.active).map(e => ({
+      metric: e.metric,
+      label: METRIK_LABEL[e.metric] + (e.subject ? ` ${e.subject}` : ''),
+      subject: e.subject,
+      value: Math.round(e.value * 10) / 10,
+      limit: e.limit,
+      since: e.since,
+    }));
+    out[s.id] = {
+      name: s.name,
+      alerts: aktiv,
+      // Wirksame Schwellen (null = Metrik abgeschaltet) — Karten färben danach.
+      limits: Object.fromEntries(OVERRIDE_METRIKEN.map(k => [k, muted.has(k) ? null : TH[k].high])),
+      maintenance: wartung ? { id: wartung.id, until: wartung.until, reason: wartung.reason } : null,
+    };
+  }
+  return out;
 }
 
 // Check and fire alerts
 export async function checkAlerts(data) {
   const db = getDb();
-  const TH = { ...getThresholds() }; // Kopie: Overrides dürfen nicht auf andere Server durchschlagen
-  const muted = new Set();
-  for (const [k, v] of Object.entries(getServerOverrides(data.serverId))) {
-    if (!TH[k]) continue;
-    if (v === null) muted.add(k);
-    else if (typeof v === 'number' && v > 0 && v <= 200) TH[k] = { high: v, ok: Math.max(0, v - OK_GAP[k]) };
-  }
+  const { TH, muted } = effektiveSchwellen(data.serverId); // Kopie: Overrides dürfen nicht auf andere Server durchschlagen
+  trackLive(data, TH, muted);
+  // Wartungsfenster: Zustand wird weiter geführt, aber nichts versendet.
+  if (data.serverId && maintenanceFor(data.serverId)) return;
   const channels = db.prepare('SELECT * FROM alert_channels WHERE enabled = 1').all();
   if (channels.length === 0) return;
 
@@ -588,6 +808,44 @@ export async function checkForecastAlerts(forecast) {
   }
 }
 
+// ── RAM-Trend: dauerhaft steigender Grundbedarf = Speicherleck-Verdacht ──
+// Alle 15 Minuten aus dem Job; die Trenddaten ändern sich nur stündlich.
+export async function checkMemoryTrendAlerts() {
+  const db = getDb();
+  const channels = db.prepare('SELECT * FROM alert_channels WHERE enabled = 1').all();
+  if (!channels.length) return;
+  const trends = getMemoryTrends();
+  for (const channel of channels) {
+    const events = JSON.parse(channel.events || '[]');
+    if (!events.includes('ram_trend')) continue;
+    for (const t of trends) {
+      if (maintenanceFor(t.serverId)) continue;
+      if (muteMetric(t.serverId, 'ram')) continue;
+      await handleThreshold(db, channel, {
+        event: 'ram_trend',
+        scope: t.serverId,
+        subject: t.serverName,
+        isHigh: t.status === 'steigend',
+        isOk: t.status !== 'steigend',
+        alert: (name) => ({
+          title: `📈 RAM-Bedarf steigt: ${name}`,
+          message: `Der Grundbedarf an Arbeitsspeicher von **${name}** wächst seit ${t.days} Tagen um ca. **${String(t.slopePerDay).replace('.', ',')} Prozentpunkte pro Tag**${t.daysUntilFull ? ` — bei gleichem Tempo ist er in etwa ${t.daysUntilFull} Tagen voll` : ''}. Typisch für ein Speicherleck.`,
+          color: 0xff8800,
+        }),
+        recovery: (name) => ({
+          title: `✅ RAM-Bedarf stabil: ${name}`,
+          message: `Der RAM-Grundbedarf von **${name}** steigt nicht mehr.`,
+          color: 0x10b981,
+        }),
+      });
+    }
+  }
+}
+
+function muteMetric(serverId, metric) {
+  return getServerOverrides(serverId)[metric] === null;
+}
+
 // ── Image-Updates: einmal melden, wenn Container auf veralteten Images laufen ──
 // Nur bei geänderter Liste und höchstens alle 20 Stunden — der Durchlauf selbst läuft alle 6 h.
 let letzteImageMeldung = { key: '', time: 0 };
@@ -619,11 +877,15 @@ export async function notifyImageUpdates(lauf) {
 // Get all channels
 export function getChannels() {
   const db = getDb();
-  return db.prepare('SELECT * FROM alert_channels ORDER BY created_at DESC').all().map(c => ({
-    ...c,
-    events: JSON.parse(c.events || '[]'),
-    enabled: !!c.enabled,
-  }));
+  return db.prepare('SELECT * FROM alert_channels ORDER BY created_at DESC').all().map(c => {
+    const basis = { ...c, events: JSON.parse(c.events || '[]'), enabled: !!c.enabled };
+    if (c.type !== 'webpush') return basis;
+    // Schlüssel der Push-Anmeldung bleiben im Backend; die Oberfläche braucht nur den Endpunkt,
+    // um „dieses Gerät" wiederzuerkennen.
+    let endpoint = null;
+    try { endpoint = JSON.parse(c.webhook_url).endpoint; } catch { /* kaputte Anmeldung */ }
+    return { ...basis, webhook_url: '', endpoint };
+  });
 }
 
 // Add channel
@@ -648,6 +910,10 @@ export function updateChannel(id, data) {
   if (sets.length === 0) return;
   vals.push(id);
   db.prepare(`UPDATE alert_channels SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+}
+
+export function getChannelRaw(id) {
+  return getDb().prepare('SELECT * FROM alert_channels WHERE id = ?').get(id);
 }
 
 // Delete channel

@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import * as alerting from '../services/alerting.js';
 import { getDb } from '../services/database.js';
+import { logAudit } from '../services/audit.js';
 
 const router = Router();
 
@@ -80,8 +81,8 @@ router.delete('/channels/:id', (req, res) => {
 // Test webhook
 router.post('/channels/:id/test', async (req, res) => {
   try {
-    const channels = alerting.getChannels();
-    const channel = channels.find(c => c.id === req.params.id);
+    // Rohzeile: bei Push-Kanälen liegt die Anmeldung in webhook_url, die getChannels() ausblendet.
+    const channel = alerting.getChannelRaw(req.params.id);
     if (!channel) return res.status(404).json({ error: 'Channel not found' });
     const success = await alerting.testWebhook(channel);
     res.json({ success });
@@ -97,6 +98,81 @@ router.get('/history', (req, res) => {
     res.json(alerting.getAlertHistory(limit));
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Live-Übersicht je Server: aktive Alarme (mit Hysterese), wirksame Schwellen, Wartungsfenster.
+router.get('/active', (req, res) => {
+  try {
+    res.json({ servers: alerting.getAlertOverview(), maintenance: alerting.getMaintenance() });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Schwellen-Overrides pro Server ({"truenas": {"cpu": null, "ram": 95}})
+router.get('/overrides', (req, res) => {
+  try {
+    res.json(alerting.getAllOverrides());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/overrides', (req, res) => {
+  try {
+    const sauber = alerting.setAllOverrides(req.body);
+    logAudit('alerts.overrides', `${Object.keys(sauber).length} Server`, null, req.user?.id);
+    res.json(sauber);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Wartungsfenster: keine Benachrichtigungen für einen Server (oder alle) bis zum Ablauf
+router.get('/maintenance', (req, res) => {
+  try {
+    res.json(alerting.getMaintenance());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/maintenance', (req, res) => {
+  try {
+    const fenster = alerting.addMaintenance(req.body || {});
+    logAudit('alerts.maintenance', `${fenster.serverId} bis ${fenster.until}`, null, req.user?.id);
+    res.json(fenster);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/maintenance/:id', (req, res) => {
+  try {
+    alerting.removeMaintenance(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Web-Push: öffentlicher VAPID-Schlüssel + Geräteanmeldung
+router.get('/vapid-key', (req, res) => {
+  try {
+    res.json({ publicKey: alerting.getVapidPublicKey() });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/push/subscribe', (req, res) => {
+  try {
+    const result = alerting.subscribePush(req.body || {});
+    logAudit('alerts.push', result.updated ? 'Gerät erneuert' : 'Gerät angemeldet', null, req.user?.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 

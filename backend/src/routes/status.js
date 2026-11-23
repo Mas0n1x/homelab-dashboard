@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { buildStatusBoard } from '../services/statusBoard.js';
 import { getDb } from '../services/database.js';
+import { buildAttention } from '../services/attention.js';
 
 const router = Router();
 
@@ -29,6 +30,15 @@ router.get('/board', (req, res) => {
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: 'Status-Board konnte nicht geladen werden', message: error.message });
+  }
+});
+
+// GET /api/status/attention — alles, was jetzt Aufmerksamkeit braucht, plus Gesamtampel.
+router.get('/attention', (req, res) => {
+  try {
+    res.json(buildAttention());
+  } catch (error) {
+    res.status(500).json({ error: 'Attention-Liste fehlgeschlagen', message: error.message });
   }
 });
 
