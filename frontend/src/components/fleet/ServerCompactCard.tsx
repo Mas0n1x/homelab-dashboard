@@ -22,11 +22,11 @@ function MetricRow({ label, percent, level, right, animate }: {
   return (
     <div className="grid grid-cols-[3.25rem_1fr_auto] items-center gap-2.5">
       <span className="text-[11px] uppercase tracking-wider text-white/55">{label}</span>
-      <div className="h-1.5 rounded-full bg-white/[0.07] overflow-hidden">
+      <div className="h-2 rounded-full bg-white/[0.07] overflow-hidden" style={{ color }}>
         {percent != null && (
           <motion.div
-            className="h-full rounded-full"
-            style={{ background: color }}
+            className="h-full rounded-full bar-glow"
+            style={{ background: `linear-gradient(90deg, ${color}99, ${color})` }}
             initial={animate ? { width: 0 } : false}
             animate={{ width: `${Math.min(percent, 100)}%` }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -60,16 +60,21 @@ export function ServerCompactCard({ server, data, index }: { server: ServerType;
         m.alerts.length > 0 && !m.maintenance && 'ring-1 ring-red-500/40 shadow-[0_0_24px_-4px_rgba(239,68,68,0.3)]',
       )}>
         <div className={clsx('absolute top-0 left-0 right-0 h-[2px]', !m.isOnline || (m.alerts.length && !m.maintenance) ? 'bg-gradient-to-r from-red-500/0 via-red-400 to-red-500/0' : 'bg-gradient-to-r from-emerald-500/0 via-emerald-400/60 to-emerald-500/0')} />
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-24 pointer-events-none z-0"
+          style={{ background: `linear-gradient(180deg, ${m.isOnline && !(m.alerts.length && !m.maintenance) ? 'rgba(16,185,129,0.09)' : 'rgba(239,68,68,0.12)'}, transparent)` }}
+        />
         <div className="relative z-10 p-4 flex-1 flex flex-col gap-3.5">
           <div className="flex items-start gap-3">
             <div className="relative flex-shrink-0">
-              <div className={clsx('w-9 h-9 rounded-xl flex items-center justify-center border', m.isOnline ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20')}>
+              <div className={clsx('w-10 h-10 rounded-xl flex items-center justify-center border', m.isOnline ? 'bg-emerald-500/10 border-emerald-500/25 shadow-[0_0_16px_-4px_rgba(16,185,129,0.55)]' : 'bg-red-500/10 border-red-500/20')}>
                 <Server className={clsx('w-4 h-4', m.isOnline ? 'text-emerald-400' : 'text-red-400')} />
               </div>
               <span className={clsx('absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0a0a1a]', m.isOnline ? 'bg-emerald-400 status-pulse-healthy' : 'bg-red-400')} />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-semibold truncate">{server.name}</h3>
+              <h3 className="text-[15px] font-semibold truncate">{server.name}</h3>
               <p className="text-[11px] text-white/50 truncate font-mono">{server.host}</p>
             </div>
             <div className="flex flex-col items-end gap-1 flex-shrink-0 min-h-[22px]">

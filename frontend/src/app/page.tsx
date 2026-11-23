@@ -22,35 +22,58 @@ import { ProxmoxFleetPanel } from '@/components/fleet/ProxmoxFleetPanel';
 import { MemoryTrendWidget } from '@/components/dashboard/MemoryTrendWidget';
 import { FleetActions } from '@/components/fleet/FleetActions';
 import { useFleetWebSocket } from '@/hooks/useFleetWebSocket';
+import { useServerStore } from '@/stores/serverStore';
+import { istErreichbar } from '@/lib/formatters';
 import { PageTransition } from '@/components/ui/PageTransition';
 
-const UEBERSCHRIFT = 'text-xs uppercase tracking-widest text-white/50 font-medium';
+const UEBERSCHRIFT = 'section-title';
 
 export default function FleetOverviewPage() {
   useFleetWebSocket();
   const router = useRouter();
+  const { servers } = useServerStore();
+  const offline = servers.filter(s => !istErreichbar(s.status)).length;
+  const alleOk = servers.length > 0 && offline === 0;
 
   return (
     <PageTransition>
       <div className="space-y-6">
         {/* Kopf: das Wetter wohnt jetzt in der Kopfleiste — hier gehört die Bühne der Flotte. */}
-        <div>
-          <motion.h1
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="text-2xl font-bold"
-          >
-            Fleet <span className="text-gradient">Übersicht</span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="text-sm text-white/55 mt-1"
-          >
-            Alle Server auf einen Blick
-          </motion.p>
+        <div className="relative flex flex-wrap items-end justify-between gap-3">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-10 -left-10 w-72 h-40 rounded-full blur-3xl opacity-60"
+            style={{ background: 'radial-gradient(closest-side, rgba(var(--accent-rgb),0.28), transparent)' }}
+          />
+          <div className="relative">
+            <motion.h1
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="text-3xl font-bold tracking-tight"
+            >
+              Fleet <span className="text-gradient">Übersicht</span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="text-sm text-white/55 mt-1"
+            >
+              Alle Server auf einen Blick
+            </motion.p>
+          </div>
+          {servers.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.15 }}
+              className={`live-pill relative ${alleOk ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300' : 'bg-amber-500/10 border-amber-500/25 text-amber-300'}`}
+            >
+              <span className={`w-2 h-2 rounded-full ${alleOk ? 'bg-emerald-400 status-pulse-healthy' : 'bg-amber-400'}`} />
+              {alleOk ? 'Alle Systeme laufen' : `${offline} von ${servers.length} Servern nicht erreichbar`}
+            </motion.div>
+          )}
         </div>
 
         {/* „Läuft alles?" — schmale grüne Zeile, oder gebündelt, was nicht stimmt. */}
