@@ -236,10 +236,30 @@ export function getThresholds() {
   }
 }
 
+// Pro-Server-Overrides (Settings-Key `alert_overrides`, JSON):
+// {"truenas": {"cpu": null, "ram": 95}} → null schaltet die Metrik für diesen
+// Server ab, eine Zahl ersetzt die "high"-Schwelle (ok = high - gap).
+// Gedacht für Server, die dauerhaft nahe der Schwelle laufen (z. B. NAS-VM).
+const OK_GAP = { cpu: 10, ram: 10, disk: 5, temp: 10 };
+function getServerOverrides(serverId) {
+  try {
+    const row = getDb().prepare("SELECT value FROM settings WHERE key = 'alert_overrides'").get();
+    return (row?.value && JSON.parse(row.value)[serverId]) || {};
+  } catch {
+    return {};
+  }
+}
+
 // Check and fire alerts
 export async function checkAlerts(data) {
   const db = getDb();
-  const TH = getThresholds();
+  const TH = { ...getThresholds() }; // Kopie: Overrides dürfen nicht auf andere Server durchschlagen
+  const muted = new Set();
+  for (const [k, v] of Object.entries(getServerOverrides(data.serverId))) {
+    if (!TH[k]) continue;
+    if (v === null) muted.add(k);
+    else if (typeof v === 'number' && v > 0 && v <= 200) TH[k] = { high: v, ok: Math.max(0, v - OK_GAP[k]) };
+  }
   const channels = db.prepare('SELECT * FROM alert_channels WHERE enabled = 1').all();
   if (channels.length === 0) return;
 
@@ -255,7 +275,7 @@ export async function checkAlerts(data) {
     const events = JSON.parse(channel.events || '[]');
 
     // CPU
-    if (events.includes('cpu_high')) {
+    if (events.includes('cpu_high') && !muted.has('cpu')) {
       const v = data.cpuPercent || 0;
       await handleThreshold(db, channel, {
         event: 'cpu_high',
@@ -278,7 +298,7 @@ export async function checkAlerts(data) {
     }
 
     // RAM
-    if (events.includes('ram_high')) {
+    if (events.includes('ram_high') && !muted.has('ram')) {
       const v = data.memPercent || 0;
       const memInfo = stats?.memory ? `${fmtBytes(stats.memory.used)} / ${fmtBytes(stats.memory.total)}` : null;
       await handleThreshold(db, channel, {
@@ -306,7 +326,7 @@ export async function checkAlerts(data) {
     }
 
     // Festplatte (pro Mountpoint)
-    if (events.includes('disk_high')) {
+    if (events.includes('disk_high') && !muted.has('disk')) {
       for (const d of disks) {
         const v = Number(d.percent) || 0;
         await handleThreshold(db, channel, {
@@ -337,7 +357,7 @@ export async function checkAlerts(data) {
     }
 
     // CPU-Temperatur
-    if (events.includes('temp_high') && maxTemp !== null) {
+    if (events.includes('temp_high') && maxTemp !== null && !muted.has('temp')) {
       await handleThreshold(db, channel, {
         event: 'temp_high',
         scope,
