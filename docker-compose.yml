@@ -201,7 +201,9 @@ services:
 
 networks:
   homelab-network:
-    driver: bridge
+    # Bestehendes Netz weiterverwenden: Compose-Updates wollen es sonst neu anlegen, obwohl nginx/Stalwart/Bot daran hängen.
+    external: true
+    name: homelab-dashboard_homelab-network
   # Vom minecraft-Compose-Stack angelegt, hier nur referenziert (nicht erzeugt).
   minecraft_default:
     external: true
