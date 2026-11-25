@@ -483,10 +483,11 @@ export interface MailAccount {
   sortOrder: number;
   isActive: boolean;
   unreadCount?: number;
+  provider?: 'jmap' | 'gmail';
 }
 
 export const getUserMailAccounts = () => fetchApi<MailAccount[]>('/mail/accounts');
-export const addUserMailAccount = (data: { email: string; displayName?: string }) =>
+export const addUserMailAccount = (data: { email: string; displayName?: string; provider?: 'jmap' | 'gmail'; password?: string }) =>
   fetchApi<MailAccount>('/mail/accounts', { method: 'POST', body: JSON.stringify(data) });
 export const activateUserMailAccount = (id: number) =>
   fetchApi<{ ok: boolean; email: string }>(`/mail/accounts/${id}/activate`, { method: 'PUT' });

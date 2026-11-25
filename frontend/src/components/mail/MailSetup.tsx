@@ -19,6 +19,8 @@ interface MailSetupProps {
 export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [provider, setProvider] = useState<'jmap' | 'gmail'>('jmap');
+  const [appPassword, setAppPassword] = useState('');
   const [error, setError] = useState('');
   const { setAccounts, setActiveAccount } = useMailStore();
   const queryClient = useQueryClient();
@@ -32,6 +34,7 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
       const result = await addUserMailAccount({
         email: email.trim(),
         displayName: displayName.trim() || undefined,
+        ...(provider === 'gmail' ? { provider, password: appPassword } : {}),
       });
       return result;
     },
@@ -43,6 +46,7 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
       // Reset form
       setEmail('');
       setDisplayName('');
+      setAppPassword('');
 
       if (onClose) {
         onClose();
@@ -55,19 +59,35 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || (provider === 'gmail' && !appPassword.trim())) return;
     loginMutation.mutate();
   };
 
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-2">
+        {([['jmap', 'Eigener Server'], ['gmail', 'Gmail']] as const).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setProvider(id)}
+            className={`py-2 rounded-lg text-sm border transition-colors ${
+              provider === id
+                ? 'bg-indigo-500/20 border-indigo-400/40 text-white'
+                : 'border-white/10 text-white/60 hover:bg-white/5'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div>
         <label className="text-xs text-white/65 mb-1 block">E-Mail-Adresse</label>
         <input
           type="text"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="user@domain.tld"
+          placeholder={provider === 'gmail' ? 'name@gmail.com' : 'user@domain.tld'}
           className="glass-input w-full"
           autoComplete="email"
         />
@@ -82,9 +102,26 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
           className="glass-input w-full"
         />
       </div>
-      <p className="text-[11px] text-white/50">
-        Kein Passwort erforderlich - nur Zugriff über Dashboard
-      </p>
+      {provider === 'gmail' ? (
+        <div>
+          <label className="text-xs text-white/65 mb-1 block">Google-App-Passwort</label>
+          <input
+            type="password"
+            value={appPassword}
+            onChange={(e) => setAppPassword(e.target.value)}
+            placeholder="xxxx xxxx xxxx xxxx"
+            className="glass-input w-full"
+            autoComplete="off"
+          />
+          <p className="text-[11px] text-white/50 mt-1">
+            Erstellen unter myaccount.google.com/apppasswords (2-Faktor muss aktiv sein). Dein normales Passwort funktioniert nicht.
+          </p>
+        </div>
+      ) : (
+        <p className="text-[11px] text-white/50">
+          Kein Passwort erforderlich - nur Zugriff über Dashboard
+        </p>
+      )}
 
       {error && (
         <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
@@ -119,7 +156,7 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold">Mail-Konto hinzufügen</h2>
-                  <p className="text-xs text-white/55">Stalwart JMAP-Zugangsdaten eingeben</p>
+                  <p className="text-xs text-white/55">Eigener Server oder Gmail verbinden</p>
                 </div>
               </div>
               <button
@@ -147,7 +184,7 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
             </div>
             <div>
               <h2 className="text-lg font-semibold">Mail-Konto verbinden</h2>
-              <p className="text-xs text-white/55">Stalwart JMAP-Zugangsdaten eingeben</p>
+              <p className="text-xs text-white/55">Eigener Server oder Gmail verbinden</p>
             </div>
           </div>
           {formContent}

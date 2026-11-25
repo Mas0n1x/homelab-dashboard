@@ -411,6 +411,12 @@ export function initDatabase() {
     }
   }
 
+  // Migration: Mail-Anbieter je Konto ('jmap' = Stalwart, 'gmail' = IMAP/SMTP-Adapter)
+  const mailAccCols = db.prepare('PRAGMA table_info(mail_accounts)').all().map(c => c.name);
+  if (!mailAccCols.includes('provider')) {
+    db.exec("ALTER TABLE mail_accounts ADD COLUMN provider TEXT DEFAULT 'jmap'");
+  }
+
   // Migration: geschätzter Aufwand je Aufgabe (Soll/Ist-Vergleich der Zeiterfassung)
   const taskCols = db.prepare('PRAGMA table_info(tasks)').all().map(c => c.name);
   if (!taskCols.includes('estimate_minutes')) {

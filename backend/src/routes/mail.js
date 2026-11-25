@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { getDb } from '../services/database.js';
 import * as mail from '../services/mail.js';
+import * as gmail from '../services/gmail.js';
 
 const router = Router();
 
@@ -17,7 +18,7 @@ function getMailAuth(req) {
 
   const db = getDb();
   const row = db.prepare(`
-    SELECT email, password_encrypted, account_id
+    SELECT email, password_encrypted, account_id, provider, display_name
     FROM mail_accounts
     WHERE user_id = ? AND email = ?
   `).get(req.user.id, email);
@@ -25,12 +26,20 @@ function getMailAuth(req) {
   if (!row) throw new Error('Mail-Konto nicht gefunden');
 
   const password = mail.decryptPassword(row.password_encrypted);
+  if (row.provider === 'gmail') {
+    return {
+      account: row.email, password, accountId: row.account_id,
+      provider: 'gmail', displayName: row.display_name, authHeader: null,
+    };
+  }
   // Stalwart authenticates with username, not full email
   const username = mail.stalwartUsername(row.email);
   return {
     account: row.email,
     password,
     accountId: row.account_id,
+    provider: 'jmap',
+    displayName: row.display_name,
     authHeader: 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
   };
 }
@@ -40,7 +49,8 @@ function getMailAuth(req) {
 // GET /session — fetch JMAP session resource
 router.get('/session', async (req, res) => {
   try {
-    const { account, password } = getMailAuth(req);
+    const { account, password, provider } = getMailAuth(req);
+    if (provider === 'gmail') return res.json(gmail.fakeSession(account));
     const session = await mail.getJmapSession(account, password);
     res.json(session);
   } catch (error) {
@@ -51,12 +61,14 @@ router.get('/session', async (req, res) => {
 // POST /jmap — generic JMAP method call proxy
 router.post('/jmap', async (req, res) => {
   try {
-    const { authHeader } = getMailAuth(req);
-    const { methodCalls } = req.body;
+    const auth = getMailAuth(req);
+    const { methodCalls } = auth.provider === 'gmail' ? { methodCalls: req.body.methodCalls } : req.body;
     if (!methodCalls || !Array.isArray(methodCalls)) {
       return res.status(400).json({ error: 'methodCalls erforderlich' });
     }
-    const result = await mail.jmapRequest(authHeader, methodCalls);
+    const result = auth.provider === 'gmail'
+      ? await gmail.jmapShim(auth.account, auth.password, methodCalls, auth.displayName)
+      : await mail.jmapRequest(auth.authHeader, methodCalls);
     // Alles, was Mails verändert (gelesen, verschoben, gelöscht), macht die
     // zwischengespeicherten Ungelesen-Zähler sofort ungültig — sonst hinkt das
     // Zeichen an der Bottom-Bar bis zu 20 Sekunden hinterher.
@@ -72,7 +84,8 @@ router.post('/jmap', async (req, res) => {
 // POST /upload — upload attachment blob
 router.post('/upload', async (req, res) => {
   try {
-    const { authHeader } = getMailAuth(req);
+    const auth = getMailAuth(req);
+    const { authHeader } = auth;
     const accountId = req.headers['x-mail-account-id'];
     if (!accountId) return res.status(400).json({ error: 'Account-ID fehlt' });
 
@@ -83,7 +96,9 @@ router.post('/upload', async (req, res) => {
     const buffer = Buffer.concat(chunks);
     const contentType = req.headers['content-type'] || 'application/octet-stream';
 
-    const result = await mail.uploadBlob(accountId, authHeader, buffer, contentType);
+    const result = auth.provider === 'gmail'
+      ? gmail.storeUpload(buffer, contentType)
+      : await mail.uploadBlob(accountId, authHeader, buffer, contentType);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -93,8 +108,16 @@ router.post('/upload', async (req, res) => {
 // GET /download/:accountId/:blobId/:name — stream attachment download
 router.get('/download/:accountId/:blobId/:name', async (req, res) => {
   try {
-    const { authHeader } = getMailAuth(req);
+    const auth = getMailAuth(req);
+    const { authHeader } = auth;
     const { accountId, blobId, name } = req.params;
+
+    if (auth.provider === 'gmail') {
+      const file = await gmail.downloadAttachment(auth.account, auth.password, blobId);
+      res.setHeader('Content-Type', file.contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(name)}"`);
+      return res.end(file.buffer);
+    }
 
     const response = await mail.downloadBlob(accountId, blobId, name, authHeader);
     const contentType = response.headers.get('content-type') || 'application/octet-stream';
@@ -122,7 +145,7 @@ router.get('/download/:accountId/:blobId/:name', async (req, res) => {
 function authFor(userId, email) {
   const db = getDb();
   const row = db.prepare(
-    'SELECT email, password_encrypted, account_id FROM mail_accounts WHERE user_id = ? AND email = ?'
+    'SELECT email, password_encrypted, account_id, provider, display_name FROM mail_accounts WHERE user_id = ? AND email = ?'
   ).get(userId, email);
   if (!row) throw new Error('Mail-Konto nicht gefunden');
   const password = mail.decryptPassword(row.password_encrypted);
@@ -130,8 +153,18 @@ function authFor(userId, email) {
   return {
     account: row.email,
     accountId: row.account_id,
+    provider: row.provider || 'jmap',
+    password,
+    displayName: row.display_name,
     authHeader: 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64'),
   };
+}
+
+/** JMAP-Aufruf je nach Anbieter: Stalwart direkt, Gmail über den IMAP-Adapter. */
+function runJmap(auth, methodCalls) {
+  return auth.provider === 'gmail'
+    ? gmail.jmapShim(auth.account, auth.password, methodCalls, auth.displayName)
+    : mail.jmapRequest(auth.authHeader, methodCalls);
 }
 
 // Kurzer Cache je Nutzer: Übersicht und Sammel-Eingang fragen dieselben Postfächer
@@ -160,10 +193,11 @@ async function loadOverview(userId) {
       sortOrder: acc.sort_order,
     };
     try {
-      const { authHeader, accountId } = authFor(userId, acc.email);
+      const auth = authFor(userId, acc.email);
+      const { accountId } = auth;
       if (!accountId) return { ...base, folders: [], unread: 0, total: 0, error: 'Konto-Kennung fehlt' };
 
-      const result = await mail.jmapRequest(authHeader, [
+      const result = await runJmap(auth, [
         ['Mailbox/get', { accountId, ids: null }, '0'],
       ]);
       const folders = result?.methodResponses?.[0]?.[1]?.list || [];
@@ -232,8 +266,7 @@ router.get('/unified', async (req, res) => {
       const inbox = acc.folders.find(f => f.role === 'inbox');
       if (!inbox || acc.error) return [];
       try {
-        const { authHeader } = authFor(req.user.id, acc.email);
-        const result = await mail.jmapRequest(authHeader, [
+        const result = await runJmap(authFor(req.user.id, acc.email), [
           ['Email/query', {
             accountId: acc.accountId,
             filter: { inMailbox: inbox.id },
@@ -278,7 +311,7 @@ router.get('/accounts', (req, res) => {
   try {
     const db = getDb();
     const rows = db.prepare(`
-      SELECT id, email, account_id, display_name, sort_order, is_active, added_at
+      SELECT id, email, account_id, display_name, sort_order, is_active, added_at, provider
       FROM mail_accounts
       WHERE user_id = ?
       ORDER BY sort_order ASC, added_at ASC
@@ -291,6 +324,7 @@ router.get('/accounts', (req, res) => {
       sortOrder: row.sort_order,
       isActive: row.is_active === 1,
       addedAt: row.added_at,
+      provider: row.provider || 'jmap',
     }));
     res.json(accounts);
   } catch (error) {
@@ -300,12 +334,42 @@ router.get('/accounts', (req, res) => {
 
 router.post('/accounts', async (req, res) => {
   try {
-    const { email, displayName } = req.body;
-    // Mail-Account-Passwort serverseitig aus der Umgebung (nicht mehr aus dem Client-Bundle)
-    const password = process.env.MAIL_ACCOUNT_PASSWORD || req.body.password;
+    const { email, displayName, provider } = req.body;
     if (!email) {
       return res.status(400).json({ error: 'E-Mail erforderlich' });
     }
+
+    // Gmail: App-Passwort kommt vom Nutzer, Anbindung läuft über IMAP/SMTP
+    if (provider === 'gmail') {
+      const appPassword = String(req.body.password || '').replace(/\s+/g, '');
+      if (!appPassword) return res.status(400).json({ error: 'Google-App-Passwort erforderlich' });
+      const address = email.trim().toLowerCase();
+      try {
+        await gmail.verify(address, appPassword);
+      } catch (verifyError) {
+        return res.status(400).json({ error: verifyError.message });
+      }
+      const db = getDb();
+      if (db.prepare('SELECT 1 FROM mail_accounts WHERE user_id = ? AND email = ?').get(req.user.id, address)) {
+        return res.status(409).json({ error: 'Konto ist bereits verbunden' });
+      }
+      const maxSort = db.prepare('SELECT COALESCE(MAX(sort_order), -1) as max FROM mail_accounts WHERE user_id = ?').get(req.user.id);
+      const sortOrder = (maxSort?.max ?? -1) + 1;
+      const count = db.prepare('SELECT COUNT(*) as cnt FROM mail_accounts WHERE user_id = ?').get(req.user.id);
+      const isActive = count.cnt === 0 ? 1 : 0;
+      const result = db.prepare(`
+        INSERT INTO mail_accounts (user_id, email, password_encrypted, account_id, display_name, sort_order, is_active, provider)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'gmail')
+      `).run(req.user.id, address, mail.encryptPassword(appPassword), gmail.GMAIL_ACCOUNT_ID, displayName || null, sortOrder, isActive);
+      overviewCache.delete(req.user.id);
+      return res.json({
+        id: result.lastInsertRowid, email: address, accountId: gmail.GMAIL_ACCOUNT_ID,
+        displayName, sortOrder, isActive: isActive === 1, provider: 'gmail',
+      });
+    }
+
+    // Mail-Account-Passwort serverseitig aus der Umgebung (nicht mehr aus dem Client-Bundle)
+    const password = process.env.MAIL_ACCOUNT_PASSWORD || req.body.password;
     if (!password) {
       return res.status(500).json({ error: 'MAIL_ACCOUNT_PASSWORD ist serverseitig nicht konfiguriert.' });
     }
