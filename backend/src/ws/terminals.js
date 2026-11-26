@@ -7,6 +7,7 @@
 import fs from 'fs';
 import { Client as SSHClient } from 'ssh2';
 import serverManager from '../services/serverManager.js';
+import { logAudit } from '../services/audit.js';
 
 // Terminal sessions: ws -> { exec, stream }
 const terminalSessions = new Map();
@@ -75,6 +76,7 @@ export async function handleTerminalOpen(ws, data) {
       name: info.Name.replace(/^\//, '')
     }));
 
+    logAudit('terminal.container', info.Name.replace(/^\//, ''), { serverId }, ws.benutzer?.id);
     console.log(`Terminal opened for container ${info.Name}`);
   } catch (error) {
     ws.send(JSON.stringify({ type: 'terminal-error', error: error.message }));
@@ -119,6 +121,8 @@ export async function handleHostShellOpen(ws, data) {
         return;
       }
       terminalSessions.set(ws, { kind: 'ssh', sshClient: client, stream });
+
+      logAudit('terminal.host', cfg.name, { serverId, user: username }, ws.benutzer?.id);
 
       // Root erzwingen, falls als Nicht-root-Nutzer verbunden.
       if (username !== 'root') {

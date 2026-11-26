@@ -173,9 +173,7 @@ function createPortfolioRouter(bot) {
     try {
       const config = bot.getAllConfig();
       delete config.bot_token;
-      delete config.homelab_password;
       config.has_token = !!(process.env.DISCORD_BOT_TOKEN || bot.getConfig('bot_token'));
-      config.has_homelab_password = !!(process.env.HOMELAB_PASSWORD || bot.getConfig('homelab_password'));
       res.json(config);
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -189,11 +187,13 @@ function createPortfolioRouter(bot) {
     try {
       const config = { ...req.body };
       if (config.bot_token) { bot.setConfig('bot_token', config.bot_token); delete config.bot_token; }
-      if (config.homelab_password === '' || config.homelab_password === undefined) delete config.homelab_password;
+      // Zugangsdaten werden nicht mehr gespeichert (Bot liest per Token).
+      delete config.homelab_user;
+      delete config.homelab_password;
       bot.saveAllConfig(config);
 
-      const serversKeys = ['channel_servers', 'servers_refresh_seconds', 'servers_autorefresh_enabled', 'homelab_api_url', 'homelab_user', 'homelab_password'];
-      if (serversKeys.some(k => k in config) && bot.isConnected) { bot._homelabToken = null; bot._startServersRefresh(); }
+      const serversKeys = ['channel_servers', 'servers_refresh_seconds', 'servers_autorefresh_enabled', 'homelab_api_url'];
+      if (serversKeys.some(k => k in config) && bot.isConnected) bot._startServersRefresh();
 
       const mcKeys = ['mc_server_ip', 'mc_map_url', 'mc_refresh_seconds', 'mc_autorefresh_enabled'];
       if (mcKeys.some(k => k in config) && bot.isConnected) bot._startMinecraftRefresh();

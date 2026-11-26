@@ -19,7 +19,7 @@ interface AnimatedNumberProps {
 export function AnimatedNumber({ value, duration = 500, decimals = 0, suffix = '', className }: AnimatedNumberProps) {
   const [display, setDisplay] = useState(value);
   const prevRef = useRef(value);
-  const frameRef = useRef<number>();
+  const frameRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const from = prevRef.current;

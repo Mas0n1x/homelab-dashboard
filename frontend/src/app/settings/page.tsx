@@ -18,6 +18,7 @@ import { ServicesTab } from '@/components/settings/ServicesTab';
 import { AppearanceTab } from '@/components/settings/AppearanceTab';
 import { AlertsTab } from '@/components/settings/AlertsTab';
 import { BackupTab } from '@/components/settings/BackupTab';
+import { BackupCenterCard } from '@/components/settings/BackupCenterCard';
 import { AuditLogCard } from '@/components/settings/AuditLogCard';
 import { AccountTab } from '@/components/settings/AccountTab';
 
@@ -100,7 +101,7 @@ export default function SettingsPage() {
 
         {/* Inhalt */}
         <div className="flex-1 min-w-0 space-y-6">
-          <div className="lg:hidden">
+          <div className="lg:hidden lg:[&+*]:!mt-0">
             <h2 className="text-base font-semibold">{activeMeta.label}</h2>
             <p className="text-xs text-white/50">{activeMeta.desc}</p>
           </div>
@@ -111,6 +112,7 @@ export default function SettingsPage() {
           {activeTab === 'alerts' && <AlertsTab />}
           {activeTab === 'backup' && (
             <>
+              <BackupCenterCard />
               <BackupTab />
               <AuditLogCard />
             </>

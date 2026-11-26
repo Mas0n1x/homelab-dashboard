@@ -9,6 +9,7 @@
  */
 const express = require('express');
 const { initDb, dbGet, dbAll, dbRun } = require('./db');
+const { sicherungHandler } = require('./sicherung');
 const DiscordBot = require('./bots/portfolio/DiscordBot');
 const { createPortfolioRouter, createGithubWebhookHandler } = require('./bots/portfolio/router');
 const {
@@ -67,6 +68,9 @@ app.use((req, res, next) => {
   if (provided && provided === TOKEN) return next();
   return res.status(401).json({ error: 'Nicht autorisiert' });
 });
+
+// ── Datenbank-Stand für das Dashboard-Backup ───────────────────────────
+app.get('/sicherung/:name', sicherungHandler);
 
 // ── Übersicht aller Bots (Status) ──────────────────────────────────────
 app.get('/bots', (req, res) => {

@@ -424,12 +424,8 @@ export default function PortfolioBotPage() {
               <div className="space-y-4">
                 <div className="glass-card rounded-2xl p-5 space-y-4">
                   <h2 className="text-sm font-semibold text-white/70">Homelab-Anbindung (Serverstatus)</h2>
-                  <p className="text-[12px] text-white/55">Läuft die Bot-Runtime im selben Compose-Netz, reicht die interne URL (z.B. <code className="text-white/70">http://backend:3001</code>).</p>
+                  <p className="text-[12px] text-white/55">Der Bot liest nur die Serverübersicht, mit dem internen Token — kein Konto nötig. Im selben Compose-Netz reicht die interne URL (z.B. <code className="text-white/70">http://backend:3001</code>).</p>
                   <Field label="Dashboard-API-URL" value={cfg.homelab_api_url || ''} onChange={v => set('homelab_api_url', v)} placeholder="http://backend:3001" mono />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Field label="Benutzer" value={cfg.homelab_user || ''} onChange={v => set('homelab_user', v)} />
-                    <Field label="Passwort (leer = unverändert)" value={cfg.homelab_password || ''} onChange={v => set('homelab_password', v)} type="password" placeholder={cfg.has_homelab_password ? '•••••••• (gesetzt)' : ''} />
-                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="Auto-Refresh (Sekunden)" value={cfg.servers_refresh_seconds || ''} onChange={v => set('servers_refresh_seconds', v)} type="number" placeholder="60" />
                     <div className="flex items-center justify-between pt-6">

@@ -6,7 +6,7 @@
 import { getDb } from './database.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { existsSync, mkdirSync, statSync, unlinkSync, copyFileSync, readFileSync, mkdtempSync, rmSync, cpSync } from 'fs';
+import { existsSync, mkdirSync, statSync, copyFileSync, readFileSync, mkdtempSync, rmSync, cpSync } from 'fs';
 import { cp } from 'fs/promises';
 import { tmpdir } from 'os';
 import Database from 'better-sqlite3';
@@ -18,6 +18,9 @@ import { basename, dirname, join, resolve } from 'path';
 import { Client as SSHClient } from 'ssh2';
 import { logAudit } from './audit.js';
 import { notify } from './alerting.js';
+import { begleiter, loescheSicherung, veralteteDateien } from './backupDateien.js';
+import { sichereBotDatenbanken } from './botSicherung.js';
+import { testeBackup } from './backupTest.js';
 
 const BACKUP_DIR = process.env.BACKUP_DIR || '/app/data/backups';
 const MAX_BACKUPS = 10;
@@ -125,8 +128,26 @@ export async function runBackup(type, userId = null) {
     // Cleanup old backups (keep MAX_BACKUPS)
     cleanupOldBackups(type);
 
+    // Bot-Datenbanken dazulegen; scheitert das, bleibt das Hauptbackup gültig.
+    const hinweis = await sichereBotDatenbanken(backupPath);
+    if (hinweis) db.prepare('UPDATE backups SET note = ? WHERE id = ?').run(hinweis, backupId);
+
     // Off-Site-Kopie (falls konfiguriert), nicht-blockierend
-    copyOffsite(backupPath).catch(e => console.error('Offsite-Kopie fehlgeschlagen:', e.message));
+    copyOffsite([backupPath, ...begleiter(backupPath)]).catch(e => {
+      console.error('Offsite-Kopie fehlgeschlagen:', e.message);
+      merkeOffsite({ ok: false, error: e.message });
+    });
+
+    // Restore-Test im Hintergrund; nur ein Fehlschlag meldet sich.
+    testeBackup(backupId).then((t) => {
+      if (t.ok) return null;
+      return notify('backup_failed', {
+        title: '⚠️ Restore-Test fehlgeschlagen',
+        message: `Das neue ${TYPE_LABEL[type] || type}-Backup lässt sich nicht prüfen.`,
+        color: 0xff4444,
+        fields: [{ name: 'Ergebnis', value: String(t.detail).substring(0, 1000), inline: false }],
+      });
+    }).catch(e => console.error('Restore-Test:', e.message));
 
     // Erfolgs-Benachrichtigung an alle Kanäle mit dem Event 'backup_completed'.
     notify('backup_completed', {
@@ -184,9 +205,7 @@ function cleanupOldBackups(type) {
   }
 
   for (const backup of toDelete.values()) {
-    if (backup.path && existsSync(backup.path)) {
-      try { unlinkSync(backup.path); } catch {}
-    }
+    loescheSicherung(backup.path);
     db.prepare('DELETE FROM backups WHERE id = ?').run(backup.id);
   }
 
@@ -214,9 +233,7 @@ export function deleteBackup(id, userId = null) {
   if (!backup) throw new Error('Backup nicht gefunden');
   if (backup.status === 'running') throw new Error('Laufendes Backup kann nicht gelöscht werden');
 
-  if (backup.path && existsSync(backup.path)) {
-    try { unlinkSync(backup.path); } catch {}
-  }
+  loescheSicherung(backup.path);
   db.prepare('DELETE FROM backups WHERE id = ?').run(id);
   logAudit('backup.deleted', backup.type, { path: backup.path }, userId);
   return { success: true };
@@ -297,40 +314,65 @@ export async function restoreBackup(id, userId = null, { neustart = () => proces
   return { success: true, restart: true };
 }
 
-// Off-Site-Kopie eines Backups auf einen Fleet-Server via SFTP (ssh2).
-async function copyOffsite(localPath) {
+function merkeOffsite(stand) {
+  getDb().prepare("INSERT INTO settings (key, value) VALUES ('offsite_status', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+    .run(JSON.stringify({ am: new Date().toISOString(), ...stand }));
+}
+
+export function getOffsiteStatus() {
+  const row = getDb().prepare("SELECT value FROM settings WHERE key = 'offsite_status'").get();
+  try { return row?.value ? JSON.parse(row.value) : null; } catch { return null; }
+}
+
+const alsPromise = (fn) => new Promise((resolve, reject) => fn((err, wert) => (err ? reject(err) : resolve(wert))));
+
+// Off-Site-Kopie eines Backups auf einen Fleet-Server via SFTP (ssh2), danach
+// dort Abgelaufenes entfernen — sonst läuft das Ziel mit der Zeit voll.
+async function copyOffsite(dateien) {
   const db = getDb();
   const cfg = getOffsiteConfig();
   if (!cfg.enabled || !cfg.serverId) return;
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(cfg.serverId);
-  if (!server?.ssh_host) return;
+  if (!server?.ssh_host) throw new Error('Zielserver ohne SSH-Zugang');
   const keyPath = server.ssh_key_path || process.env.SSH_KEY_PATH || '/app/ssh/id_ed25519';
-  if (!existsSync(keyPath)) return;
-  const remoteDir = cfg.path || '/root/dashboard-backups';
-  const remotePath = `${remoteDir.replace(/\/$/, '')}/${basename(localPath)}`;
+  if (!existsSync(keyPath)) throw new Error(`SSH-Schlüssel fehlt (${keyPath})`);
+  const remoteDir = (cfg.path || '/root/dashboard-backups').replace(/\/$/, '');
 
-  await new Promise((resolve, reject) => {
-    const conn = new SSHClient();
-    conn.on('ready', () => {
-      conn.exec(`mkdir -p ${remoteDir}`, (err) => {
-        if (err) { conn.end(); return reject(err); }
-        conn.sftp((err2, sftp) => {
-          if (err2) { conn.end(); return reject(err2); }
-          sftp.fastPut(localPath, remotePath, (err3) => {
-            conn.end();
-            err3 ? reject(err3) : resolve();
-          });
-        });
+  const conn = new SSHClient();
+  try {
+    await new Promise((resolve, reject) => {
+      conn.on('ready', resolve).on('error', reject).connect({
+        host: server.ssh_host,
+        port: server.ssh_port || 22,
+        username: server.ssh_user || 'root',
+        privateKey: readFileSync(keyPath),
+        readyTimeout: 15000,
       });
-    }).on('error', reject).connect({
-      host: server.ssh_host,
-      port: server.ssh_port || 22,
-      username: server.ssh_user || 'root',
-      privateKey: readFileSync(keyPath),
-      readyTimeout: 15000,
     });
-  });
-  logAudit('backup.offsite', basename(localPath), { server: cfg.serverId }, null);
+    const quoted = `'${remoteDir.replace(/'/g, `'\\''`)}'`;
+    await new Promise((resolve, reject) => {
+      conn.exec(`mkdir -p ${quoted}`, (err, stream) => {
+        if (err) return reject(err);
+        stream.on('close', (code) => (code ? reject(new Error(`Zielordner nicht anlegbar (${remoteDir})`)) : resolve()));
+        stream.resume();
+        stream.stderr.resume();
+      });
+    });
+    const sftp = await alsPromise((cb) => conn.sftp(cb));
+    for (const datei of dateien) {
+      await alsPromise((cb) => sftp.fastPut(datei, `${remoteDir}/${basename(datei)}`, cb));
+    }
+    const vorhanden = await alsPromise((cb) => sftp.readdir(remoteDir, cb));
+    const weg = veralteteDateien(vorhanden.map((e) => e.filename), {
+      retentionDays: getBackupSchedule().retentionDays,
+      max: MAX_BACKUPS,
+    });
+    for (const name of weg) await alsPromise((cb) => sftp.unlink(`${remoteDir}/${name}`, cb));
+    merkeOffsite({ ok: true, dateien: dateien.length, entfernt: weg.length });
+    logAudit('backup.offsite', basename(dateien[0]), { server: cfg.serverId, entfernt: weg.length }, null);
+  } finally {
+    conn.end();
+  }
 }
 
 export function getOffsiteConfig() {

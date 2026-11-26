@@ -8,7 +8,7 @@ Leitfaden für Claude Code (claude.com/code) in diesem Repository.
 
 ## Tech-Stack
 
-- **Frontend:** **Next.js 14** (App Router) + React 18 + TypeScript (`frontend/`)
+- **Frontend:** **Next.js 16** (App Router) + React 19 + TypeScript (`frontend/`)
 - **Backend:** Node.js + **Express** + dockerode (Docker-Steuerung) (`backend/`)
 - **cloudflare-worker/** — Cloudflare Worker (Edge-Komponente)
 - **Docker / docker-compose**, nginx (`nginx/`)

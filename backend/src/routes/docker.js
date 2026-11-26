@@ -5,6 +5,7 @@
  */
 import { Router } from 'express';
 import * as dockerService from '../services/docker.js';
+import { vorschau, aufraeumen } from '../services/cleanup.js';
 import serverManager from '../services/serverManager.js';
 import { logAudit } from '../services/audit.js';
 import { checkFleetImageUpdates, getLastImageUpdateRun } from '../services/imageUpdates.js';
@@ -49,7 +50,7 @@ function mitZeitlimit(ziel, ms = DOCKER_ZEITLIMIT_MS) {
 
 // Wählt die Docker-Instanz anhand ?serverId= (Default: lokaler Server).
 // Wirft, wenn der Server existiert, aber keinen Docker-Zugriff hat (nur Monitoring).
-function dockerFor(req) {
+function dockerFor(req, zeitlimitMs = DOCKER_ZEITLIMIT_MS) {
   const serverId = req.query.serverId || 'local';
   if (serverId === 'local') return undefined; // Service nutzt dann den lokalen Default
   const docker = serverManager.getDocker(serverId);
@@ -59,7 +60,7 @@ function dockerFor(req) {
     throw err;
   }
   // Nur Remote-Server über SSH können hängen — der lokale Socket nicht.
-  return mitZeitlimit(docker);
+  return mitZeitlimit(docker, zeitlimitMs);
 }
 
 // Einheitliches Fehler-Mapping: nutzt error.statusCode (z. B. 409) sonst 500.
@@ -265,6 +266,33 @@ router.post('/system/prune', async (req, res) => {
     res.json(result);
   } catch (error) {
     fail(res, error, 'Failed to prune system');
+  }
+});
+
+// ==================== AUFRÄUMEN ====================
+
+// df und prune dauern auf vollen Platten deutlich länger als normale Abfragen.
+const AUFRAEUM_ZEITLIMIT_MS = 5 * 60 * 1000;
+const aufraeumZiel = (req) => dockerFor(req, AUFRAEUM_ZEITLIMIT_MS) || serverManager.getDocker('local');
+
+router.get('/cleanup/preview', async (req, res) => {
+  try {
+    res.json(await vorschau(aufraeumZiel(req)));
+  } catch (error) {
+    fail(res, error, 'Vorschau fehlgeschlagen');
+  }
+});
+
+router.post('/cleanup', async (req, res) => {
+  try {
+    const auswahl = req.body || {};
+    const resultat = await aufraeumen(aufraeumZiel(req), auswahl);
+    logAudit('docker.cleanup', req.query.serverId || 'local', {
+      auswahl: Object.keys(resultat.ergebnis), freigegeben: resultat.freigegeben,
+    }, req.user?.id);
+    res.json(resultat);
+  } catch (error) {
+    fail(res, error, 'Aufräumen fehlgeschlagen');
   }
 });
 

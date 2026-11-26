@@ -3,9 +3,15 @@
  * Copyright (c) 2024-2026 DEV Mas0n1x.
  * Licensed under the MIT License.
  */
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { getDb } from './database.js';
 
+// Merkt je Anfrage, ob eine Route selbst schon protokolliert hat.
+export const anfrageKontext = new AsyncLocalStorage();
+
 export function logAudit(action, target, details, userId = null) {
+  const kontext = anfrageKontext.getStore();
+  if (kontext) kontext.protokolliert = true;
   const db = getDb();
   // Achtung: typeof null === 'object' — null/undefined zuerst abfangen,
   // sonst landet der String "null" in der Spalte.

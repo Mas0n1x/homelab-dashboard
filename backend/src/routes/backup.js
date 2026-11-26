@@ -16,8 +16,20 @@ import {
   getOffsiteConfig,
   setOffsiteConfig,
 } from '../services/backup.js';
+import { testeBackup } from '../services/backupTest.js';
+import { backupZentrale } from '../services/backupZentrale.js';
 
 const router = Router();
+
+// Übersicht über alle Sicherungen
+router.get('/zentrale', async (req, res) => {
+  try { res.json(await backupZentrale()); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Restore-Test für ein einzelnes Backup
+router.post('/:id/test', async (req, res) => {
+  try { res.json(await testeBackup(parseInt(req.params.id))); } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // Off-Site-Konfiguration
 router.get('/offsite', (req, res) => {

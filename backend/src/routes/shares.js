@@ -16,6 +16,7 @@ import { JWT_SECRET } from '../services/auth.js';
 import { listRemoteDir, readRemoteFileBuffer } from '../services/sshFile.js';
 import { resolveLocalPath } from '../services/localFiles.js';
 import { resolveTarget } from './files.js';
+import { clientIp } from '../middleware/clientIp.js';
 
 const jsonBody = express.json({ limit: '4kb' });
 const MAX_REMOTE_BYTES = 500 * 1024 * 1024; // Remote-Dateien werden komplett gepuffert
@@ -23,10 +24,6 @@ const TICKET_SEKUNDEN = 120;
 
 // Versehentliche Freigabe von Zugangsdaten verhindern (Schlüssel, .env, Geheimnis-Ordner).
 const SENSIBEL = /(^|\/)(\.env[^/]*|id_[a-z0-9]+(\.pub)?|[^/]*\.(pem|key|p12|pfx)|\.ssh|_secrets|authorized_keys)(\/|$)/i;
-
-function ipVon(req) {
-  return (req.headers['x-forwarded-for'] || '').toString().split(',')[0].trim() || req.ip || 'unbekannt';
-}
 
 // ---------- Hilfen ----------
 
@@ -179,7 +176,7 @@ sharePublicRoutes.post('/:token/ticket', jsonBody, async (req, res) => {
   if (!s.ok) return res.status(s.code).json({ error: s.grund });
 
   if (row.password_hash) {
-    const schluessel = `${ipVon(req)}|${row.token}`;
+    const schluessel = `${clientIp(req)}|${row.token}`;
     if (gesperrt(schluessel)) return res.status(429).json({ error: 'Zu viele Fehlversuche. Bitte in 15 Minuten erneut versuchen.' });
     const ok = await bcrypt.compare(String(req.body?.password || ''), row.password_hash);
     if (!ok) { fehlversuch(schluessel); return res.status(401).json({ error: 'Falsches Passwort' }); }
@@ -222,7 +219,7 @@ sharePublicRoutes.get('/:token/file', async (req, res) => {
       stream?.destroy();
       return res.status(410).json({ error: 'Das Download-Limit dieses Links ist erreicht.' });
     }
-    logAudit('share.download', row.path, { id: row.id, ip: ipVon(req) }, null);
+    logAudit('share.download', row.path, { id: row.id, ip: clientIp(req) }, null);
 
     const ascii = row.name.replace(/[^\x20-\x7e]|["\\]/g, '_');
     res.setHeader('Content-Type', 'application/octet-stream');

@@ -6,6 +6,7 @@
 // Konsolen-Proxys für Minecraft und Pelican
 import { WebSocketServer, WebSocket } from 'ws';
 import { verifyToken } from '../middleware/auth.js';
+import { merkeSitzung } from '../services/sitzungen.js';
 import { getServer as getMcServer, accessHeaders as mcAccessHeaders } from '../services/mcServers.js';
 import * as gameservers from '../services/gameservers.js';
 
@@ -17,7 +18,7 @@ export const gsConsoleWss = new WebSocketServer({ noServer: true });
 async function gameserverKonsole(client, req) {
   try {
     const u = new URL(req.url, `http://${req.headers.host}`);
-    verifyToken(u.searchParams.get('token') || '');
+    merkeSitzung(verifyToken(u.searchParams.get('token') || '').id, client);
     const id = (u.searchParams.get('server') || '').replace(/^pelican:/, '');
     const server = await gameservers.getServer(id);
     gameservers.konsoleAnhaengen(client, server);
@@ -32,7 +33,7 @@ mcConsoleWss.on('connection', (client, req) => {
   try {
     const u = new URL(req.url, `http://${req.headers.host}`);
     if ((u.searchParams.get('server') || '').startsWith('pelican:')) { gameserverKonsole(client, req); return; }
-    verifyToken(u.searchParams.get('token') || '');
+    merkeSitzung(verifyToken(u.searchParams.get('token') || '').id, client);
     mcServer = getMcServer(u.searchParams.get('server') || '');
   } catch { client.close(4001, 'Unauthorized'); return; }
   if (!mcServer || !mcServer.url || !mcServer.token) { client.close(4002, 'Agent nicht konfiguriert'); return; }

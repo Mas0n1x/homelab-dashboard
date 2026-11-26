@@ -16,7 +16,7 @@ export function useFleetWebSocket() {
   const { setServerData } = useFleetStore();
   const { addNotifications } = useNotificationStore();
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimerRef = useRef<NodeJS.Timeout>();
+  const reconnectTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const subscribedServersRef = useRef<Set<string>>(new Set());
 
   const connect = useCallback(() => {

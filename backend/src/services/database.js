@@ -445,6 +445,14 @@ export function initDatabase() {
 
   // Index für die Zustandsabfragen der Alarme (laufen alle 30 s je Server und Kanal).
   db.exec('CREATE INDEX IF NOT EXISTS idx_alert_history_state ON alert_history(channel_id, event_type, sent_at)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_alert_history_sent ON alert_history(sent_at)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at)');
+
+  // Hinweise und Restore-Test je Backup
+  const backupCols = db.prepare('PRAGMA table_info(backups)').all().map(c => c.name);
+  for (const [col, type] of [['note', 'TEXT'], ['tested_at', 'TEXT'], ['test_ok', 'INTEGER'], ['test_detail', 'TEXT']]) {
+    if (!backupCols.includes(col)) db.exec(`ALTER TABLE backups ADD COLUMN ${col} ${type}`);
+  }
 
   // Einmalig: Kanäle, die Ausfälle melden sollen, bekommen den neuen Alarm
   // „Server nicht erreichbar" dazu — sonst bliebe er stumm.
@@ -583,6 +591,15 @@ export function migrateMailCredentials() {
   } catch (error) {
     console.error('Failed to migrate mail credentials:', error.message);
   }
+}
+
+// Verlauf begrenzen. 90 Tage reichen weit über die Fenster hinaus, aus denen die
+// Alarme ihren Zustand lesen (höchstens 30 Tage); Audit-Einträge bleiben ein Jahr.
+export function cleanupVerlaeufe({ alarmTage = 90, auditTage = 365 } = {}) {
+  const alarme = db.prepare("DELETE FROM alert_history WHERE sent_at < datetime('now', ?)").run(`-${alarmTage} days`).changes;
+  const audit = db.prepare("DELETE FROM audit_log WHERE created_at < datetime('now', ?)").run(`-${auditTage} days`).changes;
+  if (alarme || audit) console.log(`Verlauf aufgeräumt: ${alarme} Alarme, ${audit} Audit-Einträge`);
+  return { alarme, audit };
 }
 
 export function cleanupOldUptimeData() {

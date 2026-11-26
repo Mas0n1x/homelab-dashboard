@@ -315,7 +315,8 @@ class DiscordBot {
     this.isConnected = false;
     this.startTime = null;
     this._serversInterval = null;
-    this._homelabToken = null;
+    // Altlast: hier lag das Admin-Passwort des Dashboards im Klartext.
+    this.dbRun("DELETE FROM discord_config WHERE key IN ('homelab_user', 'homelab_password')");
     this._minecraftInterval = null;
   }
 
@@ -2102,52 +2103,21 @@ class DiscordBot {
   // ══════════════════════════════════════════════════════════════════
 
   // ── Homelab-Dashboard-Anbindung ───────────────────────────────
-  // URL/Zugangsdaten kommen bevorzugt aus der .env, sonst aus der Bot-Config.
-  _homelabConfig() {
-    return {
-      url: (process.env.HOMELAB_API_URL || this.getConfig('homelab_api_url') || '').replace(/\/+$/, ''),
-      user: process.env.HOMELAB_USER || this.getConfig('homelab_user') || '',
-      password: process.env.HOMELAB_PASSWORD || this.getConfig('homelab_password') || '',
-    };
-  }
-
-  async _homelabLogin() {
-    const { url, user, password } = this._homelabConfig();
-    if (!url || !user || !password) {
-      throw new Error('Homelab-Anbindung nicht konfiguriert (URL, Benutzer oder Passwort fehlen)');
-    }
-    const r = await fetch(`${url}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: user, password }),
-    });
-    if (!r.ok) throw new Error(`Homelab-Login fehlgeschlagen: ${r.status}`);
-    const data = await r.json();
-    this._homelabToken = data.accessToken;
-    if (!this._homelabToken) throw new Error('Homelab-Login lieferte kein Token');
-    return this._homelabToken;
-  }
-
+  // Nur lesend: das gemeinsame Runtime-Token, kein Benutzerkonto, kein Passwort.
   async _homelabFetch(endpoint) {
-    const { url } = this._homelabConfig();
-    if (!this._homelabToken) await this._homelabLogin();
-
-    const doFetch = () => fetch(`${url}${endpoint}`, {
-      headers: { Accept: 'application/json', Authorization: `Bearer ${this._homelabToken}` },
+    const url = (process.env.HOMELAB_API_URL || this.getConfig('homelab_api_url') || '').replace(/\/+$/, '');
+    const token = process.env.BOT_RUNTIME_TOKEN || '';
+    if (!url || !token) throw new Error('Homelab-Anbindung nicht konfiguriert (URL oder BOT_RUNTIME_TOKEN fehlt)');
+    const r = await fetch(`${url}${endpoint}`, {
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(20000),
     });
-
-    let r = await doFetch();
-    if (r.status === 401) {
-      // Token abgelaufen -> neu anmelden und einmal wiederholen
-      await this._homelabLogin();
-      r = await doFetch();
-    }
     if (!r.ok) throw new Error(`Homelab-API-Fehler: ${r.status}`);
     return r.json();
   }
 
   async fetchHomelabServers() {
-    const data = await this._homelabFetch('/api/servers/status-summary');
+    const data = await this._homelabFetch('/api/intern/server-status');
     return Array.isArray(data?.servers) ? data.servers : [];
   }
 

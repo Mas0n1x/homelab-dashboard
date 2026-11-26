@@ -53,7 +53,7 @@ function TextField({ label, value, onChange, placeholder, mono }: {
 
 function AreaField({ label, value, onChange, placeholder, rows = 4, hint, textareaRef }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string;
-  rows?: number; hint?: ReactNode; textareaRef?: React.RefObject<HTMLTextAreaElement>;
+  rows?: number; hint?: ReactNode; textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }) {
   return (
     <label className="block min-w-0">
@@ -144,7 +144,7 @@ export function EmojiField({ label, value, onChange }: { label?: string; value: 
 
 /** Fügt einen Platzhalter an der Cursor-Position ein (Fallback: am Ende). */
 function insertAtCursor(
-  ref: React.RefObject<HTMLTextAreaElement> | undefined,
+  ref: React.RefObject<HTMLTextAreaElement | null> | undefined,
   text: string,
   token: string,
   onChange: (v: string) => void,
@@ -166,7 +166,7 @@ export function PlaceholderChips({ tokens, value, onChange, textareaRef, label =
   tokens: string[];
   value: string;
   onChange: (v: string) => void;
-  textareaRef?: React.RefObject<HTMLTextAreaElement>;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   label?: string;
 }) {
   if (!tokens.length) return null;

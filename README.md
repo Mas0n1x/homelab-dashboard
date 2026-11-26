@@ -78,12 +78,12 @@ Ein umfassendes, modernes Dashboard für deinen Raspberry Pi 5 Homelab-Server mi
 
 | Komponente | Technologie |
 |------------|-------------|
-| Frontend | Next.js 14, React 18, TypeScript, Tailwind CSS |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS |
 | State Management | Zustand, TanStack React Query |
 | Charts | Recharts |
 | Animationen | Framer Motion |
 | Terminal | xterm.js |
-| Backend | Node.js 20, Express, WebSocket (ws) |
+| Backend | Node.js 24, Express, WebSocket (ws) |
 | Datenbank | SQLite (better-sqlite3) |
 | Auth | JWT, bcryptjs |
 | Container | Docker, Dockerode |

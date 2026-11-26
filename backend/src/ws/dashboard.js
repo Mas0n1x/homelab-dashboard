@@ -7,6 +7,7 @@
 import { WebSocketServer } from 'ws';
 import serverManager from '../services/serverManager.js';
 import { verifyToken } from '../middleware/auth.js';
+import { merkeSitzung } from '../services/sitzungen.js';
 import { handleTerminalOpen, handleHostShellOpen, handleTerminalInput, handleTerminalResize, handleLogStream, stopLogStream, cleanupLogSessions, cleanupTerminalSession } from './terminals.js';
 import { withTimeout } from '../jobs/hilfen.js';
 
@@ -18,6 +19,7 @@ const clients = new Map();
 
 wss.on('connection', (ws, req) => {
   // Verify JWT token from query parameter
+  let benutzer;
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const token = url.searchParams.get('token');
@@ -25,12 +27,14 @@ wss.on('connection', (ws, req) => {
       ws.close(4001, 'Unauthorized');
       return;
     }
-    verifyToken(token);
+    benutzer = verifyToken(token);
   } catch (err) {
     ws.close(4001, 'Unauthorized');
     return;
   }
 
+  merkeSitzung(benutzer.id, ws);
+  ws.benutzer = benutzer;
   console.log('Client connected to WebSocket');
   // Ein Takt je abonniertem Server: Abbestellen oder erneutes Abonnieren trifft nur ihn.
   const clientState = { intervals: new Map() };
@@ -42,6 +46,7 @@ wss.on('connection', (ws, req) => {
   clients.set(ws, clientState);
 
   ws.on('message', async (message) => {
+    if (ws.readyState !== ws.OPEN) return;
     try {
       const data = JSON.parse(message.toString());
 

@@ -4,7 +4,7 @@
  * Licensed under the MIT License.
  */
 // Alle Hintergrundjobs
-import { cleanupOldUptimeData, getDb } from '../services/database.js';
+import { cleanupOldUptimeData, cleanupVerlaeufe, getDb } from '../services/database.js';
 import serverManager from '../services/serverManager.js';
 import { discoverServices, hasDiscoveryChanged, getDiscoverySnapshot } from '../services/discovery.js';
 import { recordSeenServices, purgeVanishedServices } from '../services/serviceRegistry.js';
@@ -304,6 +304,7 @@ export function starteJobs() {
   function runDataCleanup() {
     try {
       cleanupOldUptimeData();
+    cleanupVerlaeufe(); // Alarm- und Audit-Verlauf begrenzen
       rollupHourly(47); // vor dem Aufräumen (47: das erste Fenster liegt so sicher noch voll in den Rohdaten): Rohdaten zu Stundenwerten verdichten
       pruneMetrics(48); // Rohdaten 48 h, Stundenwerte 90 Tage
       pruneDiskDaily(); // Tageswerte der Platte: gut ein Jahr behalten (Summe und je Mount)

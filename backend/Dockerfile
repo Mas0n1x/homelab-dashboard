@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
 # better-sqlite3 needs build tools on Alpine, speedtest-cli and curl for speedtest
 RUN apk add --no-cache python3 make g++ py3-pip curl && pip3 install --break-system-packages speedtest-cli || true

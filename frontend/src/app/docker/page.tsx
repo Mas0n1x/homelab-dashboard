@@ -19,6 +19,7 @@ import { CategorySection } from '@/components/ui/CategorySection';
 import { Modal } from '@/components/ui/Modal';
 import { ContainerResourcesInline } from '@/components/docker/ContainerResources';
 import { DiskTreemap } from '@/components/docker/DiskTreemap';
+import { CleanupCard } from '@/components/docker/CleanupCard';
 import { ImageUpdates } from '@/components/docker/ImageUpdates';
 import { ContainerComparison } from '@/components/docker/ContainerComparison';
 import { ContainerTemplates } from '@/components/docker/ContainerTemplates';
@@ -432,7 +433,12 @@ export default function DockerPage() {
       {activeTab === 'editor' && <ComposeEditor />}
 
       {/* Storage Tab */}
-      {activeTab === 'storage' && <DiskTreemap />}
+      {activeTab === 'storage' && (
+        <div className="space-y-4">
+          <CleanupCard />
+          <DiskTreemap />
+        </div>
+      )}
 
       {/* Updates Tab */}
       {activeTab === 'updates' && <ImageUpdates />}

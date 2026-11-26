@@ -1,6 +1,6 @@
 # Homelab Dashboard — Bot-Runtime
 # Copyright (c) 2024-2026 DEV Mas0n1x. MIT License.
-FROM node:20-alpine
+FROM node:24-alpine
 
 # better-sqlite3 braucht Build-Tools auf Alpine
 RUN apk add --no-cache python3 make g++

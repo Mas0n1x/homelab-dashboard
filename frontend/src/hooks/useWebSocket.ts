@@ -16,8 +16,8 @@ export function useWebSocket() {
   const { addNotifications } = useNotificationStore();
   const queryClient = useQueryClient();
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimerRef = useRef<NodeJS.Timeout>();
-  const fallbackTimerRef = useRef<NodeJS.Timeout>();
+  const reconnectTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const fallbackTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const [connected, setConnected] = useState(false);
 
   const connect = useCallback(() => {

@@ -8,9 +8,14 @@
  * Vorbild: minecraft.js -> mc-control-agent.
  */
 import { Router } from 'express';
+import { bearerPasst } from '../services/geheim.js';
 
 const RUNTIME_URL = (process.env.BOT_RUNTIME_URL || 'http://bot-runtime:3200').replace(/\/+$/, '');
 const RUNTIME_TOKEN = process.env.BOT_RUNTIME_TOKEN || '';
+// Eigener Schlüssel für externe Dienste, die Events melden. RUNTIME_TOKEN steuert
+// die Bots und liest die Serverübersicht — das darf nicht außer Haus liegen.
+const EVENTS_TOKEN = process.env.BOT_EVENTS_TOKEN || '';
+if (!EVENTS_TOKEN) console.warn('[bots] BOT_EVENTS_TOKEN fehlt — der Events-Eingang bleibt abgeschaltet.');
 
 const router = Router();
 
@@ -61,13 +66,11 @@ export default router;
 
 // Öffentlicher, token-gesicherter Events-Eingang (kein JWT): Portfolio & SaleNet
 // melden hierüber Business-Events (neue Bestellung/Anfrage/Incident …). Auth über
-// das geteilte BOT_RUNTIME_TOKEN als Bearer — der Bot postet die Events nach Discord.
+// BOT_EVENTS_TOKEN als Bearer — der Bot postet die Events nach Discord.
 export function createBotEventsIngest() {
   return async (req, res) => {
-    if (!RUNTIME_TOKEN) return res.status(503).json({ error: 'Bot-Runtime nicht konfiguriert' });
-    const auth = req.headers.authorization || '';
-    const provided = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    if (!provided || provided !== RUNTIME_TOKEN) return res.status(401).json({ error: 'Nicht autorisiert' });
+    if (!RUNTIME_TOKEN || !EVENTS_TOKEN) return res.status(503).json({ error: 'Events-Eingang nicht konfiguriert' });
+    if (!bearerPasst(req, EVENTS_TOKEN)) return res.status(401).json({ error: 'Nicht autorisiert' });
 
     const bot = req.params.bot;
     if (!['portfolio', 'salenet'].includes(bot)) return res.status(404).json({ error: 'Unbekannter Bot' });

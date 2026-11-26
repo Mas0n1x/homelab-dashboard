@@ -8,6 +8,8 @@ import { getDb } from '../services/database.js';
 import { authenticateToken } from '../middleware/auth.js';
 import * as authService from '../services/auth.js';
 import { logAudit } from '../services/audit.js';
+import { clientIp } from '../middleware/clientIp.js';
+import { schliesseSitzungen } from '../services/sitzungen.js';
 
 const router = Router();
 
@@ -15,9 +17,6 @@ const router = Router();
 const loginAttempts = new Map();
 const MAX_ATTEMPTS = 8;
 const WINDOW_MS = 15 * 60 * 1000;
-function clientIp(req) {
-  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
-}
 function loginRateLimited(ip) {
   const rec = loginAttempts.get(ip);
   if (!rec) return false;
@@ -31,6 +30,9 @@ function recordLoginFail(ip) {
   rec.count++;
   loginAttempts.set(ip, rec);
 }
+setInterval(() => {
+  for (const [ip, rec] of loginAttempts) if (Date.now() - rec.first > WINDOW_MS) loginAttempts.delete(ip);
+}, WINDOW_MS).unref();
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -44,16 +46,19 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Benutzername und Passwort erforderlich' });
     }
 
+    // Schon vor der Prüfung zählen, sonst laufen parallele Anfragen an der Sperre vorbei.
+    recordLoginFail(ip);
+
     const db = getDb();
     const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
     if (!user) {
-      recordLoginFail(ip);
+      logAudit('auth.login_failed', String(username).slice(0, 60), { ip });
       return res.status(401).json({ error: 'Ungültige Anmeldedaten' });
     }
 
     const valid = await authService.verifyPassword(password, user.password_hash);
     if (!valid) {
-      recordLoginFail(ip);
+      logAudit('auth.login_failed', user.username, { ip }, user.id);
       return res.status(401).json({ error: 'Ungültige Anmeldedaten' });
     }
     loginAttempts.delete(ip);
@@ -152,6 +157,8 @@ router.put('/password', authenticateToken, async (req, res) => {
 
     // Revoke all refresh tokens - force re-login
     authService.revokeAllUserTokens(user.id);
+    // Offene Terminals und Live-Verbindungen sofort trennen.
+    schliesseSitzungen(user.id);
 
     logAudit('auth.password_change', req.user.username, null, req.user.id);
 

@@ -298,7 +298,30 @@ export const saveComposeFile = (project: string, content: string, serverId = 'lo
   fetchApi(`/docker/compose/${encodeURIComponent(project)}/file?serverId=${serverId}`, { method: 'PUT', body: JSON.stringify({ content }) });
 
 // Docker Disk Usage
+export type BackupStand = 'ok' | 'ueberfaellig' | 'fehlt' | 'fehler' | 'ohne-zeitplan' | 'ungesichert';
+export interface BackupZentrale {
+  dashboard: {
+    status: BackupStand; letzte: string | null; letzteId: number | null; groesse: number | null; hinweis: string | null; botDatenbanken: number;
+    test: { am: string; ok: boolean; detail: string; stand: string } | null;
+    offsite: { aktiv: boolean; letzte: { am: string; ok: boolean; error?: string; dateien?: number; entfernt?: number } | null };
+  };
+  proxmox: {
+    konfiguriert: boolean; fehler?: string;
+    gaeste: { vmid: number; name: string; typ: string; status: BackupStand; letzte: string | null; groesse: number | null; anzahl: number; ziel: string | null; zeitplan: string | null }[];
+  };
+}
+export const getBackupZentrale = () => fetchApi<BackupZentrale>('/backup/zentrale');
+export const testBackup = (id: number) => fetchApi<{ ok: boolean; detail: string }>(`/backup/${id}/test`, { method: 'POST' });
+
 export const getDiskUsage = (serverId = 'local') => fetchApi(`/docker/disk-usage?serverId=${serverId}`);
+
+export type CleanupKey = 'buildCache' | 'danglingImages' | 'unusedImages' | 'containers';
+export interface CleanupGroup { count: number; size: number; items: { name: string; size: number }[] }
+export type CleanupPreview = Record<CleanupKey, CleanupGroup>;
+export interface CleanupResult { freigegeben: number; ergebnis: Record<string, { ok: boolean; freigegeben: number; error?: string }> }
+export const getCleanupPreview = (serverId = 'local') => fetchApi<CleanupPreview>(`/docker/cleanup/preview?serverId=${serverId}`);
+export const runCleanup = (auswahl: Partial<Record<CleanupKey, boolean>>, serverId = 'local') =>
+  fetchApi<CleanupResult>(`/docker/cleanup?serverId=${serverId}`, { method: 'POST', body: JSON.stringify(auswahl) });
 
 // Container Stats (batch)
 export const getAllContainerStats = (serverId = 'local') => fetchApi(`/docker/stats/all?serverId=${serverId}`);

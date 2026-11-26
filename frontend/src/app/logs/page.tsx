@@ -37,7 +37,7 @@ export default function LogsPage() {
   const wsRef = useRef<WebSocket | null>(null);
   const pausedRef = useRef(false);
   const containersRef = useRef<Container[]>([]);
-  const reconnectTimerRef = useRef<NodeJS.Timeout>();
+  const reconnectTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const selectedRef = useRef<Set<string>>(new Set());
 
   const runningContainers = (containers || []).filter(c => c.state === 'running');

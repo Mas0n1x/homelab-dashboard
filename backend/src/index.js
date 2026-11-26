@@ -50,6 +50,8 @@ import { sharesAdminRoutes, sharePublicRoutes } from './routes/shares.js';
 import { wss, broadcast } from './ws/dashboard.js';
 import { mcConsoleWss, gsConsoleWss } from './ws/consoles.js';
 import { starteJobs } from './jobs/index.js';
+import { protokolliereAenderungen } from './middleware/audit.js';
+import { botServerStatus } from './routes/intern.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -89,6 +91,8 @@ const ROH_UPLOADS = new Set(['/api/files/upload', '/api/mail/upload']);
 app.use((req, res, next) => (ROH_UPLOADS.has(req.path) ? next() : jsonParser(req, res, next)));
 
 // Public routes (no auth required)
+// Nur-Lese-Zugang für die Bot-Runtime im Compose-Netz (eigenes Token, kein Konto)
+app.get('/api/intern/server-status', botServerStatus);
 app.use('/api/auth', authRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -107,6 +111,7 @@ app.use('/api/share', sharePublicRoutes);
 
 // Auth middleware for all other /api routes
 app.use('/api', authenticateToken);
+app.use('/api', protokolliereAenderungen);
 
 // Protected routes
 app.use('/api/system', systemRoutes);

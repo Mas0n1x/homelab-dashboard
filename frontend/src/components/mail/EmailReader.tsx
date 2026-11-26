@@ -5,9 +5,10 @@
  */
 'use client';
 
+import { useState } from 'react';
 import { zahl } from '@/lib/formatters';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Reply, ReplyAll, Forward, Trash2, Paperclip, Download } from 'lucide-react';
+import { ArrowLeft, Reply, ReplyAll, Forward, Trash2, Paperclip, Download, ImageOff } from 'lucide-react';
 import { jmapCall, getMailAttachmentUrl } from '@/lib/api';
 import { useMailStore } from '@/stores/mailStore';
 import type { MailEmail, MailFolder } from '@/lib/types';
@@ -25,6 +26,9 @@ export function EmailReader({ folders }: EmailReaderProps) {
   const email = selectedEmailAccount || activeEmail;
   const accountId = accounts.find(a => a.email === email)?.accountId ?? null;
   const queryClient = useQueryClient();
+  // Nachgeladene Inhalte verraten dem Absender, dass und wo die Mail geöffnet
+  // wurde. Deshalb je Mail erst auf Klick.
+  const [bilderFuer, setBilderFuer] = useState<string | null>(null);
 
   const { data: emailData, isLoading } = useQuery({
     queryKey: ['mail-email', accountId, selectedEmailId],
@@ -121,8 +125,16 @@ export function EmailReader({ folders }: EmailReaderProps) {
   const sanitizeHtml = (html: string) => {
     return html
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/\son\w+\s*=/gi, ' data-removed=');
+      .replace(/\son\w+\s*=/gi, ' data-removed=')
+      // Weiterleitungen und Vorab-Verbindungen umgehen die Richtlinie unten.
+      .replace(/<meta\b[^>]*http-equiv\s*=\s*["']?\s*refresh[^>]*>/gi, '')
+      .replace(/<link\b[^>]*>/gi, '');
   };
+
+  const bilderErlaubt = bilderFuer === selectedEmailId;
+  const hatExternes = !!htmlContent && /(?:\bsrc|\bsrcset|\bbackground|\bposter)\s*=\s*["']?\s*(?:https?:)?\/\/|url\(\s*["']?\s*(?:https?:)?\/\//i.test(htmlContent);
+  // Die Richtlinie im Rahmen sperrt alles Fremde — Bilder, Schriften, Stylesheets.
+  const richtlinie = `default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data: blob: cid:${bilderErlaubt ? ' https: http:' : ''}`;
 
   return (
     <div className="space-y-3">
@@ -180,9 +192,18 @@ export function EmailReader({ folders }: EmailReaderProps) {
 
       {/* Body */}
       <div className="glass-card p-4 overflow-hidden">
+        {htmlContent && hatExternes && !bilderErlaubt && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2">
+            <span className="flex items-center gap-2 text-xs text-white/60">
+              <ImageOff className="w-3.5 h-3.5 flex-shrink-0" /> Externe Bilder sind blockiert.
+            </span>
+            <button onClick={() => setBilderFuer(selectedEmailId)} className="btn-glass py-1.5 px-3 text-xs">Bilder laden</button>
+          </div>
+        )}
         {htmlContent ? (
           <iframe
-            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{color:#e0e0e0!important;background-color:transparent!important;border-color:#333!important;}body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.6;margin:0;padding:0;background:#0d0d1a!important;}a,a *{color:#818cf8!important;}img{max-width:100%;height:auto;}blockquote{border-left:3px solid #444!important;margin:8px 0;padding:0 12px;}blockquote,blockquote *{color:#999!important;}table{border-collapse:collapse;}td,th{padding:4px 8px;}</style></head><body>${sanitizeHtml(htmlContent)}</body></html>`}
+            key={`${selectedEmailId}-${bilderErlaubt}`}
+            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${richtlinie}"><meta name="referrer" content="no-referrer"><style>*{color:#e0e0e0!important;background-color:transparent!important;border-color:#333!important;}body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.6;margin:0;padding:0;background:#0d0d1a!important;}a,a *{color:#818cf8!important;}img{max-width:100%;height:auto;}blockquote{border-left:3px solid #444!important;margin:8px 0;padding:0 12px;}blockquote,blockquote *{color:#999!important;}table{border-collapse:collapse;}td,th{padding:4px 8px;}</style></head><body>${sanitizeHtml(htmlContent)}</body></html>`}
             sandbox="allow-same-origin"
             className="w-full border-0 min-h-[200px] rounded-lg"
             style={{ colorScheme: 'dark', background: '#0d0d1a' }}
