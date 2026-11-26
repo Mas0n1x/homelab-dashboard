@@ -46,6 +46,7 @@ const EVENT_CATEGORY = {
   container_crash: 'Docker · Container',
   container_restart: 'Docker · Container',
   service_offline: 'Dienste',
+  server_offline: 'System · Erreichbarkeit',
   status_report: 'Statusbericht',
   new_portfolio_request: 'Portfolio · Anfrage',
   new_portfolio_customer: 'Portfolio · Kunde',
@@ -103,7 +104,7 @@ async function sendPush(channel, payload) {
     url: '/alerts',
   });
   try {
-    await webpush.sendNotification(sub, nachricht, { TTL: 3600, urgency: sev === 'critical' ? 'high' : 'normal' });
+    await webpush.sendNotification(sub, nachricht, { TTL: 3600, urgency: sev === 'critical' ? 'high' : 'normal', timeout: SENDE_ZEITLIMIT_MS });
   } catch (error) {
     // 404/410: Gerät hat sich abgemeldet oder die Anmeldung ist abgelaufen — Kanal aufräumen.
     if (error.statusCode === 404 || error.statusCode === 410) {
@@ -132,8 +133,10 @@ export function subscribePush({ subscription, name, events }) {
   return { id, updated: false };
 }
 
+const SENDE_ZEITLIMIT_MS = 10000;
+
 const PUSH_STANDARD_EVENTS = [
-  'cpu_high', 'ram_high', 'disk_high', 'temp_high', 'container_crash',
+  'server_offline', 'cpu_high', 'ram_high', 'disk_high', 'temp_high', 'container_crash',
   'service_offline', 'backup_failed', 'disk_forecast', 'ram_trend',
 ];
 
@@ -177,11 +180,15 @@ async function sendWebhook(channel, payload) {
     }
 
     if (channel.type !== 'webpush') {
-      await fetch(channel.webhook_url, {
+      const antwort = await fetch(channel.webhook_url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(SENDE_ZEITLIMIT_MS),
       });
+      // Eine abgelehnte Meldung (429, 404, …) darf nicht als gesendet im Verlauf
+      // landen — sonst gilt der Alarm als zugestellt und kommt nie wieder.
+      if (!antwort.ok) throw new Error(`Webhook antwortet mit ${antwort.status}`);
     }
 
     if (payload.record !== false) {
@@ -219,6 +226,9 @@ async function handleThreshold(db, channel, opts) {
   // isOk (optional): echte Hysterese — Entwarnung erst unterhalb der tieferen ok-Schwelle.
   // Werte dazwischen (Totband) ändern den Zustand nicht und zählen weder als hoch noch als ok.
   const { event, scope = '', subject = '', isHigh, alert, recovery } = opts;
+  // Wie lange ein Alarm als „noch offen" gilt. Standard 1 Tag (danach Erinnerung);
+  // Ausfälle sollen dagegen einmal melden und auch nach Tagen noch entwarnen.
+  const zeitfenster = opts.stateWindow || '-1 day';
   const isOk = opts.isOk === undefined ? !isHigh : !!opts.isOk;
   const stateEvent = [event, scope, subject].filter(Boolean).join('::');
   const okEvent = `${stateEvent}::ok`;
@@ -230,14 +240,14 @@ async function handleThreshold(db, channel, opts) {
   else { streak.high = 0; streak.ok = 0; } // Totband
   streaks.set(streakKey, streak);
 
-  const lastAlert = db.prepare(
-    "SELECT sent_at FROM alert_history WHERE channel_id = ? AND event_type = ? AND sent_at > datetime('now','-1 day') ORDER BY sent_at DESC LIMIT 1"
-  ).get(channel.id, stateEvent);
-  const lastOk = db.prepare(
-    "SELECT sent_at FROM alert_history WHERE channel_id = ? AND event_type = ? AND sent_at > datetime('now','-1 day') ORDER BY sent_at DESC LIMIT 1"
-  ).get(channel.id, okEvent);
+  const letzte = db.prepare(
+    "SELECT id, sent_at FROM alert_history WHERE channel_id = ? AND event_type = ? AND sent_at > datetime('now', ?) ORDER BY sent_at DESC, id DESC LIMIT 1"
+  );
+  const lastAlert = letzte.get(channel.id, stateEvent, zeitfenster);
+  const lastOk = letzte.get(channel.id, okEvent, zeitfenster);
 
-  const alerting = !!lastAlert && (!lastOk || lastAlert.sent_at > lastOk.sent_at);
+  // Über die ID verglichen: Alarm und Entwarnung können in derselben Sekunde liegen.
+  const alerting = !!lastAlert && (!lastOk || lastAlert.id > lastOk.id);
 
   // Cooldown: nach einer Entwarnung nicht sofort wieder alarmieren (Flapping-Schutz).
   const inCooldown = !alerting && !!lastOk &&
@@ -395,6 +405,50 @@ export function maintenanceFor(serverId) {
   return getMaintenance().find(w => w.serverId === '*' || w.serverId === serverId) || null;
 }
 
+// Keine Messung ist nicht dasselbe wie 0 %: ohne Werte darf weder alarmiert noch
+// entwarnt werden.
+function ramBekannt(stats) {
+  return !!stats && !stats.fehlend?.includes('mem');
+}
+
+// ── Ausfälle ─────────────────────────────────────────────────────
+// Ein Dienst muss seit dem Start einmal erreichbar gewesen sein, bevor sein
+// Ausfall meldet — sonst fluten nach jedem Neustart alle dauerhaft toten Dienste.
+const warOnline = new Set();
+
+/** services: [{ key, name, online }] eines Servers aus dem Uptime-Lauf. */
+export async function checkServiceAlerts({ serverId, serverName, services }) {
+  if (maintenanceFor(serverId)) return;
+  const db = getDb();
+  const channels = db.prepare('SELECT * FROM alert_channels WHERE enabled = 1').all()
+    .filter(c => JSON.parse(c.events || '[]').includes('service_offline'));
+
+  for (const s of services) {
+    const merk = `${serverId}|${s.key}`;
+    if (s.online) warOnline.add(merk);
+    for (const channel of channels) {
+      await handleThreshold(db, channel, {
+        event: 'service_offline',
+        scope: serverId,
+        subject: s.name,
+        isHigh: !s.online && warOnline.has(merk),
+        isOk: s.online,
+        stateWindow: '-30 days',
+        alert: (name) => ({
+          title: `🔴 Dienst offline: ${name}`,
+          message: `**${name}** auf **${serverName}** ist nicht erreichbar.`,
+          color: 0xff4444,
+        }),
+        recovery: (name) => ({
+          title: `✅ Dienst wieder da: ${name}`,
+          message: `**${name}** auf **${serverName}** ist wieder erreichbar.`,
+          color: 0x00ff88,
+        }),
+      });
+    }
+  }
+}
+
 // ── Live-Zustand ─────────────────────────────────────────────────
 // Unabhängig von Kanälen und Wartungsfenstern: was ist JETZT auffällig? Gleiche
 // Streak-/Hysterese-Regeln wie bei den Benachrichtigungen, damit Karte und
@@ -426,7 +480,11 @@ function trackLive(data, TH, muted) {
 
   const stats = data.systemStats;
   if (!muted.has('cpu')) upd('cpu', null, data.cpuPercent || 0, TH.cpu);
-  if (!muted.has('ram')) upd('ram', null, data.memPercent || 0, TH.ram);
+  if (!muted.has('ram')) {
+    // Fehlt der Speicherwert, bleibt der bisherige Zustand stehen.
+    if (ramBekannt(stats)) upd('ram', null, data.memPercent || 0, TH.ram);
+    else gesehen.add('ram');
+  }
   if (!muted.has('disk')) {
     for (const d of stats.disk || []) upd('disk', d.mountPoint || d.device || 'disk', Number(d.percent) || 0, TH.disk);
   }
@@ -494,8 +552,29 @@ export async function checkAlerts(data) {
   for (const channel of channels) {
     const events = JSON.parse(channel.events || '[]');
 
+    // Server nicht erreichbar (online ist nur bei Servern mit Messquelle gesetzt)
+    if (events.includes('server_offline') && typeof data.online === 'boolean') {
+      await handleThreshold(db, channel, {
+        event: 'server_offline',
+        scope,
+        isHigh: !data.online,
+        stateWindow: '-30 days',
+        alert: () => ({
+          title: `🔴 Server nicht erreichbar: ${data.serverName}`,
+          message: `**${data.serverName}** liefert seit rund 90 Sekunden keine Messwerte.`,
+          color: 0xff4444,
+        }),
+        recovery: () => ({
+          title: `✅ Server wieder erreichbar: ${data.serverName}`,
+          message: `**${data.serverName}** liefert wieder Messwerte.`,
+          color: 0x00ff88,
+          fields: contextFields(data),
+        }),
+      });
+    }
+
     // CPU
-    if (events.includes('cpu_high') && !muted.has('cpu')) {
+    if (events.includes('cpu_high') && stats && !muted.has('cpu')) {
       const v = data.cpuPercent || 0;
       await handleThreshold(db, channel, {
         event: 'cpu_high',
@@ -518,7 +597,7 @@ export async function checkAlerts(data) {
     }
 
     // RAM
-    if (events.includes('ram_high') && !muted.has('ram')) {
+    if (events.includes('ram_high') && ramBekannt(stats) && !muted.has('ram')) {
       const v = data.memPercent || 0;
       const memInfo = stats?.memory ? `${fmtBytes(stats.memory.used)} / ${fmtBytes(stats.memory.total)}` : null;
       await handleThreshold(db, channel, {
@@ -650,23 +729,6 @@ export async function checkAlerts(data) {
       }
     }
 
-    // Service offline
-    if (events.includes('service_offline') && data.offlineServices?.length > 0) {
-      for (const s of data.offlineServices) {
-        const recent = db.prepare(
-          "SELECT id FROM alert_history WHERE channel_id = ? AND event_type = 'service_offline' AND message LIKE ? AND sent_at > datetime('now', '-10 minutes')"
-        ).get(channel.id, `%${s.name}%`);
-        if (!recent) {
-          await sendWebhook(channel, {
-            event: 'service_offline',
-            title: '🔴 Service offline',
-            message: `Service **${s.name}** ist nicht erreichbar`,
-            color: 0xff4444,
-          });
-        }
-      }
-    }
-
     // New portfolio request
     if (events.includes('new_portfolio_request') && data.portfolioRequests?.length > 0) {
       for (const req of data.portfolioRequests) {
@@ -795,7 +857,7 @@ export async function checkForecastAlerts(forecast) {
         isHigh: knapp,
         alert: (name) => ({
           title: `🗄️ Speicherplatz wird knapp: ${name}`,
-          message: `Die Platte von **${name}** ist laut Prognose ${tageText(s.daysUntilFull)} voll (${fmtPct(s.percent)} belegt, Zuwachs ca. ${((s.bytesPerDay || 0) / 1e9).toFixed(1).replace('.', ',')} GB/Tag).`,
+          message: `Die Platte${s.mountPoint ? ` \`${s.mountPoint}\`` : ''} von **${name}** ist laut Prognose${tageText(s.daysUntilFull)} voll (${fmtPct(s.percent)} belegt, Zuwachs ca. ${((s.bytesPerDay || 0) / 1e9).toFixed(1).replace('.', ',')} GB/Tag).`,
           color: s.daysUntilFull <= 7 ? 0xff4444 : 0xff8800,
         }),
         recovery: (name) => ({

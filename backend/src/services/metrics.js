@@ -4,7 +4,7 @@
  * Licensed under the MIT License.
  */
 import { getDb } from './database.js';
-import { lineareRegression } from './regression.js';
+import { lineareRegression, ohneEinmalSpruenge } from './regression.js';
 
 // Rohdaten: ein Sample alle 30 s, 48 h lang. Daraus werden Stundenwerte
 // berechnet, die 90 Tage bleiben — Grundlage für 7-/30-/90-Tage-Ansichten
@@ -152,7 +152,10 @@ export function getMetricsRange(serverId, range = '24h') {
 // Ab dieser Steigung (Prozentpunkte RAM pro Tag) gilt ein Anstieg als Leck-Verdacht.
 const LECK_STEIGUNG = 0.4;
 const LECK_MIN_R2 = 0.6;
-const TREND_MIN_TAGE = 3;
+// Unter einer Woche sieht jeder neu gestartete Dienst wie ein Leck aus.
+const TREND_MIN_TAGE = 7;
+// Sprung des Tages-Bodens (Prozentpunkte), der als einmalige Änderung gilt.
+const TREND_SPRUNG = 5;
 const TREND_FENSTER_TAGE = 14;
 
 /**
@@ -196,7 +199,8 @@ export function getMemoryTrends() {
     if (tage.length < TREND_MIN_TAGE) { out.push(basis); continue; }
 
     const t0 = new Date(tage[0].tag).getTime();
-    const punkte = tage.map(t => ({ x: (new Date(t.tag).getTime() - t0) / 86400000, y: t.boden }));
+    const boeden = ohneEinmalSpruenge(tage.map(t => t.boden), TREND_SPRUNG);
+    const punkte = tage.map((t, i) => ({ x: (new Date(t.tag).getTime() - t0) / 86400000, y: boeden[i] }));
     const { steigung, r2 } = lineareRegression(punkte);
     basis.slopePerDay = Math.round(steigung * 100) / 100;
     basis.r2 = Math.round(r2 * 100) / 100;

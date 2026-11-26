@@ -59,8 +59,21 @@ http {
             proxy_read_timeout 30;
         }
 
+        # Datei-Explorer: Uploads (Cloudflare lässt im Free-Tarif höchstens 100 MB durch)
+        location /api/files/upload {
+            client_max_body_size 100m;
+            proxy_pass $backend_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_read_timeout 300;
+        }
+
         # Backend API
         location /api {
+            # Ohne Angabe gilt 1 MB — zu wenig für Mail-Anhänge (Backend-Limit 48 MB).
+            client_max_body_size 50m;
             proxy_pass $backend_upstream;
             proxy_http_version 1.1;
             proxy_set_header Host $host;

@@ -631,6 +631,8 @@ export interface ImageUpdateSummary {
 export interface DiskForecastServer {
   serverId: string
   serverName: string
+  /** Einhängepunkt der Prognose; `null` = Summe aller Platten. */
+  mountPoint?: string | null
   usedBytes: number | null
   totalBytes: number | null
   percent: number | null

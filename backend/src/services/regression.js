@@ -49,3 +49,31 @@ export function lineareRegression(punkte) {
 
   return { steigung, achsenabschnitt, r2 };
 }
+
+/**
+ * Nimmt einmalige Sprünge nach oben aus einer Messreihe (neuer Dienst, großes
+ * Image), damit sie nicht als Dauertrend hochgerechnet werden.
+ *
+ * Als Sprung zählt ein Zuwachs über `schwelle`, der auch das Fünffache der
+ * typischen Veränderung übersteigt. Kommen mehr als zwei vor, ist es ein
+ * Muster und bleibt stehen.
+ *
+ * @param {number[]} werte
+ * @param {number} schwelle
+ * @returns {number[]}
+ */
+export function ohneEinmalSpruenge(werte, schwelle) {
+  const schritte = werte.slice(1).map((w, i) => w - werte[i]);
+  if (!schritte.length) return [...werte];
+  const betraege = schritte.map(Math.abs).sort((a, b) => a - b);
+  const mitte = Math.floor(betraege.length / 2);
+  const typisch = betraege.length % 2 ? betraege[mitte] : (betraege[mitte - 1] + betraege[mitte]) / 2;
+  const istSprung = (s) => s > schwelle && s > 5 * typisch;
+  if (schritte.filter(istSprung).length > 2) return [...werte];
+
+  let versatz = 0;
+  return werte.map((w, i) => {
+    if (i > 0 && istSprung(schritte[i - 1])) versatz += schritte[i - 1];
+    return w - versatz;
+  });
+}

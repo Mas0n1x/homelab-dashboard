@@ -96,7 +96,7 @@ function ServerZeile({ s, minDays }: { s: DiskForecastServer; minDays: number })
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-[12px] text-white/60 truncate min-w-0">{s.serverName}</span>
+        <span className="text-[12px] text-white/60 truncate min-w-0">{s.serverName}{s.mountPoint && s.mountPoint !== '/' ? ` · ${s.mountPoint}` : ''}</span>
         <span className="text-[12px] text-white/50 tabular-nums flex-shrink-0">
           {prozent ? `${zahl(prozent, 0)} %` : '–'}
         </span>

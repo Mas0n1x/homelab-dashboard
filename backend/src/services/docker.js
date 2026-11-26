@@ -4,6 +4,7 @@
  * Licensed under the MIT License.
  */
 import Docker from 'dockerode';
+import os from 'node:os';
 import serverManager from './serverManager.js';
 import { readRemoteFile, writeRemoteFile } from './sshFile.js';
 
@@ -66,6 +67,14 @@ async function holeContainers(dockerInstance) {
   }
 }
 
+// Wie `docker stats`: der freigebbare Datei-Cache zählt nicht als belegter RAM.
+// cgroup v1 nennt ihn total_inactive_file, v2 inactive_file.
+export function ramNutzung(memoryStats = {}) {
+  const usage = memoryStats.usage || 0;
+  const cache = memoryStats.stats?.total_inactive_file ?? memoryStats.stats?.inactive_file ?? 0;
+  return cache < usage ? usage - cache : usage;
+}
+
 export async function getContainerStats(containerId, dockerInstance) {
   const docker = getDockerInstance(dockerInstance);
   try {
@@ -76,7 +85,7 @@ export async function getContainerStats(containerId, dockerInstance) {
     const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
     const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * stats.cpu_stats.online_cpus * 100 : 0;
 
-    const memUsage = stats.memory_stats.usage || 0;
+    const memUsage = ramNutzung(stats.memory_stats);
     const memLimit = stats.memory_stats.limit || 1;
     const memPercent = (memUsage / memLimit) * 100;
 
@@ -598,14 +607,59 @@ export async function checkImageUpdates(dockerInstance) {
   }
 }
 
-export async function pullAndRecreate(containerId, dockerInstance) {
+// Baut aus dem Inspect des alten Containers die Angaben für den neuen.
+function neuanlageAngaben(inspect) {
+  const kurzId = inspect.Id.substring(0, 12);
+  const config = { ...inspect.Config };
+  const hostConfig = { ...inspect.HostConfig };
+  const modus = hostConfig.NetworkMode || 'default';
+  const ohneEigenesNetz = modus === 'host' || modus === 'none' || modus.startsWith('container:');
+
+  if (config.Hostname === kurzId || ohneEigenesNetz) delete config.Hostname;
+  if (modus.startsWith('container:')) delete config.ExposedPorts;
+
+  // Namenlose Volumes mitnehmen — sonst startet der neue Container mit leeren.
+  const belegt = new Set([
+    ...(hostConfig.Binds || []).map(b => b.split(':')[1]),
+    ...(hostConfig.Mounts || []).map(m => m.Target),
+  ]);
+  const volumes = (inspect.Mounts || [])
+    .filter(m => m.Type === 'volume' && m.Name && !belegt.has(m.Destination))
+    .map(m => `${m.Name}:${m.Destination}${m.RW === false ? ':ro' : ''}`);
+  if (volumes.length) hostConfig.Binds = [...(hostConfig.Binds || []), ...volumes];
+
+  const netze = ohneEigenesNetz ? [] : Object.entries(inspect.NetworkSettings?.Networks || {})
+    .map(([netz, e]) => [netz, {
+      Aliases: (e.Aliases || []).filter(a => a !== kurzId),
+      Links: e.Links,
+      IPAMConfig: e.IPAMConfig,
+    }])
+    // Das Hauptnetz kommt zuerst; weitere werden nach dem Anlegen verbunden,
+    // weil ältere Docker-APIs beim Anlegen nur eines annehmen.
+    .sort(([a], [b]) => (b === modus) - (a === modus));
+
+  return { config, hostConfig, netze };
+}
+
+const STARTPRUEFUNG_MS = 3000;
+
+// Reihenfolge: erst Image holen, alten Container nur umbenennen und stoppen,
+// neuen anlegen und starten. Gelöscht wird der alte erst, wenn der neue läuft —
+// sonst kommt er zurück.
+export async function pullAndRecreate(containerId, dockerInstance, { startPruefungMs = STARTPRUEFUNG_MS } = {}) {
   const docker = getDockerInstance(dockerInstance);
   try {
-    const container = docker.getContainer(containerId);
-    const inspect = await container.inspect();
-    const image = inspect.Config.Image;
+    const inspect = await docker.getContainer(containerId).inspect();
+    const name = inspect.Name.replace(/^\//, '');
+    const eigener = os.hostname();
+    if (!dockerInstance && eigener.length >= 12 && inspect.Id.startsWith(eigener)) {
+      throw Object.assign(new Error('Das Dashboard kann seinen eigenen Container nicht ersetzen — bitte per docker compose aktualisieren.'), { statusCode: 409 });
+    }
+    if (inspect.HostConfig?.AutoRemove) {
+      throw Object.assign(new Error('Container mit --rm lassen sich nicht sicher ersetzen.'), { statusCode: 409 });
+    }
 
-    const pullStream = await docker.pull(image);
+    const pullStream = await docker.pull(inspect.Config.Image);
     await new Promise((resolve, reject) => {
       docker.modem.followProgress(pullStream, (err, output) => {
         if (err) reject(err);
@@ -613,18 +667,46 @@ export async function pullAndRecreate(containerId, dockerInstance) {
       });
     });
 
-    try { await container.stop(); } catch {}
-    await container.remove();
+    const alt = docker.getContainer(inspect.Id);
+    const lief = !!inspect.State?.Running;
+    const { config, hostConfig, netze } = neuanlageAngaben(inspect);
 
-    const newContainer = await docker.createContainer({
-      ...inspect.Config,
-      name: inspect.Name.replace(/^\//, ''),
-      HostConfig: inspect.HostConfig,
-      NetworkingConfig: { EndpointsConfig: inspect.NetworkSettings.Networks },
-    });
+    await alt.rename({ name: `${name}-alt-${Date.now()}` });
+    let neu;
+    try {
+      if (lief) await alt.stop();
+      neu = await docker.createContainer({
+        ...config,
+        name,
+        HostConfig: hostConfig,
+        ...(netze.length ? { NetworkingConfig: { EndpointsConfig: Object.fromEntries(netze.slice(0, 1)) } } : {}),
+      });
+      for (const [netz, endpoint] of netze.slice(1)) {
+        await docker.getNetwork(netz).connect({ Container: neu.id, EndpointConfig: endpoint });
+      }
+      if (lief) {
+        await neu.start();
+        // Ein Start ohne Fehler heißt noch nicht, dass der Prozess oben bleibt.
+        await new Promise(r => setTimeout(r, startPruefungMs));
+        const stand = (await neu.inspect()).State;
+        if (!stand.Running || stand.Restarting) {
+          throw new Error(`Der neue Container läuft nicht (Exit-Code ${stand.ExitCode})`);
+        }
+      }
+    } catch (error) {
+      try { await (neu || docker.getContainer(name)).remove({ force: true }); } catch { /* nicht angelegt */ }
+      try {
+        await alt.rename({ name });
+        if (lief) await alt.start();
+        error.message = `Aktualisierung abgebrochen, alter Container wiederhergestellt: ${error.message}`;
+      } catch (rueckfall) {
+        error.message = `${error.message} — Wiederherstellen fehlgeschlagen: ${rueckfall.message}`;
+      }
+      throw error;
+    }
 
-    await newContainer.start();
-    return { success: true, newId: newContainer.id };
+    try { await alt.remove(); } catch (e) { console.warn(`Alter Container von ${name} blieb liegen: ${e.message}`); }
+    return { success: true, newId: neu.id };
   } catch (error) {
     console.error('Error pulling and recreating:', error.message);
     throw error;
@@ -692,7 +774,7 @@ async function holeAlleContainerStats(dockerInstance) {
         const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
         const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
         const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * stats.cpu_stats.online_cpus * 100 : 0;
-        const memUsage = stats.memory_stats.usage || 0;
+        const memUsage = ramNutzung(stats.memory_stats);
         const memLimit = stats.memory_stats.limit || 1;
 
         return {

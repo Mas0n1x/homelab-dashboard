@@ -24,6 +24,7 @@ import { formatAudit } from '@/lib/audit';
 import type { AlertChannel } from '@/lib/types';
 
 const EVENT_OPTIONS = [
+  { id: 'server_offline', label: 'Server nicht erreichbar', icon: '🔌' },
   { id: 'cpu_high', label: 'CPU > 90%', icon: '🔥' },
   { id: 'ram_high', label: 'RAM > 90%', icon: '💾' },
   { id: 'disk_high', label: 'Speicher > 90%', icon: '🗄️' },

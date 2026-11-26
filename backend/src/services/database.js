@@ -130,6 +130,17 @@ export function initDatabase() {
 
     CREATE INDEX IF NOT EXISTS idx_disk_daily_server ON disk_daily(server_id, day);
 
+    -- Dasselbe je Einhängepunkt: in der Summe geht eine volle Einzelplatte unter.
+    CREATE TABLE IF NOT EXISTS disk_mount_daily (
+      server_id TEXT NOT NULL,
+      mount TEXT NOT NULL,
+      day TEXT NOT NULL,
+      used_bytes INTEGER,
+      total_bytes INTEGER,
+      percent REAL,
+      PRIMARY KEY (server_id, mount, day)
+    );
+
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT
@@ -430,6 +441,22 @@ export function initDatabase() {
   const userCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
   if (!userCols.includes('tokens_valid_after')) {
     db.exec('ALTER TABLE users ADD COLUMN tokens_valid_after TEXT');
+  }
+
+  // Index für die Zustandsabfragen der Alarme (laufen alle 30 s je Server und Kanal).
+  db.exec('CREATE INDEX IF NOT EXISTS idx_alert_history_state ON alert_history(channel_id, event_type, sent_at)');
+
+  // Einmalig: Kanäle, die Ausfälle melden sollen, bekommen den neuen Alarm
+  // „Server nicht erreichbar" dazu — sonst bliebe er stumm.
+  if (!db.prepare("SELECT 1 FROM settings WHERE key = 'alert_server_offline_v1'").get()) {
+    for (const c of db.prepare('SELECT id, events FROM alert_channels').all()) {
+      let events;
+      try { events = JSON.parse(c.events || '[]'); } catch { continue; }
+      if (!events.includes('server_offline') && (events.includes('service_offline') || events.includes('container_crash'))) {
+        db.prepare('UPDATE alert_channels SET events = ? WHERE id = ?').run(JSON.stringify([...events, 'server_offline']), c.id);
+      }
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('alert_server_offline_v1', 'true')").run();
   }
 
   // Ensure local server exists

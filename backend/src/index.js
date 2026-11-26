@@ -50,10 +50,10 @@ import * as gameservers from './services/gameservers.js';
 import statusRoutes from './routes/status.js';
 import timeRoutes from './routes/time.js';
 import etsyRoutes, { createEtsyCallback } from './routes/etsy.js';
-import { checkAlerts, sendStatusReport, checkForecastAlerts, notifyImageUpdates, checkMemoryTrendAlerts } from './services/alerting.js';
-import { runDueBackups, enforceBackupRetention } from './services/backup.js';
+import { checkAlerts, checkServiceAlerts, sendStatusReport, checkForecastAlerts, notifyImageUpdates, checkMemoryTrendAlerts } from './services/alerting.js';
+import { runDueBackups, enforceBackupRetention, markiereAbgebrocheneBackups } from './services/backup.js';
 import { recordMetric, pruneMetrics, rollupHourly } from './services/metrics.js';
-import { recordDiskDaily, pruneDiskDaily, getDiskForecast } from './services/diskForecast.js';
+import { recordDiskDaily, recordDiskMounts, pruneDiskDaily, getDiskForecast } from './services/diskForecast.js';
 import { checkFleetImageUpdates } from './services/imageUpdates.js';
 import metricsRoutes from './routes/metrics.js';
 import tunnelsRoutes from './routes/tunnels.js';
@@ -93,7 +93,11 @@ app.post('/api/bots/:bot/webhook/github', express.json({ limit: '5mb', verify: (
 // Business-Events aus Portfolio/SaleNet (öffentlich, per Bearer-Token gesichert)
 app.post('/api/bots/:bot/events', express.json({ limit: '2mb' }), createBotEventsIngest());
 
-app.use(express.json({ limit: '48mb' }));
+// Uploads kommen als roher Body. Ohne diese Ausnahme schluckt der JSON-Parser
+// hochgeladene .json-Dateien, und gespeichert würde eine leere Datei.
+const jsonParser = express.json({ limit: '48mb' });
+const ROH_UPLOADS = new Set(['/api/files/upload', '/api/mail/upload']);
+app.use((req, res, next) => (ROH_UPLOADS.has(req.path) ? next() : jsonParser(req, res, next)));
 
 // Public routes (no auth required)
 app.use('/api/auth', authRoutes);
@@ -509,7 +513,13 @@ wss.on('connection', (ws, req) => {
   }
 
   console.log('Client connected to WebSocket');
-  const clientState = { subscriptions: new Set(), intervals: [] };
+  // Ein Takt je abonniertem Server: Abbestellen oder erneutes Abonnieren trifft nur ihn.
+  const clientState = { intervals: new Map() };
+  const stoppeTakt = (serverId) => {
+    clearInterval(clientState.intervals.get(serverId));
+    clientState.intervals.delete(serverId);
+  };
+  const stoppeAlle = () => [...clientState.intervals.keys()].forEach(stoppeTakt);
   clients.set(ws, clientState);
 
   ws.on('message', async (message) => {
@@ -518,7 +528,6 @@ wss.on('connection', (ws, req) => {
 
       if (data.type === 'subscribe') {
         const serverId = data.serverId || 'local';
-        clientState.subscriptions.add(serverId);
 
         // Overlap-Guard: hängt ein Aufruf (z. B. SSH-Kanal nach einem Tunnelabriss),
         // stauen sich sonst alle 10 s weitere hängende Läufe auf — und die Karte
@@ -567,15 +576,14 @@ wss.on('connection', (ws, req) => {
 
         // Danach alle 10 Sekunden. Bewusst nicht schneller: jeder Lauf fragt
         // die ganze Flotte ab, das war bei 2 Sekunden unnoetige Dauerlast.
-        const interval = setInterval(sendUpdates, 10000);
-        clientState.intervals.push(interval);
+        stoppeTakt(serverId);
+        clientState.intervals.set(serverId, setInterval(sendUpdates, 10000));
       }
 
+      // Ohne serverId: alles abbestellen (Serverwechsel in der Oberfläche).
       if (data.type === 'unsubscribe') {
-        const serverId = data.serverId || 'local';
-        clientState.subscriptions.delete(serverId);
-        clientState.intervals.forEach(i => clearInterval(i));
-        clientState.intervals = [];
+        if (data.serverId) stoppeTakt(data.serverId);
+        else stoppeAlle();
       }
 
       // Terminal messages
@@ -595,7 +603,7 @@ wss.on('connection', (ws, req) => {
 
   ws.on('close', () => {
     console.log('Client disconnected from WebSocket');
-    clientState.intervals.forEach(i => clearInterval(i));
+    stoppeAlle();
     cleanupTerminalSession(ws);
     cleanupLogSessions(ws);
     clients.delete(ws);
@@ -603,7 +611,7 @@ wss.on('connection', (ws, req) => {
 
   ws.on('error', (error) => {
     console.error('WebSocket error:', error.message);
-    clientState.intervals.forEach(i => clearInterval(i));
+    stoppeAlle();
     cleanupTerminalSession(ws);
     cleanupLogSessions(ws);
     clients.delete(ws);
@@ -676,13 +684,27 @@ setInterval(makeJob('uptime', () => forEachServer(async (server) => {
   const snapshot = getDiscoverySnapshot(server.id);
   const discovered = snapshot?.services
     ?? await withTimeout(discoverServices(server.id), 20000, 'discovery');
-  const manual = db.prepare('SELECT id, url, server_id as serverId FROM manual_services WHERE server_id = ?').all(server.id);
+  const manual = db.prepare('SELECT id, name, url, server_id as serverId FROM manual_services WHERE server_id = ?').all(server.id);
   const allServices = [
-    ...discovered.map(s => ({ id: s.id, url: s.url, serverId: s.serverId, container: { state: s.state, status: s.status } })),
+    ...discovered.map(s => ({ id: s.id, name: s.name, url: s.url, serverId: s.serverId, container: { state: s.state, status: s.status } })),
     ...manual
   ];
   const results = await checkAllServices(allServices);
   broadcast({ type: 'service-status', serverId: server.id, data: results });
+
+  // Ist der ganze Server weg, meldet das „Server nicht erreichbar" — nicht jeder Dienst einzeln.
+  if (serverManager.getConnection(server.id)?.reachable === false) return;
+  const namen = new Map(allServices.map(s => [s.id, s.name || s.id]));
+  const anzahl = new Map();
+  for (const n of namen.values()) anzahl.set(n, (anzahl.get(n) || 0) + 1);
+  await checkServiceAlerts({
+    serverId: server.id,
+    serverName: server.name || server.id,
+    services: results.map(r => {
+      const name = namen.get(r.serviceId) || r.serviceId;
+      return { key: r.serviceId, name: anzahl.get(name) > 1 ? `${name} (${r.serviceId})` : name, online: r.online };
+    }),
+  });
 })), 60000);
 
 // Background: Portfolio notifications (every 30 seconds)
@@ -705,7 +727,6 @@ setInterval(makeJob('portfolio', async () => {
           cpuPercent: 0,
           memPercent: 0,
           crashedContainers: [],
-          offlineServices: [],
           portfolioRequests: allRequests,
           portfolioCustomers: allCustomers,
         });
@@ -764,7 +785,7 @@ setInterval(makeJob('alerting', () => forEachServer(async (server) => {
         try {
           recordMetric(server.id, {
             cpu: systemStats.cpu?.total || 0,
-            mem: systemStats.memory?.percent || 0,
+            mem: systemStats.fehlend?.includes('mem') ? null : (systemStats.memory?.percent || 0),
             // null statt 0, wenn die Platten-Abfrage ausfiel: eine Lücke im
             // Verlauf ist ehrlich, ein Ausschlag auf 0 % wäre erfunden.
             disk: dcap ? (dused / dcap) * 100 : null,
@@ -778,6 +799,7 @@ setInterval(makeJob('alerting', () => forEachServer(async (server) => {
           // Füllstand-Prognose. metrics_history wird nach 48 Stunden geleert
           // und taugt dafür nicht.
           recordDiskDaily(server.id, dused, dcap);
+          recordDiskMounts(server.id, disks);
         } catch { /* Sampling darf das Alerting nie stoppen */ }
       }
 
@@ -785,17 +807,19 @@ setInterval(makeJob('alerting', () => forEachServer(async (server) => {
       // Hartes Zeitlimit: haengt die SSH-Verbindung zu einem toten Flotten-Server,
       // duerfte dieser Aufruf sonst ewig warten — der makeJob-Guard bliebe auf
       // `running` stehen und Alerting samt Metrik-Aufzeichnung stuenden still.
+      // null = Abfrage fehlgeschlagen. Dann bleibt der gemerkte Zustand stehen,
+      // sonst ginge der nächste Absturz unbemerkt durch.
       const containers = dockerInst
-        ? await withTimeout(dockerMod.getContainers(dockerInst), 12000, 'docker').catch(() => [])
-        : [];
+        ? await withTimeout(dockerMod.getContainers(dockerInst), 12000, 'docker').catch(() => null)
+        : null;
 
       // Detect crashed + restarted containers
       const crashedContainers = [];
       const restartedContainers = [];
       const currentStates = new Map();
-      containers.forEach(c => currentStates.set(c.id, c.state));
+      containers?.forEach(c => currentStates.set(c.id, c.state));
 
-      const prevStates = previousContainerStatesByServer.get(server.id) || new Map();
+      const prevStates = (containers && previousContainerStatesByServer.get(server.id)) || new Map();
       for (const [id, prevState] of prevStates) {
         const currentState = currentStates.get(id);
         if (prevState === 'running' && currentState && currentState !== 'running') {
@@ -806,7 +830,7 @@ setInterval(makeJob('alerting', () => forEachServer(async (server) => {
           if (c) restartedContainers.push(c);
         }
       }
-      previousContainerStatesByServer.set(server.id, currentStates);
+      if (containers) previousContainerStatesByServer.set(server.id, currentStates);
 
       // Reboot-Erkennung über Uptime-Rückgang
       let rebooted = false;
@@ -821,11 +845,11 @@ setInterval(makeJob('alerting', () => forEachServer(async (server) => {
         serverId: server.id,
         serverName: server.name || server.id,
         systemStats,
+        online: glances ? !!systemStats : undefined,
         cpuPercent: systemStats?.cpu?.total || 0,
         memPercent: systemStats?.memory?.percent || 0,
         crashedContainers,
         restartedContainers,
-        offlineServices: [],
         rebooted,
       });
     }
@@ -904,7 +928,7 @@ function runDataCleanup() {
     cleanupOldUptimeData();
     rollupHourly(47); // vor dem Aufräumen (47: das erste Fenster liegt so sicher noch voll in den Rohdaten): Rohdaten zu Stundenwerten verdichten
     pruneMetrics(48); // Rohdaten 48 h, Stundenwerte 90 Tage
-    pruneDiskDaily(); // Tageswerte der Platte: gut ein Jahr behalten
+    pruneDiskDaily(); // Tageswerte der Platte: gut ein Jahr behalten (Summe und je Mount)
     const removedBackups = enforceBackupRetention();
     if (removedBackups > 0) {
       console.log(`Abgelaufene Backups gelöscht: ${removedBackups}`);
@@ -913,6 +937,8 @@ function runDataCleanup() {
     console.error('Cleanup error:', error.message);
   }
 }
+// Vor dem ersten Aufräumen: Läufe, die ein Neustart abgebrochen hat, schließen.
+markiereAbgebrocheneBackups();
 runDataCleanup();
 setInterval(runDataCleanup, 24 * 60 * 60 * 1000);
 

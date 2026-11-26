@@ -15,7 +15,7 @@ interface Eintrag { id: number; event_type: string; message: string; sent_at: st
 
 const LABEL: Record<string, string> = {
   cpu_high: 'CPU', ram_high: 'RAM', disk_high: 'Speicher', temp_high: 'Temperatur', reboot: 'Neustart',
-  container_crash: 'Container gestoppt', container_restart: 'Container aktiv', service_offline: 'Dienst offline',
+  container_crash: 'Container gestoppt', container_restart: 'Container aktiv', service_offline: 'Dienst offline', server_offline: 'Server nicht erreichbar',
   status_report: 'Statusbericht', backup_completed: 'Backup ok', backup_failed: 'Backup fehlgeschlagen',
   disk_forecast: 'Speicher-Prognose', image_updates: 'Image-Updates', ram_trend: 'RAM-Trend', test: 'Test',
   new_portfolio_request: 'Neue Anfrage', new_portfolio_customer: 'Neuer Kunde',

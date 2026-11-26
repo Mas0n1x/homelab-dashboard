@@ -85,7 +85,7 @@ export function buildAttention() {
   try {
     for (const s of getDiskForecast(30).servers || []) {
       if (s.daysUntilFull != null && s.daysUntilFull <= 30) {
-        add(s.daysUntilFull <= 7 ? 'critical' : 'warning', 'prognose', `${s.serverName}: Platte in ca. ${s.daysUntilFull} Tagen voll`,
+        add(s.daysUntilFull <= 7 ? 'critical' : 'warning', 'prognose', `${s.serverName}: Platte${s.mountPoint ? ` ${s.mountPoint}` : ''} in ca. ${s.daysUntilFull} Tagen voll`,
           `${Math.round(s.percent || 0)} % belegt`, `/server/${s.serverId}`, s.serverId);
       }
     }

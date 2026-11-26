@@ -6,12 +6,15 @@
 import { getDb } from './database.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { existsSync, mkdirSync, statSync, unlinkSync, copyFileSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, statSync, unlinkSync, copyFileSync, readFileSync, mkdtempSync, rmSync, cpSync } from 'fs';
+import { cp } from 'fs/promises';
+import { tmpdir } from 'os';
+import Database from 'better-sqlite3';
 
 // Async statt execSync: tar synchron würde den kompletten Event-Loop bis zu
 // 120 s blockieren (keine HTTP-/WS-Antworten, alle Hintergrundjobs eingefroren).
 const execAsync = promisify(exec);
-import { basename, join } from 'path';
+import { basename, dirname, join, resolve } from 'path';
 import { Client as SSHClient } from 'ssh2';
 import { logAudit } from './audit.js';
 import { notify } from './alerting.js';
@@ -33,6 +36,18 @@ function ensureBackupDir() {
   if (!existsSync(BACKUP_DIR)) {
     mkdirSync(BACKUP_DIR, { recursive: true });
   }
+}
+
+const dbPfad = () => resolve(process.env.DB_PATH || '/app/data/dashboard.db');
+
+/**
+ * Beim Start aufrufen: ein Lauf mit Status „running“ kann dann nicht mehr laufen.
+ * Bliebe er stehen, würde er jedes weitere Backup blockieren.
+ */
+export function markiereAbgebrocheneBackups() {
+  return getDb().prepare(
+    "UPDATE backups SET status = 'failed', error = 'Durch Neustart abgebrochen', completed_at = datetime('now') WHERE status = 'running'"
+  ).run().changes;
 }
 
 export function getBackups(limit = 20) {
@@ -77,10 +92,23 @@ export async function runBackup(type, userId = null) {
         break;
       }
       case 'full': {
-        const dbPath = process.env.DB_PATH || '/app/data/dashboard.db';
+        const dbPath = dbPfad();
+        const datenDir = dirname(dbPath);
         backupPath = join(BACKUP_DIR, `full-backup-${timestamp}.tar.gz`);
-        // Backup entire data directory excluding the backups folder
-        await execAsync(`tar -czf "${backupPath}" --exclude='backups' -C /app/data .`, { timeout: 120000 });
+        // Die laufende Datenbank darf nicht roh in das Archiv: erst die Dateien
+        // ohne sie zusammenstellen, dann einen in sich stimmigen Stand dazulegen.
+        const ablage = mkdtempSync(join(tmpdir(), 'backup-'));
+        try {
+          await cp(datenDir, ablage, {
+            recursive: true,
+            filter: (quelle) => resolve(quelle) === datenDir
+              || (basename(quelle) !== 'backups' && !resolve(quelle).startsWith(dbPath)),
+          });
+          await db.backup(join(ablage, basename(dbPath)));
+          await execAsync(`tar -czf "${backupPath}" -C "${ablage}" .`, { timeout: 120000 });
+        } finally {
+          rmSync(ablage, { recursive: true, force: true });
+        }
         size = statSync(backupPath).size;
         break;
       }
@@ -210,43 +238,62 @@ export function getBackupFile(id) {
 // 0 = nur die Stückzahl-Grenze (MAX_BACKUPS) greift.
 const DEFAULT_SCHEDULE = { enabled: false, type: 'database', intervalHours: 24, retentionDays: 7 };
 
-// Backup wiederherstellen. Legt vorher eine Sicherheitskopie an und startet
-// das Backend neu, damit die DB frisch geöffnet wird.
-export async function restoreBackup(id, userId = null) {
+// Prüft die zurückzuspielende Datenbank und führt dabei ein mitgesichertes WAL ein.
+function pruefeDatenbank(pfad) {
+  if (!existsSync(pfad)) throw new Error('Backup enthält keine Datenbank');
+  const kopie = new Database(pfad);
+  try {
+    const ergebnis = kopie.pragma('quick_check', { simple: true });
+    if (ergebnis !== 'ok') throw new Error(`Datenbank im Backup ist beschädigt: ${ergebnis}`);
+    kopie.pragma('wal_checkpoint(TRUNCATE)');
+  } finally {
+    kopie.close();
+  }
+}
+
+// Backup wiederherstellen. Erst wird alles bereitgelegt und geprüft, dann die
+// laufende Datenbank geschlossen, ersetzt und das Backend neu gestartet.
+export async function restoreBackup(id, userId = null, { neustart = () => process.exit(0), verzoegerungMs = 800 } = {}) {
   const db = getDb();
   const backup = db.prepare('SELECT * FROM backups WHERE id = ?').get(id);
   if (!backup) throw new Error('Backup nicht gefunden');
   if (backup.status !== 'completed' || !backup.path || !existsSync(backup.path)) {
     throw new Error('Backup-Datei nicht verfügbar');
   }
-  const dbPath = process.env.DB_PATH || '/app/data/dashboard.db';
+  if (!['database', 'full'].includes(backup.type)) throw new Error('Unbekannter Backup-Typ');
+
+  const dbPath = dbPfad();
   ensureBackupDir();
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  // Sicherheitskopie des aktuellen Standes — ohne sie wird nichts überschrieben.
+  await db.backup(join(BACKUP_DIR, `pre-restore-${ts}.db`));
 
-  // Sicherheitskopie des aktuellen Standes (eingebaute better-sqlite3-API, kein CLI)
-  try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch { /* egal */ }
-  try { await db.backup(join(BACKUP_DIR, `pre-restore-${ts}.db`)); } catch { /* egal */ }
+  const ablage = mkdtempSync(join(tmpdir(), 'restore-'));
+  try {
+    if (backup.type === 'database') copyFileSync(backup.path, join(ablage, basename(dbPath)));
+    else await execAsync(`tar -xzf "${backup.path}" -C "${ablage}"`, { timeout: 120000 });
+    pruefeDatenbank(join(ablage, basename(dbPath)));
+  } catch (error) {
+    rmSync(ablage, { recursive: true, force: true });
+    throw error;
+  }
 
   logAudit('backup.restore', backup.type, { id, path: backup.path }, userId);
 
-  if (backup.type === 'database') {
-    copyFileSync(backup.path, dbPath);
-    // Alte WAL/SHM entfernen, sonst wird die wiederhergestellte DB überschrieben
-    for (const ext of ['-wal', '-shm']) {
-      try { if (existsSync(dbPath + ext)) unlinkSync(dbPath + ext); } catch { /* egal */ }
-    }
-  } else if (backup.type === 'full') {
-    await execAsync(`tar -xzf "${backup.path}" -C /app/data`, { timeout: 120000 });
-  } else {
-    throw new Error('Unbekannter Backup-Typ');
-  }
-
-  // Neustart erzwingen (Container hat restart: unless-stopped) — DB vorher sauber
-  // schließen, damit keine WAL-Reste die wiederhergestellte Datei überschreiben.
+  // Verzögert, damit die Antwort noch rausgeht. Ab db.close() läuft alles
+  // synchron — kein anderer Zugriff kann dazwischenkommen.
   setTimeout(() => {
-    try { db.close(); } catch { /* egal */ }
-    process.exit(0);
-  }, 800);
+    try {
+      db.close();
+      for (const ext of ['-wal', '-shm']) rmSync(dbPath + ext, { force: true });
+      cpSync(ablage, dirname(dbPath), { recursive: true, force: true, filter: (q) => !/-(wal|shm)$/.test(q) });
+    } catch (error) {
+      console.error('Wiederherstellung fehlgeschlagen:', error.message);
+    } finally {
+      rmSync(ablage, { recursive: true, force: true });
+      neustart();
+    }
+  }, verzoegerungMs);
   return { success: true, restart: true };
 }
 
