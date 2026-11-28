@@ -7,8 +7,8 @@
 // die Route selbst nichts schreibt. So fällt eine neue Route nicht durchs Raster.
 import { anfrageKontext, logAudit } from '../services/audit.js';
 
-const BEREICHE = new Set(['docker', 'servers', 'services', 'maintenance', 'templates', 'gameservers', 'minecraft',
-  'pelican', 'proxmox', 'files', 'shares', 'backup', 'tunnels', 'bots', 'alerts']);
+const BEREICHE = new Set(['docker', 'servers', 'services', 'maintenance', 'templates', 'minecraft',
+  'proxmox', 'files', 'shares', 'backup', 'tunnels', 'bots', 'alerts']);
 
 const NAMEN = [
   ['POST', /^docker\/(images|volumes|system)\/prune$/, (m) => `docker.prune.${m[1]}`],

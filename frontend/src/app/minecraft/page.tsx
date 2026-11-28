@@ -20,10 +20,6 @@ import {
 import { PageTransition } from '@/components/ui/PageTransition';
 import { YamlFormEditor } from '@/components/dashboard/YamlFormEditor';
 import { useAuthStore } from '@/stores/authStore';
-import { useGameservers } from '@/hooks/useGameservers';
-import { SchedulesPanel } from '@/components/gameserver/SchedulesPanel';
-import { StartupPanel } from '@/components/gameserver/StartupPanel';
-import { PerformancePanel } from '@/components/gameserver/PerformancePanel';
 
 const API_BASE = typeof window !== 'undefined'
   ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api`
@@ -45,8 +41,7 @@ async function mcApi(endpoint: string, options?: RequestInit) {
   return res.json().catch(() => ({}));
 }
 
-// provider 'pelican': Server aus dem Pelican-Panel (Konsole/Dateien/Backups über Wings), sonst mc-agent.
-interface McServer { id: string; name: string; host: string; version: string; map?: string; provider?: string }
+interface McServer { id: string; name: string; host: string; version: string; map?: string }
 
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '').replace(/\r/g, '');
 function fmtSize(b: number): string { if (!b) return '0 B'; const u = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(1024)); return `${zahl(b / Math.pow(1024, i), 1)} ${u[i]}`; }
@@ -125,7 +120,7 @@ function Avatar({ name, size = 32 }: { name: string; size?: number }) {
   return <img key={stage} src={src} alt={name} onError={() => setStage(stage + 1)} style={{ width: px, height: px, imageRendering: 'pixelated' }} className="rounded-md" />;
 }
 
-type Tab = 'console' | 'performance' | 'players' | 'world' | 'config' | 'files' | 'plugins' | 'backups' | 'automation' | 'startup' | 'map';
+type Tab = 'console' | 'performance' | 'players' | 'world' | 'config' | 'files' | 'plugins' | 'backups' | 'automation' | 'map';
 const MAP_URL = 'https://map.mas0n1x.online';
 
 function StatCard({ icon: Icon, label, value, sub, percent, color }: { icon: any; label: string; value: string; sub?: string; percent?: number; color: string }) {
@@ -247,8 +242,6 @@ export default function MinecraftPage() {
     // Karten-Tab verlassen, wenn der neue Server keine Karte hat
     const target = servers.find(s => s.id === id);
     if (tab === 'map' && !target?.map) setTab('console');
-    if (target?.provider === 'pelican' && (tab === 'world' || tab === 'plugins')) setTab('console');
-    if (target?.provider !== 'pelican' && tab === 'startup') setTab('console');
     setTimeout(refreshStatus, 0);
   };
 
@@ -361,19 +354,11 @@ export default function MinecraftPage() {
   const restoreBackup = async (b: any) => { if (!confirm(`Backup "${b.name}" wiederherstellen? Aktuelle Welt wird überschrieben!`)) return; setBusy(true); const r = await mcApi(`/backups/${encodeURIComponent(b.id ?? b.name)}/restore`, { method: 'POST' }); setBusy(false); flash(r.error || 'Backup wiederhergestellt'); };
   const deleteBackup = async (b: any) => { if (!confirm(`Backup "${b.name}" löschen?`)) return; await mcApi(`/backups/${encodeURIComponent(b.id ?? b.name)}`, { method: 'DELETE' }); loadBackups(); };
 
-  const isPelican = activeMc?.provider === 'pelican';
-  const { data: gsData } = useGameservers();
-  const pelicanServer = isPelican ? gsData?.servers.find(g => `pelican:${g.id}` === serverId) : undefined;
   const running = status.running;
   const statusColor = status.error ? '#6b7280' : running ? '#10b981' : '#ef4444';
-  const statusText = status.error ? (isPelican ? 'Pelican nicht erreichbar' : 'Agent nicht erreichbar') : status.label || (running ? (status.health === 'healthy' ? 'Läuft' : 'Startet…') : 'Gestoppt');
+  const statusText = status.error ? 'Agent nicht erreichbar' : status.label || (running ? (status.health === 'healthy' ? 'Läuft' : 'Startet…') : 'Gestoppt');
   const mapUrl = activeMc ? (activeMc.map || '') : MAP_URL;
-  // Welt/Plugins/Karte kennt nur der mc-agent; Pelican-Server bekommen dafür Start-Optionen.
-  const TABS: [Tab, string, any][] = isPelican ? [
-    ['console', 'Konsole', TerminalSquare], ['performance', 'Leistung', Activity], ['players', 'Spieler', Users],
-    ['config', 'Konfiguration', SlidersHorizontal], ['files', 'Dateien', Folder],
-    ['backups', 'Backups', Archive], ['automation', 'Zeitpläne', CalendarClock], ['startup', 'Start-Optionen', Cpu],
-  ] : [
+  const TABS: [Tab, string, any][] = [
     ['console', 'Konsole', TerminalSquare], ['performance', 'Leistung', Activity], ['players', 'Spieler', Users], ['world', 'Welt', Globe],
     ['config', 'Konfiguration', SlidersHorizontal], ['files', 'Dateien', Folder], ['plugins', 'Plugins', Puzzle],
     ['backups', 'Backups', Archive], ['automation', 'Automatik', CalendarClock],
@@ -461,8 +446,7 @@ export default function MinecraftPage() {
         )}
 
         {/* Leistung */}
-        {tab === 'performance' && isPelican && pelicanServer && <PerformancePanel key={serverId} api={mcApi} server={pelicanServer} />}
-        {tab === 'performance' && !(isPelican && pelicanServer) && (
+        {tab === 'performance' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard icon={Zap} label="TPS (Ticks/Sek.)" value={perf.tps != null ? zahl(Number(perf.tps), 1) : '—'} sub={perf.tps >= 19.5 ? 'flüssig' : perf.tps >= 15 ? 'leichte Last' : perf.tps != null ? 'überlastet' : ''} percent={perf.tps != null ? (perf.tps / 20) * 100 : 0} color={perf.tps >= 19 ? '#10b981' : perf.tps >= 15 ? '#f59e0b' : '#ef4444'} />
@@ -793,7 +777,7 @@ export default function MinecraftPage() {
         {tab === 'backups' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-white/55">{backups.length} Backup{backups.length !== 1 ? 's' : ''} · {isPelican ? 'in Pelican' : 'auf dem VPS'}</p>
+              <p className="text-sm text-white/55">{backups.length} Backup{backups.length !== 1 ? 's' : ''} · auf dem VPS</p>
               <button disabled={busy} onClick={createBackup} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-30 transition"><Plus className="w-4 h-4" /> {busy ? 'Erstelle…' : 'Backup erstellen'}</button>
             </div>
             <div className="glass-card rounded-2xl divide-y divide-white/[0.04]">
@@ -811,9 +795,7 @@ export default function MinecraftPage() {
         )}
 
         {/* Automatik */}
-        {tab === 'automation' && isPelican && <SchedulesPanel key={serverId} api={mcApi} flash={flash} />}
-        {tab === 'startup' && isPelican && <StartupPanel key={serverId} api={mcApi} flash={flash} />}
-        {tab === 'automation' && !isPelican && (
+        {tab === 'automation' && (
           <div className="space-y-4">
             {/* Auto-Backups */}
             <div className="glass-card rounded-2xl p-5">

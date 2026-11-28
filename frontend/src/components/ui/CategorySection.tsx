@@ -6,14 +6,13 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { ChevronDown, Server, Box, Gamepad2, Briefcase, User, Boxes, type LucideIcon } from 'lucide-react';
+import { ChevronDown, Server, Box, Briefcase, User, Boxes, type LucideIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Infra: Server,
   Minecraft: Box,
-  'Game-Server': Gamepad2,
   LawNet: Briefcase,
   'Persönliches': User,
   Sonstiges: Boxes,
@@ -31,7 +30,7 @@ interface Props {
   children: ReactNode;
 }
 
-// Aufklappbarer Kategorie-Abschnitt (Infra, Minecraft, Game-Server …): die Kategorien stehen
+// Aufklappbarer Kategorie-Abschnitt (Infra, Minecraft …): die Kategorien stehen
 // untereinander, jede lässt sich einzeln auf- und zuklappen.
 export function CategorySection({ name, detail, running, total, open, onToggle, children }: Props) {
   const Icon = CATEGORY_ICONS[name] || Boxes;

@@ -62,14 +62,6 @@ export default function DockerPage() {
   const { data: networks } = useQuery({ queryKey: ['networks', activeServerId], queryFn: () => api.getNetworks(activeServerId), enabled: activeTab === 'networks' });
   const { data: ports } = useQuery({ queryKey: ['ports', activeServerId], queryFn: () => api.getPorts(activeServerId), enabled: activeTab === 'ports' });
 
-  // Anzeigenamen der Pelican-Spielserver (deren Container heißen nur nach der UUID).
-  const { data: pelicanServers } = useQuery({
-    queryKey: ['pelican-servers'],
-    queryFn: () => api.getPelicanServers(),
-    staleTime: 60000,
-    retry: false,
-  });
-  const gameServerNames = new Map<string, string>((pelicanServers || []).map(g => [g.uuid.toLowerCase(), g.name]));
 
   // Service-Links (URL) je Projekt — gleiche Daten wie der frühere Services-Tab.
   const { data: servicesData } = useQuery({
@@ -223,7 +215,7 @@ export default function DockerPage() {
                   className="flex-1 min-w-0 flex items-center gap-3 p-3.5 hover:bg-white/[0.02] transition-colors text-left"
                 >
                   {expandedProjects.has(projectName) ? <ChevronDown className="w-4 h-4 text-white/55 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-white/55 flex-shrink-0" />}
-                  <span className="font-medium truncate">{projectLabel(projectName, gameServerNames)}</span>
+                  <span className="font-medium truncate">{projectLabel(projectName)}</span>
                   <span className="text-xs text-white/50 flex-shrink-0 hidden sm:inline">{projectContainers.length} Container</span>
                   <span className={clsx('text-xs flex-shrink-0', projRunning === projectContainers.length ? 'text-emerald-400' : 'text-amber-400')}>{projRunning} laufend</span>
                 </button>

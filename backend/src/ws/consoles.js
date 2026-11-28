@@ -3,36 +3,18 @@
  * Copyright (c) 2024-2026 DEV Mas0n1x.
  * Licensed under the MIT License.
  */
-// Konsolen-Proxys für Minecraft und Pelican
+// Konsolen-Proxy für Minecraft
 import { WebSocketServer, WebSocket } from 'ws';
 import { verifyToken } from '../middleware/auth.js';
 import { merkeSitzung } from '../services/sitzungen.js';
 import { getServer as getMcServer, accessHeaders as mcAccessHeaders } from '../services/mcServers.js';
-import * as gameservers from '../services/gameservers.js';
 
 // Minecraft-Live-Konsole: WebSocket-Proxy zum MC-Agent (Agent-Token bleibt server-seitig)
 export const mcConsoleWss = new WebSocketServer({ noServer: true });
-// Pelican-Spielserver: Konsole kommt per WebSocket von Wings, nicht vom mc-agent.
-// Gleiches Protokoll wie beim Agent ({type:'log'|'error'|…} raus, {type:'command'} rein).
-export const gsConsoleWss = new WebSocketServer({ noServer: true });
-async function gameserverKonsole(client, req) {
-  try {
-    const u = new URL(req.url, `http://${req.headers.host}`);
-    merkeSitzung(verifyToken(u.searchParams.get('token') || '').id, client);
-    const id = (u.searchParams.get('server') || '').replace(/^pelican:/, '');
-    const server = await gameservers.getServer(id);
-    gameservers.konsoleAnhaengen(client, server);
-  } catch (e) {
-    client.close(e?.status === 404 ? 4004 : 4001, 'Unauthorized');
-  }
-}
-gsConsoleWss.on('connection', gameserverKonsole);
-
 mcConsoleWss.on('connection', (client, req) => {
   let mcServer = null;
   try {
     const u = new URL(req.url, `http://${req.headers.host}`);
-    if ((u.searchParams.get('server') || '').startsWith('pelican:')) { gameserverKonsole(client, req); return; }
     merkeSitzung(verifyToken(u.searchParams.get('token') || '').id, client);
     mcServer = getMcServer(u.searchParams.get('server') || '');
   } catch { client.close(4001, 'Unauthorized'); return; }

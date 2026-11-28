@@ -36,8 +36,6 @@ import trafficRoutes from './routes/traffic.js';
 import salenetRoutes from './routes/salenet.js';
 import businessRoutes from './routes/business.js';
 import proxmoxRoutes from './routes/proxmox.js';
-import pelicanRoutes from './routes/pelican.js';
-import gameserverRoutes from './routes/gameservers.js';
 import statusRoutes from './routes/status.js';
 import timeRoutes from './routes/time.js';
 import etsyRoutes, { createEtsyCallback } from './routes/etsy.js';
@@ -49,7 +47,7 @@ import botsRoutes, { createBotWebhookPassthrough, createBotEventsIngest } from '
 import filesRoutes from './routes/files.js';
 import { sharesAdminRoutes, sharePublicRoutes } from './routes/shares.js';
 import { wss, broadcast } from './ws/dashboard.js';
-import { mcConsoleWss, gsConsoleWss } from './ws/consoles.js';
+import { mcConsoleWss } from './ws/consoles.js';
 import { starteJobs } from './jobs/index.js';
 import { protokolliereAenderungen } from './middleware/audit.js';
 import { botServerStatus } from './routes/intern.js';
@@ -124,8 +122,6 @@ app.use('/api/traffic', trafficRoutes);
 app.use('/api/salenet', salenetRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/proxmox', proxmoxRoutes);
-app.use('/api/pelican', pelicanRoutes);
-app.use('/api/gameservers', gameserverRoutes);
 app.use('/api/status', statusRoutes);
 app.use('/api/time', timeRoutes);
 app.use('/api/etsy', etsyRoutes);
@@ -164,8 +160,6 @@ server.on('upgrade', (req, socket, head) => {
     wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
   } else if (pathname === '/api/minecraft/console') {
     mcConsoleWss.handleUpgrade(req, socket, head, (ws) => mcConsoleWss.emit('connection', ws, req));
-  } else if (pathname === '/api/gameservers/console') {
-    gsConsoleWss.handleUpgrade(req, socket, head, (ws) => gsConsoleWss.emit('connection', ws, req));
   } else {
     socket.destroy();
   }
