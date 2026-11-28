@@ -20,6 +20,16 @@ http {
     gzip_vary on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml application/manifest+json;
 
+    # Zugriffsprotokoll ohne Abfrageteil, Referrer und Freigabe-Token: darin stehen
+    # sonst Anmeldecodes und Download-Links im Klartext.
+    map $request_uri $log_pfad {
+        "~^(?<freigabe>/api/share/|/s/)[^/?]+(?<rest>[^?]*)" "$freigabe***$rest";
+        "~^(?<pfad>[^?]*)" $pfad;
+    }
+    log_format ohne_geheimnisse '$remote_addr [$time_local] "$request_method $log_pfad $server_protocol" '
+                                '$status $body_bytes_sent "$http_user_agent"';
+    access_log /var/log/nginx/access.log ohne_geheimnisse;
+
     # Rate limiting for auth endpoints (brute-force protection)
     limit_req_zone $binary_remote_addr zone=auth:10m rate=5r/s;
 

@@ -12,6 +12,7 @@ import { PageTransition } from '@/components/ui/PageTransition';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useServerStore } from '@/stores/serverStore';
 import { useAuthStore } from '@/stores/authStore';
+import { authSocket } from '@/lib/session';
 
 export default function TerminalPage() {
   const { servers } = useServerStore();
@@ -70,7 +71,7 @@ export default function TerminalPage() {
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.port ? `${window.location.hostname}:${window.location.port}` : window.location.hostname;
-    const ws = new WebSocket(`${protocol}//${host}/ws?token=${encodeURIComponent(accessToken || '')}`);
+    const ws = authSocket(`${protocol}//${host}/ws`, accessToken || '');
     wsRef.current = ws;
 
     ws.onopen = () => {

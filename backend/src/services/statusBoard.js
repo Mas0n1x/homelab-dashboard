@@ -5,6 +5,7 @@
  */
 import { getDb } from './database.js';
 import serverManager from './serverManager.js';
+import { summenSeit, tageSeit, letztePruefungen } from './uptimeRollup.js';
 import { getDiscoverySnapshot } from './discovery.js';
 import { getVanishedServices, getFirstSeenMap } from './serviceRegistry.js';
 
@@ -27,42 +28,19 @@ export function buildStatusBoard(days = 30) {
   const since7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const newCutoff = new Date(Date.now() - NEW_FOR_HOURS * 60 * 60 * 1000).toISOString();
 
-  // Alle Kennzahlen als je EINE gruppierte Abfrage über den ganzen Zeitraum,
-  // statt vier Abfragen pro Dienst. Bei ~60 Diensten sind das 4 statt 240.
-  const agg = (since) => {
-    const rows = db.prepare(`
-      SELECT service_id, server_id, COUNT(*) AS total, SUM(online) AS up, AVG(response_time) AS rt
-      FROM uptime_checks WHERE checked_at > ? GROUP BY service_id, server_id
-    `).all(since);
-    const map = new Map();
-    for (const r of rows) map.set(`${r.server_id}|${r.service_id}`, r);
-    return map;
-  };
+  // Alle Kennzahlen aus den Stundenwerten, je EINE gruppierte Abfrage.
+  const nachDienst = (rows) => new Map(rows.map(r => [`${r.server_id}|${r.service_id}`, r]));
+  const agg24 = nachDienst(summenSeit(db, since24));
+  const agg7 = nachDienst(summenSeit(db, since7));
 
-  const agg24 = agg(since24);
-  const agg7 = agg(since7);
-
-  const dayRows = db.prepare(`
-    SELECT service_id, server_id, date(checked_at) AS day, COUNT(*) AS total, SUM(online) AS up
-    FROM uptime_checks WHERE checked_at > ? GROUP BY service_id, server_id, date(checked_at)
-  `).all(sinceDays);
   const byDay = new Map();
-  for (const r of dayRows) {
+  for (const r of tageSeit(db, sinceDays)) {
     const key = `${r.server_id}|${r.service_id}`;
     if (!byDay.has(key)) byDay.set(key, new Map());
     byDay.get(key).set(r.day, r);
   }
 
-  // Letzter Check je Dienst — mit einem Fensterausdruck statt N Einzelabfragen.
-  const lastRows = db.prepare(`
-    SELECT service_id, server_id, online, response_time, checked_at FROM (
-      SELECT service_id, server_id, online, response_time, checked_at,
-             ROW_NUMBER() OVER (PARTITION BY server_id, service_id ORDER BY checked_at DESC) AS rn
-      FROM uptime_checks WHERE checked_at > ?
-    ) WHERE rn = 1
-  `).all(since7);
-  const lastCheck = new Map();
-  for (const r of lastRows) lastCheck.set(`${r.server_id}|${r.service_id}`, r);
+  const lastCheck = nachDienst(letztePruefungen(db, since7));
 
   // Tagesraster einmal vorbereiten — für jeden Dienst identisch.
   const dayKeys = [];

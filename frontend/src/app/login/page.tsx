@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Lock, User, Activity, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { AUTH_HEADERS } from '@/lib/session';
 import { Background } from '@/components/layout/Background';
 
 export default function LoginPage() {
@@ -28,7 +29,7 @@ export default function LoginPage() {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: AUTH_HEADERS,
         body: JSON.stringify({ username, password }),
       });
 

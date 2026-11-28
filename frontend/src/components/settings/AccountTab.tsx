@@ -10,12 +10,13 @@ import { useRouter } from 'next/navigation';
 import { Loader2, Shield, Lock } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useAuthStore } from '@/stores/authStore';
+import { beendeSitzung } from '@/lib/session';
 import * as api from '@/lib/api';
 import { SectionHeader } from './ui';
 
 export function AccountTab() {
   const router = useRouter();
-  const { logout, refreshToken } = useAuthStore();
+  const { logout } = useAuthStore();
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState(false);
@@ -36,13 +37,7 @@ export function AccountTab() {
       await api.changePassword(pwForm.currentPassword, pwForm.newPassword);
       setPwSuccess(true);
       setTimeout(async () => {
-        try {
-          await fetch('/api/auth/logout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
-          });
-        } catch {}
+        await beendeSitzung();
         logout();
         router.replace('/login');
       }, 1500);

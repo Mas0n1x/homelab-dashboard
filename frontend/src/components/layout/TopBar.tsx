@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { Wifi, WifiOff, Search, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
+import { beendeSitzung } from '@/lib/session';
 import { NotificationDropdown } from './NotificationDropdown';
 import { WeatherChip, WEATHER_LOCATIONS } from '@/components/dashboard/WeatherWidget';
 
@@ -18,7 +19,7 @@ interface TopBarProps {
 
 export function TopBar({ connected }: TopBarProps) {
   const router = useRouter();
-  const { logout, refreshToken } = useAuthStore();
+  const { logout } = useAuthStore();
   const [time, setTime] = useState('');
 
   // Die Uhr tickt nur, solange die Seite im Vordergrund ist UND sie überhaupt
@@ -55,15 +56,7 @@ export function TopBar({ connected }: TopBarProps) {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
-    } catch {
-      // ignore
-    }
+    await beendeSitzung();
     logout();
     router.replace('/login');
   };

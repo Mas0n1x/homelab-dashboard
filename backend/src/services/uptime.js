@@ -4,6 +4,7 @@
  * Licensed under the MIT License.
  */
 import { getDb } from './database.js';
+import { summenSeit } from './uptimeRollup.js';
 import http from 'node:http';
 import https from 'node:https';
 import net from 'node:net';
@@ -222,66 +223,14 @@ export function getUptimeTimeline(serviceId, days = 30) {
   };
 }
 
-// Komplettes Status-Board für eine Status-Seite: je Service 24h/7d-Uptime,
-// aktueller Zustand und eine Tages-Timeline über N Tage. Ein einziger Call.
-export function getStatusBoard(serverId = 'local', days = 30) {
-  const db = getDb();
-  const sinceDays = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-  const since24 = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const since7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  const svcIds = db.prepare(
-    'SELECT DISTINCT service_id FROM uptime_checks WHERE server_id = ? AND checked_at > ?'
-  ).all(serverId, sinceDays).map(r => r.service_id);
-
-  const out = {};
-  for (const sid of svcIds) {
-    const s24 = db.prepare('SELECT COUNT(*) t, SUM(online) up, AVG(response_time) rt FROM uptime_checks WHERE service_id = ? AND server_id = ? AND checked_at > ?').get(sid, serverId, since24);
-    const s7 = db.prepare('SELECT COUNT(*) t, SUM(online) up FROM uptime_checks WHERE service_id = ? AND server_id = ? AND checked_at > ?').get(sid, serverId, since7);
-    const last = db.prepare('SELECT online, checked_at, response_time FROM uptime_checks WHERE service_id = ? AND server_id = ? ORDER BY checked_at DESC LIMIT 1').get(sid, serverId);
-    const dayRows = db.prepare('SELECT date(checked_at) day, COUNT(*) t, SUM(online) up FROM uptime_checks WHERE service_id = ? AND server_id = ? AND checked_at > ? GROUP BY date(checked_at)').all(sid, serverId, sinceDays);
-
-    const timeline = [];
-    const now = new Date();
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const ds = d.toISOString().slice(0, 10);
-      const row = dayRows.find(r => r.day === ds);
-      timeline.push({ date: ds, uptime: row && row.t ? parseFloat((row.up / row.t * 100).toFixed(1)) : null, checks: row ? row.t : 0 });
-    }
-
-    out[sid] = {
-      uptime24h: s24.t ? parseFloat((s24.up / s24.t * 100).toFixed(1)) : null,
-      uptime7d: s7.t ? parseFloat((s7.up / s7.t * 100).toFixed(1)) : null,
-      avgResponseTime: Math.round(s24.rt || 0),
-      current: last ? !!last.online : null,
-      lastCheck: last ? last.checked_at : null,
-      timeline,
-    };
-  }
-  return out;
-}
-
 export function getUptimeSummary(serverId = 'local') {
   const db = getDb();
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  const services24h = db.prepare(`
-    SELECT service_id, COUNT(*) as total, SUM(online) as up,
-      AVG(response_time) as avg_response_time
-    FROM uptime_checks
-    WHERE server_id = ? AND checked_at > ?
-    GROUP BY service_id
-  `).all(serverId, since24h);
-
-  const services7d = db.prepare(`
-    SELECT service_id, COUNT(*) as total, SUM(online) as up
-    FROM uptime_checks
-    WHERE server_id = ? AND checked_at > ?
-    GROUP BY service_id
-  `).all(serverId, since7d);
+  const nurDieser = (rows) => rows.filter(r => r.server_id === serverId);
+  const services24h = nurDieser(summenSeit(db, since24h));
+  const services7d = nurDieser(summenSeit(db, since7d));
 
   // Entfernte Dienste (seit über 2 h nicht mehr entdeckt) zählen nicht mehr mit — sonst
   // drücken ihre alten Messungen einen Tag lang die Verfügbarkeit.
@@ -295,7 +244,7 @@ export function getUptimeSummary(serverId = 'local') {
     if (!vorhanden.has(s.service_id)) continue;
     summary[s.service_id] = {
       uptime24h: s.total > 0 ? parseFloat(((s.up / s.total) * 100).toFixed(1)) : null,
-      avgResponseTime: Math.round(s.avg_response_time || 0)
+      avgResponseTime: Math.round(s.rt || 0)
     };
   }
   for (const s of services7d) {

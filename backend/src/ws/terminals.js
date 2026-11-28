@@ -6,6 +6,7 @@
 // Terminals, Host-Shell und Log-Streams über WebSocket
 import fs from 'fs';
 import { Client as SSHClient } from 'ssh2';
+import { hostPruefung } from '../services/sshHostKeys.js';
 import serverManager from '../services/serverManager.js';
 import { logAudit } from '../services/audit.js';
 
@@ -154,7 +155,7 @@ export async function handleHostShellOpen(ws, data) {
     ws.send(JSON.stringify({ type: 'terminal-error', error: `SSH: ${err.message}` }));
   });
 
-  client.connect({ host, port, username, privateKey, readyTimeout: 15000, keepaliveInterval: 15000 });
+  client.connect({ host, port, username, privateKey, readyTimeout: 15000, keepaliveInterval: 15000, ...hostPruefung(host, port) });
 }
 
 export function handleTerminalInput(ws, data) {

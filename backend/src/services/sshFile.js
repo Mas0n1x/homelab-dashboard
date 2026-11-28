@@ -5,6 +5,7 @@
  */
 import { Client } from 'ssh2';
 import { readFileSync, existsSync } from 'fs';
+import { hostPruefung } from './sshHostKeys.js';
 
 // Eine Verbindung je Ziel wird wiederverwendet: der Handshake kostete sonst bei
 // jedem Klick im Datei-Explorer erneut Zeit. Nach einer Minute Ruhe wird getrennt.
@@ -25,6 +26,7 @@ function verbinde(sshConfig, eintrag, weg) {
       readyTimeout: 12000,
       keepaliveInterval: 15000,
       keepaliveCountMax: 2,
+      ...hostPruefung(sshConfig.ssh_host, sshConfig.ssh_port || 22),
     };
     if (keyPath && existsSync(keyPath)) {
       options.privateKey = readFileSync(keyPath);

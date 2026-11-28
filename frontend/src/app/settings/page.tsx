@@ -14,6 +14,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { EtsyConnection } from '@/components/settings/EtsyConnection';
 import { useAuthStore } from '@/stores/authStore';
 import { FleetTab } from '@/components/settings/FleetTab';
+import { HostKeysCard } from '@/components/settings/HostKeysCard';
 import { ServicesTab } from '@/components/settings/ServicesTab';
 import { AppearanceTab } from '@/components/settings/AppearanceTab';
 import { AlertsTab } from '@/components/settings/AlertsTab';
@@ -106,7 +107,12 @@ export default function SettingsPage() {
             <p className="text-xs text-white/50">{activeMeta.desc}</p>
           </div>
 
-          {activeTab === 'fleet' && <FleetTab />}
+          {activeTab === 'fleet' && (
+            <>
+              <FleetTab />
+              <HostKeysCard />
+            </>
+          )}
           {activeTab === 'services' && <ServicesTab />}
           {activeTab === 'appearance' && <AppearanceTab />}
           {activeTab === 'alerts' && <AlertsTab />}

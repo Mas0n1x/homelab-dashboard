@@ -4,6 +4,7 @@
  * Licensed under the MIT License.
  */
 import Database from 'better-sqlite3';
+import { initUptimeRollup, loescheRollupVor } from './uptimeRollup.js';
 import { existsSync } from 'fs';
 import { readFile, rename } from 'fs/promises';
 
@@ -456,6 +457,21 @@ export function initDatabase() {
     db.exec('ALTER TABLE users ADD COLUMN tokens_valid_after TEXT');
   }
 
+  // Gemerkte SSH-Hostschlüssel (siehe sshHostKeys.js)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ssh_host_keys (
+      host TEXT NOT NULL,
+      port INTEGER NOT NULL,
+      key_type TEXT NOT NULL,
+      fingerprint TEXT NOT NULL,
+      first_seen TEXT NOT NULL,
+      pending_fingerprint TEXT,
+      pending_type TEXT,
+      pending_since TEXT,
+      PRIMARY KEY (host, port)
+    )
+  `);
+
   // Index für die Zustandsabfragen der Alarme (laufen alle 30 s je Server und Kanal).
   db.exec('CREATE INDEX IF NOT EXISTS idx_alert_history_state ON alert_history(channel_id, event_type, sent_at)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_alert_history_sent ON alert_history(sent_at)');
@@ -493,6 +509,7 @@ export function initDatabase() {
   migrateMailCredentials();
 
   purgeLegacyUptimeHistory();
+  initUptimeRollup(db);
 
   return db;
 }
@@ -618,6 +635,7 @@ export function cleanupVerlaeufe({ alarmTage = 90, auditTage = 365 } = {}) {
 export function cleanupOldUptimeData() {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const result = db.prepare('DELETE FROM uptime_checks WHERE checked_at < ?').run(thirtyDaysAgo);
+  loescheRollupVor(db, thirtyDaysAgo);
   if (result.changes > 0) {
     console.log(`Cleaned up ${result.changes} old uptime records`);
   }

@@ -17,6 +17,7 @@ const execAsync = promisify(exec);
 import { basename, dirname, join, resolve } from 'path';
 import { Client as SSHClient } from 'ssh2';
 import { logAudit } from './audit.js';
+import { hostPruefung } from './sshHostKeys.js';
 import { notify } from './alerting.js';
 import { begleiter, loescheSicherung, veralteteDateien } from './backupDateien.js';
 import { sichereBotDatenbanken } from './botSicherung.js';
@@ -347,6 +348,7 @@ async function copyOffsite(dateien) {
         username: server.ssh_user || 'root',
         privateKey: readFileSync(keyPath),
         readyTimeout: 15000,
+        ...hostPruefung(server.ssh_host, server.ssh_port || 22),
       });
     });
     const quoted = `'${remoteDir.replace(/'/g, `'\\''`)}'`;

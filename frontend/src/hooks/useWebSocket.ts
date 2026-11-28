@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useServerStore } from '@/stores/serverStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useAuthStore } from '@/stores/authStore';
+import { authSocket } from '@/lib/session';
 
 export function useWebSocket() {
   const { activeServerId, setWsFallbackMode } = useServerStore();
@@ -30,9 +31,9 @@ export function useWebSocket() {
     const host = window.location.port
       ? `${window.location.hostname}:${window.location.port}`
       : window.location.hostname;
-    const wsUrl = `${protocol}//${host}/ws?token=${encodeURIComponent(accessToken)}`;
+    const wsUrl = `${protocol}//${host}/ws`;
 
-    const ws = new WebSocket(wsUrl);
+    const ws = authSocket(wsUrl, accessToken);
     wsRef.current = ws;
 
     ws.onopen = () => {

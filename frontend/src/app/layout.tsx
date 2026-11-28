@@ -12,6 +12,9 @@ import '@/styles/globals.css';
 const inter = Inter({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-inter', display: 'swap' });
 const mono = JetBrains_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-mono', display: 'swap' });
 
+// Jede Seite wird je Aufruf erzeugt, sonst trügen ihre Skripte kein CSP-Merkmal (proxy.ts).
+export const dynamic = 'force-dynamic';
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

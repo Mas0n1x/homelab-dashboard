@@ -5,6 +5,7 @@
  */
 import { getDb } from './database.js';
 import serverManager from './serverManager.js';
+import { listeHostSchluessel } from './sshHostKeys.js';
 import { getAlertOverview, getMaintenance } from './alerting.js';
 import { buildStatusBoard } from './statusBoard.js';
 import { getDiskForecast } from './diskForecast.js';
@@ -41,6 +42,13 @@ export function buildAttention() {
       if (wartung) continue; // geplant: unter „Wartung" aufgeführt
       add('critical', 'offline', `${s.name} ist nicht erreichbar`, s.lastSeen ? `Letzter Kontakt ${new Date(s.lastSeen).toLocaleString('de-DE')}` : 'Noch kein Kontakt seit dem Start', `/server/${s.id}`, s.id);
     }
+  }
+
+  // Geänderter SSH-Hostschlüssel: der Server ist gesperrt, bis das geklärt ist
+  for (const k of listeHostSchluessel()) {
+    if (!k.pending) continue;
+    add('critical', 'hostkey', `SSH-Schlüssel von ${k.servers.join(', ') || k.host} hat sich geändert`,
+      'Verbindung gesperrt — unter Einstellungen → Fleet prüfen', '/settings', `${k.host}:${k.port}`);
   }
 
   // 2) Aktive Schwellwert-Alarme (mit Hysterese, Overrides und Wartung berücksichtigt)

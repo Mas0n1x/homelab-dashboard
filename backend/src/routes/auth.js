@@ -10,6 +10,7 @@ import * as authService from '../services/auth.js';
 import { logAudit } from '../services/audit.js';
 import { clientIp } from '../middleware/clientIp.js';
 import { schliesseSitzungen } from '../services/sitzungen.js';
+import { istBrowser, setzeCookie, loescheCookie, tokenAusCookie } from '../middleware/sitzungsCookie.js';
 
 const router = Router();
 
@@ -71,9 +72,10 @@ router.post('/login', async (req, res) => {
 
     logAudit('auth.login', user.username, null, user.id);
 
+    setzeCookie(req, res, refreshToken);
     res.json({
       accessToken,
-      refreshToken,
+      ...(istBrowser(req) ? {} : { refreshToken }),
       user: { id: user.id, username: user.username },
       setupCompleted: setupCompleted?.value === 'true',
     });
@@ -86,9 +88,11 @@ router.post('/login', async (req, res) => {
 // POST /api/auth/refresh
 router.post('/refresh', (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    // Token im Anfragetext (Altbestand, Skripte) hat Vorrang vor dem Cookie.
+    const ausText = typeof req.body?.refreshToken === 'string' ? req.body.refreshToken : null;
+    const refreshToken = ausText || tokenAusCookie(req);
     if (!refreshToken) {
-      return res.status(400).json({ error: 'Refresh token required' });
+      return res.status(401).json({ error: 'Refresh token required' });
     }
 
     const tokenRecord = authService.validateRefreshToken(refreshToken);
@@ -108,9 +112,10 @@ router.post('/refresh', (req, res) => {
     const newRefreshToken = authService.generateRefreshToken();
     authService.storeRefreshToken(user.id, newRefreshToken);
 
+    setzeCookie(req, res, newRefreshToken);
     res.json({
       accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
+      ...(istBrowser(req) ? {} : { refreshToken: newRefreshToken }),
       user: { id: user.id, username: user.username },
     });
   } catch (error) {
@@ -121,10 +126,11 @@ router.post('/refresh', (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
-  const { refreshToken } = req.body;
-  if (refreshToken) {
-    authService.revokeRefreshToken(refreshToken);
+  const ausText = typeof req.body?.refreshToken === 'string' ? req.body.refreshToken : null;
+  for (const token of [ausText, tokenAusCookie(req)]) {
+    if (token) authService.revokeRefreshToken(token);
   }
+  loescheCookie(req, res);
   res.json({ ok: true });
 });
 
@@ -161,6 +167,7 @@ router.put('/password', authenticateToken, async (req, res) => {
     schliesseSitzungen(user.id);
 
     logAudit('auth.password_change', req.user.username, null, req.user.id);
+    loescheCookie(req, res);
 
     res.json({ ok: true, message: 'Passwort geändert. Bitte erneut anmelden.' });
   } catch (error) {

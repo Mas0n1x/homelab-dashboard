@@ -8,6 +8,7 @@ import { WebSocketServer } from 'ws';
 import serverManager from '../services/serverManager.js';
 import { verifyToken } from '../middleware/auth.js';
 import { merkeSitzung } from '../services/sitzungen.js';
+import { tokenAusAnfrage } from './token.js';
 import { handleTerminalOpen, handleHostShellOpen, handleTerminalInput, handleTerminalResize, handleLogStream, stopLogStream, cleanupLogSessions, cleanupTerminalSession } from './terminals.js';
 import { withTimeout } from '../jobs/hilfen.js';
 
@@ -18,11 +19,10 @@ export const wss = new WebSocketServer({ noServer: true });
 const clients = new Map();
 
 wss.on('connection', (ws, req) => {
-  // Verify JWT token from query parameter
+  // Anmeldung über das Unterprotokoll, siehe token.js
   let benutzer;
   try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const token = url.searchParams.get('token');
+    const token = tokenAusAnfrage(req);
     if (!token) {
       ws.close(4001, 'Unauthorized');
       return;

@@ -4,6 +4,7 @@
  * Licensed under the MIT License.
  */
 import { getDb } from './database.js';
+import { loescheRollupFuer } from './uptimeRollup.js';
 
 // Wie lange ein verschwundener Dienst noch als „entfernt" auf der Statusseite
 // steht. Puffer für einen Redeploy oder Neustart, der ein paar Minuten dauert.
@@ -90,6 +91,7 @@ export function purgeVanishedServices() {
   db.transaction(() => {
     for (const g of gone) {
       delChecks.run(g.service_id, g.server_id);
+      loescheRollupFuer(db, g.service_id, g.server_id);
       delOverride.run(g.service_id, g.server_id);
       delEntry.run(g.service_id, g.server_id);
     }

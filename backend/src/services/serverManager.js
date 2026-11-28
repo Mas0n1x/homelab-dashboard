@@ -9,6 +9,7 @@ import { getDb } from './database.js';
 import { createGlancesClient } from './glances.js';
 import { createProxmoxGuestClient } from './proxmoxGuest.js';
 import { createSshDockerAgent } from './sshDockerAgent.js';
+import { hostPruefung } from './sshHostKeys.js';
 import { istKonfiguriert as proxmoxKonfiguriert, blockSpeicher, laufendeGaeste } from './proxmox.js';
 
 class ServerManager {
@@ -56,6 +57,7 @@ class ServerManager {
           port: serverConfig.ssh_port || 22,
           username: serverConfig.ssh_user || 'root',
           ...sshOptions,
+          ...hostPruefung(serverConfig.ssh_host, serverConfig.ssh_port || 22),
         }, serverConfig.id);
 
         // Kein dockerode-`timeout` hier: der Transport ist ein ssh2-Stream

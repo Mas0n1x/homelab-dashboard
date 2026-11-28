@@ -20,6 +20,7 @@ import {
 import { PageTransition } from '@/components/ui/PageTransition';
 import { YamlFormEditor } from '@/components/dashboard/YamlFormEditor';
 import { useAuthStore } from '@/stores/authStore';
+import { authSocket } from '@/lib/session';
 
 const API_BASE = typeof window !== 'undefined'
   ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api`
@@ -255,7 +256,7 @@ export default function MinecraftPage() {
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.port ? `${window.location.hostname}:${window.location.port}` : window.location.hostname;
       setLogs('');
-      ws = new WebSocket(`${proto}//${host}/api/minecraft/console?token=${encodeURIComponent(accessToken || '')}&server=${encodeURIComponent(serverId)}`);
+      ws = authSocket(`${proto}//${host}/api/minecraft/console?server=${encodeURIComponent(serverId)}`, accessToken || '');
       consoleWsRef.current = ws;
       ws.onopen = () => setWsConnected(true);
       ws.onmessage = (ev) => {

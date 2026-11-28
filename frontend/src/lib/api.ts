@@ -4,8 +4,9 @@
  * Licensed under the MIT License.
  */
 import { useAuthStore } from '@/stores/authStore';
+import { erneuereSitzung } from '@/lib/session';
 import type {
-  MetricSample, TunnelInfo, ServiceStatusEntry,
+  MetricSample, TunnelInfo,
   Task, TaskInput, TaskStatus, TaskSubtask,
   StatusBoard, FleetChange, TimeEntry, TimeSummary, BillingRate, BillingProfile, InvoiceDraft,
   ImageUpdateSummary, DiskForecast, EtsyStatus, EtsyOrders,
@@ -21,19 +22,14 @@ let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
 async function refreshAccessToken(): Promise<boolean> {
-  const { refreshToken, setTokens, logout } = useAuthStore.getState();
-  if (!refreshToken) return false;
+  const { setAccessToken, logout } = useAuthStore.getState();
 
   try {
-    const res = await fetch(`${API_BASE}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
+    const res = await erneuereSitzung(API_BASE);
 
     if (res.ok) {
       const data = await res.json();
-      setTokens(data.accessToken, data.refreshToken);
+      setAccessToken(data.accessToken);
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
@@ -188,8 +184,15 @@ export const getTunnels = () => fetchApi<TunnelInfo[]>('/tunnels');
 export const getUptimeSummary = (serverId = 'local') => fetchApi(`/uptime/summary?serverId=${serverId}`);
 export const getUptimeHistory = (serviceId: string, hours = 24) => fetchApi(`/uptime/${serviceId}?hours=${hours}`);
 export const getUptimeTimeline = (serviceId: string, days = 30) => fetchApi(`/uptime/timeline/${serviceId}?days=${days}`);
-export const getUptimeStatus = (serverId = 'local', days = 30) =>
-  fetchApi<Record<string, ServiceStatusEntry>>(`/uptime/status?serverId=${serverId}&days=${days}`);
+
+// SSH-Hostschlüssel
+export interface HostKey {
+  host: string; port: number; servers: string[]; keyType: string; fingerprint: string; firstSeen: string;
+  pending: { fingerprint: string; keyType: string; since: string } | null;
+}
+export const getHostKeys = () => fetchApi<HostKey[]>('/servers/hostkeys');
+export const acceptHostKey = (host: string, port: number, fingerprint: string) =>
+  fetchApi('/servers/hostkeys/accept', { method: 'POST', body: JSON.stringify({ host, port, fingerprint }) });
 
 // Portfolio
 export const getPortfolioDashboard = () => fetchApi('/portfolio/dashboard');

@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import serverManager from '../services/serverManager.js';
 import { statusUebersicht } from '../services/statusSummary.js';
+import { listeHostSchluessel, nimmHostSchluesselAn } from '../services/sshHostKeys.js';
 
 const router = Router();
 
@@ -25,6 +26,29 @@ router.get('/status-summary', async (req, res) => {
     res.json(await statusUebersicht());
   } catch (error) {
     res.status(500).json({ error: 'Failed to build status summary', message: error.message });
+  }
+});
+
+// Gemerkte SSH-Hostschlüssel
+router.get('/hostkeys', (req, res) => {
+  try {
+    res.json(listeHostSchluessel());
+  } catch (error) {
+    res.status(500).json({ error: 'SSH-Schlüssel konnten nicht geladen werden', message: error.message });
+  }
+});
+
+// Geänderten Schlüssel annehmen — nur genau den, der angezeigt wurde
+router.post('/hostkeys/accept', (req, res) => {
+  try {
+    const { host, port, fingerprint } = req.body;
+    if (!host || !port || !fingerprint) return res.status(400).json({ error: 'host, port und fingerprint erforderlich' });
+    if (!nimmHostSchluesselAn(host, Number(port), fingerprint, req.user.id)) {
+      return res.status(409).json({ error: 'Der wartende Schlüssel hat sich inzwischen geändert' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Schlüssel konnte nicht angenommen werden', message: error.message });
   }
 });
 
