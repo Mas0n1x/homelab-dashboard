@@ -391,6 +391,22 @@ export const updateBookmark = (id: string, data: Record<string, unknown>) =>
 export const deleteBookmark = (id: string) =>
   fetchApi(`/bookmarks/${id}`, { method: 'DELETE' });
 
+// Zugänge (Seite „Zugänge") — siehe backend/src/routes/zugaenge.js
+export interface Zugang { id: string; name: string; url: string; kategorie: string; beschreibung: string; benutzer: string }
+export type ZugangEingabe = Omit<Zugang, 'id'>;
+export const getZugaenge = () => fetchApi<Zugang[]>('/zugaenge');
+// Fehlertext des Backends durchreichen, damit im Formular steht, was falsch ist.
+async function zugangAnfrage(endpoint: string, methode: 'POST' | 'PUT' | 'DELETE', body?: unknown): Promise<void> {
+  const res = await authedFetch(endpoint, { method: methode, body: body ? JSON.stringify(body) : undefined });
+  if (!res.ok) {
+    const daten = await res.json().catch(() => ({}));
+    throw new Error(daten.error || `Fehler ${res.status}`);
+  }
+}
+export const addZugang = (data: ZugangEingabe) => zugangAnfrage('/zugaenge', 'POST', data);
+export const updateZugang = (id: string, data: ZugangEingabe) => zugangAnfrage(`/zugaenge/${id}`, 'PUT', data);
+export const deleteZugang = (id: string) => zugangAnfrage(`/zugaenge/${id}`, 'DELETE');
+
 // Notes
 export const getNotes = () => fetchApi('/notes');
 export const addNote = (data: { title: string; content?: string; color?: string }) =>

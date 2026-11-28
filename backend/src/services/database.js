@@ -191,6 +191,19 @@ export function initDatabase() {
       created_at TEXT DEFAULT (datetime('now'))
     );
 
+    -- Seite „Zugänge": Absprungziele zu allen Diensten. Bewusst ohne Passwortfeld,
+    -- Passwörter gehören in den Passwort-Manager.
+    CREATE TABLE IF NOT EXISTS zugaenge (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      kategorie TEXT NOT NULL DEFAULT 'Sonstiges',
+      beschreibung TEXT DEFAULT '',
+      benutzer TEXT DEFAULT '',
+      sort_order INTEGER DEFAULT 999,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS notes (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
