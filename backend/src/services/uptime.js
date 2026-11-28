@@ -5,137 +5,40 @@
  */
 import { getDb } from './database.js';
 import { summenSeit } from './uptimeRollup.js';
-import http from 'node:http';
-import https from 'node:https';
-import net from 'node:net';
+import serverManager from './serverManager.js';
+import { pruefeDienst } from './dienstPruefung.js';
 
-const CHECK_TIMEOUT = 8000;
-
-// Private/Loopback-Hosts, die der Backend-Container NICHT direkt erreicht.
-// Für lokale Dienste läuft der Zugriff über das Host-Gateway.
-function isPrivateHost(hostname) {
-  return hostname === 'localhost' ||
-    /^127\./.test(hostname) ||
-    /^192\.168\./.test(hostname) ||
-    /^10\./.test(hostname) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname);
-}
-
-// Der Checker läuft IM Container. Lokale LAN-/Loopback-URLs sind von dort nicht
-// erreichbar -> auf host.docker.internal umbiegen. Öffentliche Domains bleiben.
-function toReachableUrl(serverId, url) {
-  if (serverId !== 'local') return url;
-  try {
-    const u = new URL(url);
-    if (isPrivateHost(u.hostname)) {
-      u.hostname = 'host.docker.internal';
-      return u.toString();
-    }
-  } catch { /* ungueltige URL -> unveraendert lassen */ }
-  return url;
-}
-
-// HTTP(S)-Probe über node:http/https. Wichtig: rejectUnauthorized:false —
-// interne Dienste (Stalwart, Vaultwarden, Syncthing-GUI …) nutzen self-signed
-// Zertifikate; global fetch würfe die als Fehler -> fälschlich "offline".
-// Ergebnis: { ok, statusCode, responded }. responded=true, sobald überhaupt
-// eine HTTP-Antwort kam (auch 5xx) — sonst greift der TCP-Fallback.
-function httpProbe(target) {
-  return new Promise((resolve) => {
-    let u;
-    try { u = new URL(target); } catch { return resolve({ ok: false, statusCode: 0, responded: false }); }
-    const lib = u.protocol === 'https:' ? https : http;
-    let settled = false;
-    const done = (v) => { if (!settled) { settled = true; resolve(v); } };
-
-    const req = lib.request(target, {
-      method: 'GET',
-      timeout: CHECK_TIMEOUT,
-      rejectUnauthorized: false,
-      headers: { 'User-Agent': 'HomelabDashboard-Uptime/1.0', 'Range': 'bytes=0-0' },
-    }, (res) => {
-      const status = res.statusCode || 0;
-      res.destroy(); // Body nicht laden — es zaehlt nur, dass geantwortet wurde
-      // Alles < 500 = läuft (Redirect, 401/403 Auth, 404 ohne Root-Route).
-      done({ ok: status > 0 && status < 500, statusCode: status, responded: true });
-    });
-    req.on('error', () => done({ ok: false, statusCode: 0, responded: false }));
-    req.on('timeout', () => { req.destroy(); done({ ok: false, statusCode: 0, responded: false }); });
-    req.end();
-  });
-}
-
-// TCP-Fallback: Dienste, die kein HTTP auf dem erkannten Port sprechen
-// (Syncthing-Sync-Port, Mail-Ports, rohe TCP-Dienste), gelten als online,
-// sobald der Port eine Verbindung annimmt. Verhindert falsche "offline".
-function tcpProbe(hostname, port) {
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-    let settled = false;
-    const done = (v) => { if (!settled) { settled = true; socket.destroy(); resolve(v); } };
-    socket.setTimeout(CHECK_TIMEOUT);
-    socket.once('connect', () => done(true));
-    socket.once('timeout', () => done(false));
-    socket.once('error', () => done(false));
-    socket.connect(port, hostname);
-  });
-}
-
-// Hostname ist eine IP-Adresse oder ein reiner Containername (kein Punkt): so adressierte
-// Dienste liegen im LAN oder im Docker-Netz der Zielmaschine und sind von hier aus oft gar
-// nicht erreichbar. Öffentliche Domains gehören nicht dazu — antworten die nicht, ist der
-// Dienst aus Sicht der Kunden tatsächlich weg.
-function nurLokalErreichbar(hostname) {
-  return /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || !hostname.includes('.');
-}
-
-/**
- * @param {{ state?: string, status?: string }|null} container Zustand des zugehörigen Containers
- *   (aus der Discovery). Der Dashboard-Container prüft per HTTP von außen; Dienste auf den
- *   Heim-VMs (LAN-IP) oder nur an 127.0.0.1 gebunden erreicht er nicht — dann entscheidet der
- *   Container-Zustand (läuft und nicht „unhealthy"), sonst stünden sie dauerhaft auf „offline".
- */
 export async function checkServiceHealth(serviceId, serverId, url, container = null) {
   if (!url) return;
 
   const db = getDb();
-  const target = toReachableUrl(serverId, url);
+  const verbindung = serverManager.getConnection(serverId);
+  const agent = verbindung?.sshAgent;
   const start = Date.now();
-  let online = false;
-  let statusCode = 0;
-
-  let u = null;
-  try { u = new URL(target); } catch { /* ungueltige URL */ }
-
-  const containerLaeuft = container?.state ? container.state === 'running' : null;
-  const containerGesund = containerLaeuft === true && !/unhealthy/i.test(container.status || '');
-
-  if (containerLaeuft === false) {
-    // Container gestoppt/beendet: sicher offline, kein Probieren nötig
-    online = false;
-  } else if (u) {
-    const probe = await httpProbe(target);
-    statusCode = probe.statusCode;
-    if (probe.ok) {
-      online = true;
-    } else if (!probe.responded) {
-      // Keine HTTP-Antwort (Nicht-HTTP-Port, Protokoll-Mismatch, Reset):
-      // Port-Verbindung prüfen. Offen -> Dienst läuft.
-      const port = u.port ? parseInt(u.port, 10) : (u.protocol === 'https:' ? 443 : 80);
-      online = await tcpProbe(u.hostname, port);
-      // Von hier nicht erreichbar (LAN-IP, Loopback-Bindung): Container-Zustand entscheidet
-      if (!online && containerGesund && nurLokalErreichbar(u.hostname)) online = true;
-    }
-    // probe.responded && !probe.ok => 5xx => bleibt offline
-  }
-
+  const ergebnis = await pruefeDienst(url, {
+    serverId,
+    server: verbindung?.config,
+    weiterleiten: agent?.weiterleiten,
+    container,
+    sprachHttp: !!db.prepare('SELECT 1 FROM uptime_http WHERE server_id = ? AND service_id = ?').get(serverId, serviceId),
+  });
   const responseTime = Date.now() - start;
 
+  // Nicht prüfbar: keine Messung erfinden, nur vermerken.
+  if (ergebnis.zustand === 'unbekannt') {
+    db.prepare('INSERT INTO uptime_unchecked (server_id, service_id, reason, since) VALUES (?, ?, ?, ?) ON CONFLICT (server_id, service_id) DO UPDATE SET reason = excluded.reason')
+      .run(serverId, serviceId, ergebnis.grund || null, new Date().toISOString());
+    return { serviceId, online: null, responseTime: 0, statusCode: 0 };
+  }
+
+  const online = ergebnis.zustand === 'online';
+  if (ergebnis.statusCode > 0) db.prepare('INSERT OR IGNORE INTO uptime_http (server_id, service_id) VALUES (?, ?)').run(serverId, serviceId);
+  db.prepare('DELETE FROM uptime_unchecked WHERE server_id = ? AND service_id = ?').run(serverId, serviceId);
   db.prepare(
     'INSERT INTO uptime_checks (service_id, server_id, online, response_time, status_code, checked_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(serviceId, serverId, online ? 1 : 0, responseTime, statusCode, new Date().toISOString());
+  ).run(serviceId, serverId, online ? 1 : 0, responseTime, ergebnis.statusCode, new Date().toISOString());
 
-  return { serviceId, online, responseTime, statusCode };
+  return { serviceId, online, responseTime, statusCode: ergebnis.statusCode };
 }
 
 export async function checkAllServices(services) {
@@ -150,76 +53,54 @@ export async function checkAllServices(services) {
     .map(r => r.value);
 }
 
+// Stunde als Schlüssel der Stundenwerte („2026-11-28T13“)
+const seitStunde = (ms) => new Date(Date.now() - ms).toISOString().slice(0, 13);
+
 export function getUptimePercent(serviceId, hours = 24) {
-  const db = getDb();
-  const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-
-  const row = db.prepare(
-    'SELECT COUNT(*) as total, SUM(online) as up FROM uptime_checks WHERE service_id = ? AND checked_at > ?'
-  ).get(serviceId, since);
-
-  if (!row || row.total === 0) return null;
+  const row = getDb().prepare('SELECT SUM(total) AS total, SUM(up) AS up FROM uptime_hourly WHERE service_id = ? AND hour >= ?')
+    .get(serviceId, seitStunde(hours * 3600000));
+  if (!row?.total) return null;
   return parseFloat(((row.up / row.total) * 100).toFixed(1));
 }
 
+// Einzelmessungen gibt es nur für die letzten 48 Stunden.
 export function getUptimeHistory(serviceId, hours = 24) {
-  const db = getDb();
-  const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-
-  return db.prepare(
+  const since = new Date(Date.now() - Math.min(hours, 48) * 3600000).toISOString();
+  return getDb().prepare(
     'SELECT online, response_time, checked_at FROM uptime_checks WHERE service_id = ? AND checked_at > ? ORDER BY checked_at ASC'
   ).all(serviceId, since);
 }
 
 export function getUptimeTimeline(serviceId, days = 30) {
-  const db = getDb();
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const rows = getDb().prepare(`
+    SELECT substr(hour, 1, 10) AS day, SUM(total) AS total, SUM(up) AS up, ROUND(SUM(rt_sum) * 1.0 / SUM(total)) AS rt
+    FROM uptime_hourly WHERE service_id = ? AND hour >= ? GROUP BY day ORDER BY day ASC
+  `).all(serviceId, seitStunde(days * 86400000));
+  const nachTag = new Map(rows.map(r => [r.day, r]));
 
-  const rows = db.prepare(`
-    SELECT
-      date(checked_at) as day,
-      COUNT(*) as total,
-      SUM(online) as up,
-      ROUND(AVG(response_time)) as avg_response_time,
-      MIN(response_time) as min_response_time,
-      MAX(response_time) as max_response_time
-    FROM uptime_checks
-    WHERE service_id = ? AND checked_at > ?
-    GROUP BY date(checked_at)
-    ORDER BY day ASC
-  `).all(serviceId, since);
-
-  // Build full timeline filling gaps with null
   const timeline = [];
   const now = new Date();
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(now);
     date.setDate(date.getDate() - i);
     const dayStr = date.toISOString().split('T')[0];
-    const row = rows.find(r => r.day === dayStr);
-
-    timeline.push(row ? {
+    const row = nachTag.get(dayStr);
+    timeline.push({
       date: dayStr,
-      uptime: row.total > 0 ? parseFloat(((row.up / row.total) * 100).toFixed(1)) : null,
-      checks: row.total,
-      avgResponseTime: row.avg_response_time || 0,
-    } : {
-      date: dayStr,
-      uptime: null,
-      checks: 0,
-      avgResponseTime: 0,
+      uptime: row?.total ? parseFloat(((row.up / row.total) * 100).toFixed(1)) : null,
+      checks: row?.total || 0,
+      avgResponseTime: row?.rt || 0,
     });
   }
 
   const totalChecks = rows.reduce((sum, r) => sum + r.total, 0);
   const totalUp = rows.reduce((sum, r) => sum + r.up, 0);
-
   return {
     serviceId,
     days,
     timeline,
     overallUptime: totalChecks > 0 ? parseFloat(((totalUp / totalChecks) * 100).toFixed(2)) : null,
-    totalChecks
+    totalChecks,
   };
 }
 

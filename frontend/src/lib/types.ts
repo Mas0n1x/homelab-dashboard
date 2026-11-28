@@ -148,6 +148,8 @@ export interface ServiceStatusEntry {
   current: boolean | null
   lastCheck: string | null
   timeline: { date: string; uptime: number | null; checks: number }[]
+  /** Grund, falls sich der Dienst gerade nicht prüfen lässt (dann weder online noch offline). */
+  unchecked?: string
 }
 
 export interface PortfolioData {
@@ -699,7 +701,7 @@ export interface FleetChange {
 
 export interface StatusBoard {
   groups: StatusGroup[]
-  summary: { up: number; down: number; total: number; servers: number }
+  summary: { up: number; down: number; unknown?: number; total: number; servers: number }
   generatedAt: string
 }
 

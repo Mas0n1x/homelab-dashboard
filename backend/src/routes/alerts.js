@@ -10,6 +10,23 @@ import { logAudit } from '../services/audit.js';
 
 const router = Router();
 
+// Zustellung: Ruhezeit, Tagesübersicht und Art je Ereignis
+router.get('/delivery', (req, res) => {
+  try {
+    res.json(alerting.getZustellung());
+  } catch (error) {
+    res.status(500).json({ error: 'Zustellung konnte nicht geladen werden', message: error.message });
+  }
+});
+
+router.put('/delivery', (req, res) => {
+  try {
+    res.json(alerting.setZustellung(req.body || {}));
+  } catch (error) {
+    res.status(500).json({ error: 'Zustellung konnte nicht gespeichert werden', message: error.message });
+  }
+});
+
 // Alert-Schwellen (konfigurierbar) lesen/setzen
 router.get('/thresholds', (req, res) => {
   try {

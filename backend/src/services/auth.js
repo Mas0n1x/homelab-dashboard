@@ -37,9 +37,10 @@ export async function verifyPassword(password, hash) {
   return bcrypt.compare(password, hash);
 }
 
-export function generateAccessToken(user) {
+// `sid` bindet das Zugriffs-Token an seine Sitzung: wird das Gerät abgemeldet, ist es sofort ungültig.
+export function generateAccessToken(user, sid) {
   return jwt.sign(
-    { id: user.id, username: user.username },
+    { id: user.id, username: user.username, ...(sid ? { sid } : {}) },
     JWT_SECRET,
     { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
@@ -49,23 +50,55 @@ export function generateRefreshToken() {
   return crypto.randomBytes(40).toString('hex');
 }
 
-export function storeRefreshToken(userId, token) {
+const tokenHash = (token) => crypto.createHash('sha256').update(token).digest('hex');
+// Ablaufzeiten stehen als ISO-Zeit in der Datenbank. Der Vergleich muss deshalb mit einer
+// ISO-Zeit erfolgen: gegen datetime('now') („JJJJ-MM-TT hh:mm:ss“) galt wegen des „T“
+// jedes am selben Tag abgelaufene Token weiter als gültig.
+const jetztIso = () => new Date().toISOString();
+
+export const neueSitzungsId = () => crypto.randomBytes(12).toString('hex');
+
+export function storeRefreshToken(userId, token, { sitzung = neueSitzungsId(), geraet = '', ip = '', begonnen } = {}) {
   const db = getDb();
-  const hash = crypto.createHash('sha256').update(token).digest('hex');
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  db.prepare('INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)').run(userId, hash, expiresAt);
+  db.prepare('INSERT INTO refresh_tokens (user_id, token_hash, expires_at, sitzung, geraet, ip, begonnen, zuletzt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(userId, tokenHash(token), expiresAt, sitzung, String(geraet).slice(0, 300), String(ip).slice(0, 60), begonnen || jetztIso(), jetztIso());
+  return sitzung;
 }
 
 export function validateRefreshToken(token) {
-  const db = getDb();
-  const hash = crypto.createHash('sha256').update(token).digest('hex');
-  return db.prepare("SELECT * FROM refresh_tokens WHERE token_hash = ? AND expires_at > datetime('now')").get(hash) || null;
+  return getDb().prepare('SELECT * FROM refresh_tokens WHERE token_hash = ? AND expires_at > ?').get(tokenHash(token), jetztIso()) || null;
 }
 
+/** Beendet die ganze Sitzung, zu der das Token gehört. Liefert deren Kennung. */
 export function revokeRefreshToken(token) {
   const db = getDb();
-  const hash = crypto.createHash('sha256').update(token).digest('hex');
-  db.prepare('DELETE FROM refresh_tokens WHERE token_hash = ?').run(hash);
+  const zeile = db.prepare('SELECT sitzung FROM refresh_tokens WHERE token_hash = ?').get(tokenHash(token));
+  if (!zeile) return null;
+  db.prepare('DELETE FROM refresh_tokens WHERE sitzung = ? OR token_hash = ?').run(zeile.sitzung, tokenHash(token));
+  return zeile.sitzung;
+}
+
+export function sitzungAktiv(sid) {
+  return !!getDb().prepare('SELECT 1 FROM refresh_tokens WHERE sitzung = ? AND expires_at > ? LIMIT 1').get(sid, jetztIso());
+}
+
+/** Je angemeldetem Gerät eine Zeile (neueste Angaben). */
+export function listeSitzungen(userId) {
+  return getDb().prepare(`
+    SELECT sitzung AS id, geraet, ip, begonnen, MAX(COALESCE(zuletzt, created_at)) AS zuletzt
+    FROM refresh_tokens WHERE user_id = ? AND expires_at > ? GROUP BY sitzung ORDER BY zuletzt DESC
+  `).all(userId, jetztIso());
+}
+
+export function beendeSitzungVon(userId, sid) {
+  return getDb().prepare('DELETE FROM refresh_tokens WHERE user_id = ? AND sitzung = ?').run(userId, sid).changes > 0;
+}
+
+export function beendeAndereSitzungen(userId, behalten) {
+  const andere = listeSitzungen(userId).map(s => s.id).filter(id => id !== behalten);
+  getDb().prepare('DELETE FROM refresh_tokens WHERE user_id = ? AND sitzung IS NOT ?').run(userId, behalten);
+  return andere;
 }
 
 /**
@@ -75,7 +108,7 @@ export function revokeRefreshToken(token) {
  */
 export function retireRefreshToken(token) {
   const db = getDb();
-  const hash = crypto.createHash('sha256').update(token).digest('hex');
+  const hash = tokenHash(token);
   const graceUntil = new Date(Date.now() + ROTATION_GRACE_SECONDS * 1000).toISOString();
   db.prepare(
     'UPDATE refresh_tokens SET expires_at = ? WHERE token_hash = ? AND expires_at > ?'
@@ -108,7 +141,7 @@ export async function ensureDefaultUser() {
 
 export function cleanupExpiredTokens() {
   const db = getDb();
-  const result = db.prepare("DELETE FROM refresh_tokens WHERE expires_at < datetime('now')").run();
+  const result = db.prepare('DELETE FROM refresh_tokens WHERE expires_at < ?').run(jetztIso());
   if (result.changes > 0) {
     console.log(`Cleaned up ${result.changes} expired refresh tokens`);
   }

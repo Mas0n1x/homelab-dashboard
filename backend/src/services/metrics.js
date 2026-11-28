@@ -175,8 +175,9 @@ export function getMemoryTrends() {
   const out = [];
 
   for (const s of servers) {
+    // 0 % gibt es nicht — das waren Lücken in der Messung und ergäben einen erfundenen Anstieg.
     const rows = db.prepare(
-      'SELECT hour, mem_avg FROM metrics_hourly WHERE server_id = ? AND hour > ? AND mem_avg IS NOT NULL ORDER BY hour ASC'
+      'SELECT hour, mem_avg FROM metrics_hourly WHERE server_id = ? AND hour > ? AND mem_avg > 0 ORDER BY hour ASC'
     ).all(s.id, since);
 
     const proTag = new Map();

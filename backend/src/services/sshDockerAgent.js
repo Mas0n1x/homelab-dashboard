@@ -238,6 +238,32 @@ export function createSshDockerAgent(connectConfig, label = 'ssh') {
   // Modul behebt. Deshalb absichtlich wirkungslos; zum Beenden gibt es close().
   agent.destroy = function () { /* die SSH-Verbindung bewusst offen halten */ };
 
+  // TCP-Weiterleitung über dieselbe Verbindung (für die Verfügbarkeitsprüfung).
+  agent.weiterleiten = async function (host, port, zeitlimit = 6000) {
+    clearTimeout(leerlaufTimer);
+    const c = await verbindung();
+    try {
+      return await new Promise((erfuellen, ablehnen) => {
+        let abgelaufen = false;
+        const zeit = setTimeout(() => {
+          abgelaufen = true;
+          ablehnen(new Error(`Weiterleitung zu ${host}:${port} ohne Antwort`));
+        }, zeitlimit);
+        zeit.unref?.();
+        c.forwardOut('127.0.0.1', 0, host, port, (err, stream) => {
+          clearTimeout(zeit);
+          if (err) return ablehnen(err);
+          stream.on('error', () => {});
+          // Kommt der Kanal erst nach der Frist, darf er nicht offen liegen bleiben.
+          if (abgelaufen) return stream.destroy();
+          erfuellen(stream);
+        });
+      });
+    } finally {
+      leerlaufPruefen();
+    }
+  };
+
   agent.close = function () { zuruecksetzen(null, 'close()'); };
   agent.zustand = () => ({
     verbunden: !!client,

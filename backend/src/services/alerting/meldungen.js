@@ -138,18 +138,30 @@ function muteMetric(serverId, metric) {
   return getServerOverrides(serverId)[metric] === null;
 }
 
-// ── Image-Updates: einmal melden, wenn Container auf veralteten Images laufen ──
-// Nur bei geänderter Liste und höchstens alle 20 Stunden — der Durchlauf selbst läuft alle 6 h.
-let letzteImageMeldung = { key: '', time: 0 };
-const IMAGE_MELDUNG_PAUSE_MS = 20 * 60 * 60 * 1000;
+// ── Image-Updates: nur melden, wenn ein Container NEU veraltet ist ──
+// Gemerkt in der Datenbank — im Arbeitsspeicher kam nach jedem Deploy dieselbe Meldung erneut.
+// Wer eine Woche lang nicht mehr als veraltet auftaucht, gilt wieder als neu.
+const IMAGE_VERGESSEN_MS = 7 * 24 * 60 * 60 * 1000;
+
+function neuVeraltet(namen) {
+  const db = getDb();
+  const row = db.prepare("SELECT value FROM settings WHERE key = 'image_meldung'").get();
+  let gemerkt = {};
+  try { gemerkt = row?.value ? JSON.parse(row.value) : {}; } catch { /* neu beginnen */ }
+  const jetzt = Date.now();
+  for (const [name, zeit] of Object.entries(gemerkt)) if (jetzt - zeit > IMAGE_VERGESSEN_MS) delete gemerkt[name];
+  const neu = namen.filter(n => !(n in gemerkt));
+  for (const n of namen) gemerkt[n] = jetzt;
+  db.prepare("INSERT INTO settings (key, value) VALUES ('image_meldung', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+    .run(JSON.stringify(gemerkt));
+  return neu;
+}
 
 export async function notifyImageUpdates(lauf) {
   const veraltet = lauf?.outdated || [];
-  if (veraltet.length === 0) { letzteImageMeldung = { key: '', time: letzteImageMeldung.time }; return; }
-
-  const key = veraltet.map(c => c.containerId || c.containerName).sort().join('|');
-  if (key === letzteImageMeldung.key) return;
-  if (Date.now() - letzteImageMeldung.time < IMAGE_MELDUNG_PAUSE_MS) return;
+  // Name statt Container-ID: die ID wechselt bei jedem Neuanlegen.
+  const namen = (lauf?.servers || []).flatMap(s => s.containers.filter(c => c.hasUpdate).map(c => `${s.serverId}/${c.containerName}`));
+  if (neuVeraltet(namen).length === 0) return;
 
   const proServer = new Map();
   for (const s of lauf.servers || []) {
@@ -158,7 +170,6 @@ export async function notifyImageUpdates(lauf) {
   }
   const zeilen = [...proServer].slice(0, 12).map(([name, namen]) => `**${name}**: ${namen.slice(0, 8).join(', ')}${namen.length > 8 ? ` und ${namen.length - 8} weitere` : ''}`);
 
-  letzteImageMeldung = { key, time: Date.now() };
   await notify('image_updates', {
     title: `🐳 ${veraltet.length} Container laufen auf einem veralteten Image`,
     message: zeilen.join('\n'),

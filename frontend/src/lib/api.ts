@@ -18,6 +18,9 @@ const API_BASE = typeof window !== 'undefined'
   ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api`
   : 'http://localhost:3001/api';
 
+// Hier bedeutet 401 etwas anderes als ein abgelaufenes Zugriffs-Token.
+const OHNE_ERNEUERUNG = /^\/auth\/(login|refresh|logout|password)/;
+
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
@@ -62,7 +65,7 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
   let res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
 
-  if (res.status === 401 && !endpoint.startsWith('/auth/')) {
+  if (res.status === 401 && !OHNE_ERNEUERUNG.test(endpoint)) {
     if (!isRefreshing) {
       isRefreshing = true;
       refreshPromise = refreshAccessToken().finally(() => { isRefreshing = false; });
@@ -93,7 +96,7 @@ export async function authedFetch(endpoint: string, options?: RequestInit): Prom
 
   let res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
 
-  if (res.status === 401 && !endpoint.startsWith('/auth/')) {
+  if (res.status === 401 && !OHNE_ERNEUERUNG.test(endpoint)) {
     if (!isRefreshing) {
       isRefreshing = true;
       refreshPromise = refreshAccessToken().finally(() => { isRefreshing = false; });
@@ -184,6 +187,26 @@ export const getTunnels = () => fetchApi<TunnelInfo[]>('/tunnels');
 export const getUptimeSummary = (serverId = 'local') => fetchApi(`/uptime/summary?serverId=${serverId}`);
 export const getUptimeHistory = (serviceId: string, hours = 24) => fetchApi(`/uptime/${serviceId}?hours=${hours}`);
 export const getUptimeTimeline = (serviceId: string, days = 30) => fetchApi(`/uptime/timeline/${serviceId}?days=${days}`);
+
+// Angemeldete Geräte
+export interface Session { id: string; geraet: string | null; ip: string | null; begonnen: string | null; zuletzt: string | null; aktuell: boolean }
+export const getSessions = () => fetchApi<Session[]>('/auth/sessions');
+export const endSession = (id: string) => fetchApi(`/auth/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export const endOtherSessions = () => fetchApi('/auth/sessions/others', { method: 'POST' });
+
+// Zustellung der Meldungen
+export type DeliveryMode = 'dringend' | 'sofort' | 'gesammelt';
+export interface AlertDelivery { quiet: { enabled: boolean; from: string; to: string }; digestAt: string; modes: Record<string, DeliveryMode> }
+export const getAlertDelivery = () => fetchApi<AlertDelivery>('/alerts/delivery');
+export const setAlertDelivery = (cfg: AlertDelivery) => fetchApi<AlertDelivery>('/alerts/delivery', { method: 'PUT', body: JSON.stringify(cfg) });
+
+// Wöchentliches Aufräumen
+export interface CleanupSchedule {
+  enabled: boolean; weekday: number; time: string;
+  letzter: { lauf: string; server: { name: string; ok: boolean; freigegeben: number; fehler?: string }[] } | null;
+}
+export const getCleanupSchedule = () => fetchApi<CleanupSchedule>('/docker/cleanup/schedule');
+export const setCleanupSchedule = (p: Partial<CleanupSchedule>) => fetchApi<CleanupSchedule>('/docker/cleanup/schedule', { method: 'PUT', body: JSON.stringify(p) });
 
 // SSH-Hostschlüssel
 export interface HostKey {

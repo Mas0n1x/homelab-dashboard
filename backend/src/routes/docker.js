@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import * as dockerService from '../services/docker.js';
 import { vorschau, aufraeumen } from '../services/cleanup.js';
+import { getAufraeumPlan, setAufraeumPlan } from '../services/autoCleanup.js';
 import serverManager from '../services/serverManager.js';
 import { logAudit } from '../services/audit.js';
 import { checkFleetImageUpdates, getLastImageUpdateRun } from '../services/imageUpdates.js';
@@ -274,6 +275,25 @@ router.post('/system/prune', async (req, res) => {
 // df und prune dauern auf vollen Platten deutlich länger als normale Abfragen.
 const AUFRAEUM_ZEITLIMIT_MS = 5 * 60 * 1000;
 const aufraeumZiel = (req) => dockerFor(req, AUFRAEUM_ZEITLIMIT_MS) || serverManager.getDocker('local');
+
+// Wöchentliches Aufräumen (Zeitplan und letztes Ergebnis)
+router.get('/cleanup/schedule', (req, res) => {
+  try {
+    res.json(getAufraeumPlan());
+  } catch (error) {
+    fail(res, error, 'Zeitplan konnte nicht geladen werden');
+  }
+});
+
+router.put('/cleanup/schedule', (req, res) => {
+  try {
+    const plan = setAufraeumPlan(req.body || {});
+    logAudit('docker.cleanup_schedule', plan.enabled ? 'an' : 'aus', { weekday: plan.weekday, time: plan.time }, req.user?.id);
+    res.json(plan);
+  } catch (error) {
+    fail(res, error, 'Zeitplan konnte nicht gespeichert werden');
+  }
+});
 
 router.get('/cleanup/preview', async (req, res) => {
   try {

@@ -15,6 +15,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: homelab-frontend
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
     restart: unless-stopped
     logging: *default-logging
     environment:
@@ -29,6 +35,12 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: homelab-backend
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
     # Docker fragte einen toten DNS-Server (192.168.178.2); direkt Fritzbox, Ausweich Cloudflare
     dns: [192.168.178.1, 1.1.1.1]
     restart: unless-stopped
@@ -108,6 +120,12 @@ services:
       context: ./bot-runtime
       dockerfile: Dockerfile
     container_name: homelab-bot-runtime
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3200/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
     # Docker fragte einen toten DNS-Server (192.168.178.2); direkt Fritzbox, Ausweich Cloudflare
     dns: [192.168.178.1, 1.1.1.1]
     restart: unless-stopped
@@ -142,6 +160,12 @@ services:
   nginx:
     image: nginx:alpine
     container_name: homelab-nginx
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
     restart: unless-stopped
     logging: *default-logging
     # Template als nginx.conf übernehmen (kein Platzhalter mehr nötig)

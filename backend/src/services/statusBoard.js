@@ -41,6 +41,7 @@ export function buildStatusBoard(days = 30) {
   }
 
   const lastCheck = nachDienst(letztePruefungen(db, since7));
+  const ungeprueft = nachDienst(db.prepare('SELECT server_id, service_id, reason FROM uptime_unchecked').all());
 
   // Tagesraster einmal vorbereiten — für jeden Dienst identisch.
   const dayKeys = [];
@@ -58,7 +59,10 @@ export function buildStatusBoard(days = 30) {
     const last = lastCheck.get(key);
     const days_ = byDay.get(key);
 
+    const offen = ungeprueft.get(key);
+
     return {
+      ...(offen ? { unchecked: offen.reason || 'nicht prüfbar' } : {}),
       uptime24h: a24?.total ? parseFloat(((a24.up / a24.total) * 100).toFixed(1)) : null,
       uptime7d: a7?.total ? parseFloat(((a7.up / a7.total) * 100).toFixed(1)) : null,
       avgResponseTime: Math.round(a24?.rt || 0),
@@ -76,7 +80,7 @@ export function buildStatusBoard(days = 30) {
   };
 
   const groups = [];
-  let up = 0, down = 0, total = 0;
+  let up = 0, down = 0, unknown = 0, total = 0;
 
   for (const server of servers) {
     const snapshot = getDiscoverySnapshot(server.id);
@@ -99,7 +103,8 @@ export function buildStatusBoard(days = 30) {
       const entry = buildEntry(server.id, s.id);
       // Ohne Messwerte zählt der Container-Zustand — so steht ein frisch
       // deployter Dienst sofort auf „online" statt eine Minute lang auf „–".
-      const isUp = entry.current !== null ? entry.current : s.state === 'running';
+      // Nicht prüfbar ist weder online noch offline.
+      const isUp = entry.unchecked ? null : entry.current !== null ? entry.current : s.state === 'running';
       const seen = firstSeen[s.id];
 
       services.push({
@@ -122,12 +127,12 @@ export function buildStatusBoard(days = 30) {
       });
 
       total++;
-      if (isUp) up++; else down++;
+      if (isUp === null) unknown++; else if (isUp) up++; else down++;
     }
 
     for (const m of manual) {
       const entry = buildEntry(server.id, m.id);
-      const isUp = entry.current !== null ? entry.current : true;
+      const isUp = entry.unchecked ? null : entry.current !== null ? entry.current : true;
       services.push({
         id: m.id,
         name: m.name,
@@ -143,7 +148,7 @@ export function buildStatusBoard(days = 30) {
         current: isUp,
       });
       total++;
-      if (isUp) up++; else down++;
+      if (isUp === null) unknown++; else if (isUp) up++; else down++;
     }
 
     // Kürzlich verschwundene Dienste sichtbar machen, statt sie wortlos zu
@@ -182,7 +187,7 @@ export function buildStatusBoard(days = 30) {
 
   return {
     groups,
-    summary: { up, down, total, servers: servers.length },
+    summary: { up, down, unknown, total, servers: servers.length },
     generatedAt: new Date().toISOString(),
   };
 }

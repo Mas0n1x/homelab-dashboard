@@ -33,7 +33,7 @@ wss.on('connection', (ws, req) => {
     return;
   }
 
-  merkeSitzung(benutzer.id, ws);
+  merkeSitzung(benutzer.id, ws, benutzer.sid);
   ws.benutzer = benutzer;
   console.log('Client connected to WebSocket');
   // Ein Takt je abonniertem Server: Abbestellen oder erneutes Abonnieren trifft nur ihn.

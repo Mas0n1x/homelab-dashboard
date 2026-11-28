@@ -15,6 +15,7 @@ import * as api from '@/lib/api';
 import type { AlertChannel } from '@/lib/types';
 import { SectionHeader, Toggle } from './ui';
 import { EVENT_OPTIONS } from './events';
+import { DeliveryCard } from './DeliveryCard';
 
 export function AlertsTab() {
   const queryClient = useQueryClient();
@@ -165,6 +166,8 @@ export function AlertsTab() {
             )}
           </div>
         </GlassCard>
+
+        <DeliveryCard />
 
         {history && history.length > 0 && (
           <GlassCard>

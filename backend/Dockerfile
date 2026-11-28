@@ -6,7 +6,7 @@ RUN apk add --no-cache python3 make g++ py3-pip curl && pip3 install --break-sys
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install --production
+RUN npm ci --omit=dev
 
 COPY src ./src
 

@@ -95,4 +95,6 @@ export function loescheRollupVor(db, grenzeIso) {
 export function loescheRollupFuer(db, serviceId, serverId) {
   db.prepare('DELETE FROM uptime_hourly WHERE service_id = ? AND server_id = ?').run(serviceId, serverId);
   db.prepare('DELETE FROM uptime_latest WHERE service_id = ? AND server_id = ?').run(serviceId, serverId);
+  db.prepare('DELETE FROM uptime_unchecked WHERE service_id = ? AND server_id = ?').run(serviceId, serverId);
+  db.prepare('DELETE FROM uptime_http WHERE service_id = ? AND server_id = ?').run(serviceId, serverId);
 }

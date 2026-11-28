@@ -68,7 +68,8 @@ type ServiceForm = { name: string; url: string; icon: string; description: strin
 const EMPTY_FORM: ServiceForm = { name: '', url: '', icon: 'link', description: '', category: 'Extern' };
 
 function ServiceTile({ svc, onOpen }: { svc: StatusService; onOpen: () => void }) {
-  const isUp = svc.current !== false && !svc.vanished;
+  const offen = !!svc.unchecked && !svc.vanished;
+  const isUp = svc.current !== false && !svc.vanished && !offen;
   const uptime = svc.uptime24h;
   const Icon = getIcon(svc.icon || 'link');
   const host = hostFrom(svc.publicUrl || svc.url);
@@ -85,9 +86,9 @@ function ServiceTile({ svc, onOpen }: { svc: StatusService; onOpen: () => void }
         <div className="flex items-start justify-between gap-2">
           <div className={clsx(
             'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-            svc.vanished ? 'bg-white/[0.05]' : isUp ? 'bg-accent/10' : 'bg-red-500/10',
+            svc.vanished || offen ? 'bg-white/[0.05]' : isUp ? 'bg-accent/10' : 'bg-red-500/10',
           )}>
-            <Icon className={clsx('w-5 h-5', svc.vanished ? 'text-white/50' : isUp ? 'text-accent-light' : 'text-red-400')} />
+            <Icon className={clsx('w-5 h-5', svc.vanished || offen ? 'text-white/50' : isUp ? 'text-accent-light' : 'text-red-400')} />
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {svc.source === 'docker' && (
@@ -97,7 +98,7 @@ function ServiceTile({ svc, onOpen }: { svc: StatusService; onOpen: () => void }
             )}
             <span className="relative flex h-2.5 w-2.5">
               {isUp && <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />}
-              <span className={clsx('relative inline-flex rounded-full h-2.5 w-2.5', svc.vanished ? 'bg-white/25' : isUp ? 'bg-emerald-400' : 'bg-red-400')} />
+              <span className={clsx('relative inline-flex rounded-full h-2.5 w-2.5', svc.vanished || offen ? 'bg-white/25' : isUp ? 'bg-emerald-400' : 'bg-red-400')} />
             </span>
           </div>
         </div>
@@ -133,12 +134,12 @@ function ServiceTile({ svc, onOpen }: { svc: StatusService; onOpen: () => void }
         <div className="pt-2 border-t border-white/[0.05] flex items-center justify-between text-xs tabular-nums">
           <span className={clsx(
             'font-semibold',
-            uptime === null ? 'text-white/50'
+            uptime === null || offen ? 'text-white/50'
               : uptime >= 99 ? 'text-emerald-400'
               : uptime >= 80 ? 'text-amber-400'
               : 'text-red-400',
           )}>
-            {svc.vanished ? 'entfernt' : uptime !== null ? `${uptime}% · 24h` : '–'}
+            {svc.vanished ? 'entfernt' : offen ? 'ungeprüft' : uptime !== null ? `${uptime}% · 24h` : '–'}
           </span>
           <span className="text-white/55">{svc.avgResponseTime ? `${svc.avgResponseTime} ms` : ''}</span>
         </div>
@@ -303,7 +304,7 @@ export default function StatusPage() {
                 : `${summary.down} von ${summary.total} Diensten offline`}
             </p>
             <p className="text-xs text-white/55 mt-0.5">
-              {summary.up} online · {summary.total} überwacht · {summary.servers} Server
+              {summary.up} online · {summary.total} überwacht{summary.unknown ? ` · ${summary.unknown} ungeprüft` : ''} · {summary.servers} Server
             </p>
           </div>
           <Activity className={clsx('w-5 h-5 flex-shrink-0', allOk ? 'text-emerald-400/50' : 'text-amber-400/50')} />
@@ -374,10 +375,10 @@ export default function StatusPage() {
             <div className="flex items-center gap-3">
               <span className={clsx(
                 'w-2.5 h-2.5 rounded-full flex-shrink-0',
-                detail.vanished ? 'bg-white/25' : detail.current !== false ? 'bg-emerald-400' : 'bg-red-400',
+                detail.vanished || detail.unchecked ? 'bg-white/25' : detail.current !== false ? 'bg-emerald-400' : 'bg-red-400',
               )} />
               <span className="text-sm text-white/70">
-                {detail.vanished ? 'Nicht mehr auf dem Server gefunden' : detail.current !== false ? 'Online' : 'Offline'}
+                {detail.vanished ? 'Nicht mehr auf dem Server gefunden' : detail.unchecked ? `Ungeprüft — ${detail.unchecked}` : detail.current !== false ? 'Online' : 'Offline'}
               </span>
               <span className="ml-auto text-[11px] px-1.5 py-0.5 rounded bg-white/[0.05] text-white/55 border border-white/10">{detail.category}</span>
               {detail.source === 'docker' && (

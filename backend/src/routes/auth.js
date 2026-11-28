@@ -9,7 +9,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import * as authService from '../services/auth.js';
 import { logAudit } from '../services/audit.js';
 import { clientIp } from '../middleware/clientIp.js';
-import { schliesseSitzungen } from '../services/sitzungen.js';
+import { schliesseSitzungen, schliesseSitzung } from '../services/sitzungen.js';
 import { istBrowser, setzeCookie, loescheCookie, tokenAusCookie } from '../middleware/sitzungsCookie.js';
 
 const router = Router();
@@ -64,9 +64,13 @@ router.post('/login', async (req, res) => {
     }
     loginAttempts.delete(ip);
 
-    const accessToken = authService.generateAccessToken(user);
+    // Meldet sich derselbe Browser erneut an, ersetzt das seine alte Sitzung.
+    const bisher = tokenAusCookie(req);
+    if (bisher) authService.revokeRefreshToken(bisher);
+
     const refreshToken = authService.generateRefreshToken();
-    authService.storeRefreshToken(user.id, refreshToken);
+    const sitzung = authService.storeRefreshToken(user.id, refreshToken, { geraet: req.headers['user-agent'], ip });
+    const accessToken = authService.generateAccessToken(user, sitzung);
 
     const setupCompleted = db.prepare("SELECT value FROM settings WHERE key = 'setup_completed'").get();
 
@@ -108,9 +112,11 @@ router.post('/refresh', (req, res) => {
 
     // Rotieren: altes Token in die Schonfrist schieben, neues ausgeben.
     authService.retireRefreshToken(refreshToken);
-    const newAccessToken = authService.generateAccessToken(user);
     const newRefreshToken = authService.generateRefreshToken();
-    authService.storeRefreshToken(user.id, newRefreshToken);
+    const sitzung = authService.storeRefreshToken(user.id, newRefreshToken, {
+      sitzung: tokenRecord.sitzung, begonnen: tokenRecord.begonnen, geraet: req.headers['user-agent'], ip: clientIp(req),
+    });
+    const newAccessToken = authService.generateAccessToken(user, sitzung);
 
     setzeCookie(req, res, newRefreshToken);
     res.json({
@@ -128,7 +134,8 @@ router.post('/refresh', (req, res) => {
 router.post('/logout', (req, res) => {
   const ausText = typeof req.body?.refreshToken === 'string' ? req.body.refreshToken : null;
   for (const token of [ausText, tokenAusCookie(req)]) {
-    if (token) authService.revokeRefreshToken(token);
+    const sitzung = token && authService.revokeRefreshToken(token);
+    if (sitzung) schliesseSitzung(sitzung);
   }
   loescheCookie(req, res);
   res.json({ ok: true });
@@ -174,6 +181,27 @@ router.put('/password', authenticateToken, async (req, res) => {
     console.error('Password change error:', error.message);
     res.status(500).json({ error: 'Interner Serverfehler' });
   }
+});
+
+// ── Angemeldete Geräte ──
+router.get('/sessions', authenticateToken, (req, res) => {
+  res.json(authService.listeSitzungen(req.user.id).map(s => ({ ...s, aktuell: s.id === req.user.sid })));
+});
+
+// Alle außer dem eigenen Gerät abmelden
+router.post('/sessions/others', authenticateToken, (req, res) => {
+  if (!req.user.sid) return res.status(409).json({ error: 'Bitte die Seite neu laden und erneut versuchen' });
+  const beendet = authService.beendeAndereSitzungen(req.user.id, req.user.sid);
+  beendet.forEach(schliesseSitzung);
+  logAudit('auth.sessions_revoked', req.user.username, { anzahl: beendet.length }, req.user.id);
+  res.json({ ok: true, beendet: beendet.length });
+});
+
+router.delete('/sessions/:id', authenticateToken, (req, res) => {
+  if (!authService.beendeSitzungVon(req.user.id, req.params.id)) return res.status(404).json({ error: 'Sitzung nicht gefunden' });
+  schliesseSitzung(req.params.id);
+  logAudit('auth.sessions_revoked', req.user.username, { anzahl: 1 }, req.user.id);
+  res.json({ ok: true });
 });
 
 // GET /api/auth/status

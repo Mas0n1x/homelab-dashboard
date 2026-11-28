@@ -14,6 +14,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useServerStore } from '@/stores/serverStore';
 import { zahl } from '@/lib/formatters';
 import * as api from '@/lib/api';
+import { AutoCleanup } from './AutoCleanup';
 
 const GRUPPEN: { key: api.CleanupKey; label: string; desc: string }[] = [
   { key: 'buildCache', label: 'Build-Cache', desc: 'Wird beim nächsten Build neu aufgebaut' },
@@ -117,6 +118,7 @@ export function CleanupCard() {
             </button>
           </>
         )}
+        <AutoCleanup />
       </div>
     </GlassCard>
 

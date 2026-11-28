@@ -8,6 +8,7 @@ import * as webpush from 'web-push';
 import { getDb } from '../database.js';
 import { BRAND, SEVERITY, severityFromColor, categoryFromEvent } from './branding.js';
 import { deleteChannel } from './kanaele.js';
+import { wartetBis, stelleZurueck } from './zustellung.js';
 
 // ── Web-Push (PWA) ───────────────────────────────────────────────
 // Jedes Gerät, das sich anmeldet, wird als Kanal vom Typ `webpush` abgelegt
@@ -88,11 +89,16 @@ const PUSH_STANDARD_EVENTS = [
 ];
 
 // Send webhook notification.
-// payload: { event, title, message, color, fields?: [{name,value,inline}], footer?, record? (default true) }
+// payload: { event, title, message, color, fields?: [{name,value,inline}], footer?, record? (default true), sofort? }
+// Ohne `sofort` entscheidet die Zustellart des Ereignisses (siehe zustellung.js).
 export async function sendWebhook(channel, payload) {
   try {
+    const bis = payload.sofort ? null : wartetBis(payload.event);
     let body;
-    if (channel.type === 'webpush') {
+    if (bis) {
+      // Zurückgehalten — im Verlauf steht sie trotzdem, daraus lesen die Alarme ihren Zustand.
+      stelleZurueck(channel.id, payload, bis);
+    } else if (channel.type === 'webpush') {
       await sendPush(channel, payload);
     } else if (channel.type === 'discord') {
       const sev = SEVERITY[severityFromColor(payload.color)] || SEVERITY.info;
@@ -126,7 +132,7 @@ export async function sendWebhook(channel, payload) {
       body = { text: `*${payload.title}*\n${payload.message}${extra}`, parse_mode: 'Markdown' };
     }
 
-    if (channel.type !== 'webpush') {
+    if (!bis && channel.type !== 'webpush') {
       const antwort = await fetch(channel.webhook_url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

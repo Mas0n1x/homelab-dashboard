@@ -11,7 +11,8 @@ import { recordSeenServices, purgeVanishedServices } from '../services/serviceRe
 import { checkAllServices } from '../services/uptime.js';
 import * as portfolio from '../services/portfolio.js';
 import { cleanupExpiredTokens } from '../services/auth.js';
-import { checkAlerts, checkServiceAlerts, sendStatusReport, checkForecastAlerts, notifyImageUpdates, checkMemoryTrendAlerts } from '../services/alerting.js';
+import { checkAlerts, checkServiceAlerts, sendStatusReport, checkForecastAlerts, notifyImageUpdates, checkMemoryTrendAlerts, liefereSammelmeldungen } from '../services/alerting.js';
+import { laufeWennFaellig } from '../services/autoCleanup.js';
 import { runDueBackups, enforceBackupRetention, markiereAbgebrocheneBackups } from '../services/backup.js';
 import { recordMetric, pruneMetrics, rollupHourly } from '../services/metrics.js';
 import { recordDiskDaily, recordDiskMounts, pruneDiskDaily, getDiskForecast } from '../services/diskForecast.js';
@@ -78,7 +79,7 @@ export function starteJobs() {
     await checkServiceAlerts({
       serverId: server.id,
       serverName: server.name || server.id,
-      services: results.map(r => {
+      services: results.filter(r => r.online !== null).map(r => {
         const name = namen.get(r.serviceId) || r.serviceId;
         return { key: r.serviceId, name: anzahl.get(name) > 1 ? `${name} (${r.serviceId})` : name, online: r.online };
       }),
@@ -292,6 +293,12 @@ export function starteJobs() {
   });
   setTimeout(pflegeLangzeit, 4 * 60 * 1000);
   setInterval(pflegeLangzeit, 15 * 60 * 1000);
+
+  // Zurückgehaltene Meldungen (Ruhezeit, Tagesübersicht) ausliefern
+  setInterval(makeJob('alert-digest', async () => { await liefereSammelmeldungen(); }), 5 * 60 * 1000);
+
+  // Wöchentliches Docker-Aufräumen (prüft alle 10 Minuten, ob es dran ist)
+  setInterval(makeJob('auto-cleanup', async () => { await laufeWennFaellig(); }), 10 * 60 * 1000);
 
   // Background: Geplante Backups prüfen (alle 5 Minuten; Fälligkeit anhand Intervall)
   setInterval(() => {

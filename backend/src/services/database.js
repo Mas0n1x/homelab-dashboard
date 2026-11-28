@@ -13,6 +13,10 @@ const CONFIG_PATH = process.env.CONFIG_PATH || '/app/data/config.json';
 
 let db;
 
+// Rohmessungen 48 h, Stundenwerte 92 Tage (die Statusseite zeigt bis zu 90).
+const ROHDATEN_STUNDEN = 48;
+const STUNDENWERTE_TAGE = 92;
+
 export function getDb() {
   if (!db) {
     throw new Error('Database not initialized');
@@ -457,6 +461,41 @@ export function initDatabase() {
     db.exec('ALTER TABLE users ADD COLUMN tokens_valid_after TEXT');
   }
 
+  // Angaben zum angemeldeten Gerät. Altbestand: jedes Token ist eine eigene Sitzung.
+  const tokenCols = db.prepare('PRAGMA table_info(refresh_tokens)').all().map(c => c.name);
+  for (const col of ['sitzung', 'geraet', 'ip', 'begonnen', 'zuletzt']) {
+    if (!tokenCols.includes(col)) db.exec(`ALTER TABLE refresh_tokens ADD COLUMN ${col} TEXT`);
+  }
+  db.exec("UPDATE refresh_tokens SET sitzung = 'alt-' || id WHERE sitzung IS NULL");
+  db.exec('CREATE INDEX IF NOT EXISTS idx_refresh_tokens_sitzung ON refresh_tokens(sitzung)');
+
+  // Dienste, die sich gerade nicht prüfen lassen (weder online noch offline), und
+  // zurückgehaltene Meldungen für Ruhezeit und Tagesübersicht.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS uptime_unchecked (
+      server_id TEXT NOT NULL,
+      service_id TEXT NOT NULL,
+      reason TEXT,
+      since TEXT NOT NULL,
+      PRIMARY KEY (server_id, service_id)
+    );
+    -- Dienste, die je per HTTP geantwortet haben: schweigen sie, hängen sie.
+    CREATE TABLE IF NOT EXISTS uptime_http (
+      server_id TEXT NOT NULL,
+      service_id TEXT NOT NULL,
+      PRIMARY KEY (server_id, service_id)
+    ) WITHOUT ROWID;
+    CREATE TABLE IF NOT EXISTS alert_queue (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      channel_id TEXT NOT NULL,
+      event_type TEXT,
+      title TEXT NOT NULL,
+      message TEXT,
+      created_at TEXT NOT NULL,
+      due_at TEXT NOT NULL
+    );
+  `);
+
   // Gemerkte SSH-Hostschlüssel (siehe sshHostKeys.js)
   db.exec(`
     CREATE TABLE IF NOT EXISTS ssh_host_keys (
@@ -510,6 +549,11 @@ export function initDatabase() {
 
   purgeLegacyUptimeHistory();
   initUptimeRollup(db);
+  // Aus den Rohdaten übernehmen, bevor diese gekürzt werden.
+  if (!db.prepare('SELECT 1 FROM uptime_http LIMIT 1').get()) {
+    db.exec('INSERT OR IGNORE INTO uptime_http (server_id, service_id) SELECT DISTINCT server_id, service_id FROM uptime_checks WHERE status_code > 0');
+  }
+  kuerzeRohdatenEinmalig();
 
   return db;
 }
@@ -549,6 +593,24 @@ function purgeLegacyUptimeHistory() {
     console.log('✓ VACUUM + ANALYZE nach Bereinigung abgeschlossen');
   } catch (error) {
     console.error('Legacy-Uptime-Bereinigung fehlgeschlagen:', error.message);
+  }
+}
+
+// Rohmessungen werden nur noch 48 Stunden gebraucht (ältere Zeiträume liefern die
+// Stundenwerte). Einmalig den Altbestand entfernen und den Platz zurückgeben.
+function kuerzeRohdatenEinmalig() {
+  if (db.prepare("SELECT 1 FROM settings WHERE key = 'uptime_raw_48h_v1'").get()) return;
+  try {
+    const grenze = new Date(Date.now() - ROHDATEN_STUNDEN * 3600 * 1000).toISOString();
+    const weg = db.prepare('DELETE FROM uptime_checks WHERE checked_at < ?').run(grenze).changes;
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('uptime_raw_48h_v1', 'true')").run();
+    if (weg > 0) {
+      db.exec('VACUUM');
+      db.exec('ANALYZE');
+      console.log(`✓ ${weg} alte Rohmessungen entfernt und Datenbank verkleinert`);
+    }
+  } catch (error) {
+    console.error('Kürzen der Rohmessungen fehlgeschlagen:', error.message);
   }
 }
 
@@ -633,9 +695,9 @@ export function cleanupVerlaeufe({ alarmTage = 90, auditTage = 365 } = {}) {
 }
 
 export function cleanupOldUptimeData() {
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const result = db.prepare('DELETE FROM uptime_checks WHERE checked_at < ?').run(thirtyDaysAgo);
-  loescheRollupVor(db, thirtyDaysAgo);
+  const rohGrenze = new Date(Date.now() - ROHDATEN_STUNDEN * 3600 * 1000).toISOString();
+  const result = db.prepare('DELETE FROM uptime_checks WHERE checked_at < ?').run(rohGrenze);
+  loescheRollupVor(db, new Date(Date.now() - STUNDENWERTE_TAGE * 86400000).toISOString());
   if (result.changes > 0) {
     console.log(`Cleaned up ${result.changes} old uptime records`);
   }

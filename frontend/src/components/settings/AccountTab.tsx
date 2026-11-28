@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { beendeSitzung } from '@/lib/session';
 import * as api from '@/lib/api';
 import { SectionHeader } from './ui';
+import { SessionsCard } from './SessionsCard';
 
 export function AccountTab() {
   const router = useRouter();
@@ -49,6 +50,7 @@ export function AccountTab() {
   };
 
   return (
+    <>
       <GlassCard>
         <div className="relative z-10">
           <SectionHeader icon={Shield} tint="bg-indigo-500/10 border-indigo-500/20 text-indigo-400" title="Passwort ändern" desc="Nach der Änderung wirst du neu angemeldet" />
@@ -79,5 +81,7 @@ export function AccountTab() {
           </div>
         </div>
       </GlassCard>
+      <SessionsCard />
+    </>
   );
 }

@@ -4,7 +4,7 @@
  * Licensed under the MIT License.
  */
 import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '../services/auth.js';
+import { JWT_SECRET, sitzungAktiv } from '../services/auth.js';
 import { getDb } from '../services/database.js';
 
 // Eine gültige Signatur allein reichte bisher als Zugangsbeweis: das Token trägt
@@ -36,6 +36,8 @@ function pruefeBenutzer(decoded) {
       return { ok: false, grund: 'Token vor der letzten Passwortänderung ausgestellt' };
     }
   }
+  // Tokens ohne `sid` stammen von vor der Sitzungsliste und laufen von selbst ab.
+  if (decoded.sid && !sitzungAktiv(decoded.sid)) return { ok: false, grund: 'Sitzung wurde beendet' };
   return { ok: true, user };
 }
 
