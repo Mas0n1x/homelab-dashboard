@@ -6,7 +6,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, LogIn, X } from 'lucide-react';
+import { Mail, LogIn } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addUserMailAccount } from '@/lib/api';
 import { useMailStore } from '@/stores/mailStore';
@@ -89,7 +90,8 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
           onChange={(e) => setEmail(e.target.value)}
           placeholder={provider === 'gmail' ? 'name@gmail.com' : 'user@domain.tld'}
           className="glass-input w-full"
-          autoComplete="email"
+          name="mailbox-address"
+          autoComplete="off"
         />
       </div>
       <div>
@@ -111,7 +113,9 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
             onChange={(e) => setAppPassword(e.target.value)}
             placeholder="xxxx xxxx xxxx xxxx"
             className="glass-input w-full"
-            autoComplete="off"
+            name="mailbox-app-password"
+            // "new-password" hindert den Browser, gespeicherte Zugänge einzusetzen.
+            autoComplete="new-password"
           />
           <p className="text-[11px] text-white/50 mt-1">
             Erstellen unter myaccount.google.com/apppasswords (2-Faktor muss aktiv sein). Dein normales Passwort funktioniert nicht.
@@ -142,34 +146,10 @@ export function MailSetup({ isModal = false, onClose }: MailSetupProps) {
 
   if (isModal) {
     return (
-      <>
-        <div
-          className="fixed inset-0 bg-black/50 z-50"
-          onClick={onClose}
-        />
-        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-          <div className="glass-card p-6 max-w-md w-full mx-4 pointer-events-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-indigo-500/15">
-                  <Mail className="w-6 h-6 text-indigo-400" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold">Mail-Konto hinzufügen</h2>
-                  <p className="text-xs text-white/55">Eigener Server oder Gmail verbinden</p>
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-white/5 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-400" />
-              </button>
-            </div>
-            {formContent}
-          </div>
-        </div>
-      </>
+      <Modal isOpen onClose={() => onClose?.()} title="Mail-Konto hinzufügen" size="sm">
+        <p className="text-xs text-white/55 mb-4">Eigener Server oder Gmail verbinden</p>
+        {formContent}
+      </Modal>
     );
   }
 

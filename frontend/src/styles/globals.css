@@ -158,6 +158,13 @@
     box-shadow: var(--glass-shadow-2), var(--glass-inset-shadow);
   }
 
+  /* Dialoge müssen auch ohne Weichzeichner lesbar sein: manche Browser (z. B.
+     ohne GPU-Beschleunigung) ignorieren backdrop-filter, dann schien die Seite
+     durch die fast durchsichtige Karte. */
+  .glass-card.modal-panel {
+    background: rgb(14, 14, 28);
+  }
+
   .glass-card::before {
     content: '';
     @apply absolute inset-0 rounded-2xl pointer-events-none z-0;

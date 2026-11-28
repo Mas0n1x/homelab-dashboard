@@ -192,7 +192,7 @@ function ComposeDialog() {
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="fixed inset-x-4 top-[10%] bottom-[10%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[640px] z-50 glass-card flex flex-col overflow-hidden"
+        className="fixed inset-x-4 top-[10%] bottom-[10%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[640px] z-50 glass-card modal-panel flex flex-col overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">

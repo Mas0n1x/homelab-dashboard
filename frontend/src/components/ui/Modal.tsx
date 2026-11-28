@@ -50,7 +50,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 24 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className={`relative w-full ${sizes[size]} glass-card p-0 max-h-[88dvh] sm:max-h-[85vh] flex flex-col`}
+            className={`relative w-full ${sizes[size]} glass-card modal-panel p-0 max-h-[88dvh] sm:max-h-[85vh] flex flex-col`}
           >
             <div className="relative z-10 flex items-center justify-between p-5 border-b border-white/[0.06]">
               <h2 className="text-lg font-semibold">{title}</h2>
