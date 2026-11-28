@@ -17,6 +17,7 @@ const { createSshDockerAgent } = await import('../src/services/sshDockerAgent.js
 const lausche = (server) => new Promise((r) => server.listen(0, '127.0.0.1', () => r(server.address().port)));
 const offen = [];
 const starte = async (server) => { offen.push(server); return lausche(server); };
+const starteAn = (host, server) => { offen.push(server); return new Promise((r) => server.listen(0, host, () => r(server.address().port))); };
 
 const webOk = await starte(http.createServer((q, a) => a.end('ok')));
 const webKaputt = await starte(http.createServer((q, a) => { a.statusCode = 503; a.end(); }));
@@ -84,3 +85,18 @@ test('verbotene Weiterleitung ergibt unbekannt', async () => {
 test('gestoppter Container ist offline ohne Netzzugriff', async () => {
   assert.equal((await pruefe(webOk, { container: { state: 'exited' } })).zustand, 'offline');
 });
+
+test('nur an einer bestimmten Adresse gebunden: diese wird mitgeprüft', async () => {
+  const nurDort = await starteAn('127.0.0.2', http.createServer((q, a) => a.end('ok')));
+  assert.equal((await pruefeDienst(`http://127.0.0.1:${nurDort}`, umfeld)).zustand, 'offline');
+  const r = await pruefeDienst(`http://127.0.0.1:${nurDort}`, { ...umfeld, container: { state: 'running', bind: ['127.0.0.2'] } });
+  assert.equal(r.zustand, 'online');
+});
+
+test('ohne erreichbaren Port entscheidet der Healthcheck, sonst unbekannt', async () => {
+  const frage = (status) => pruefeDienst('http://nur-im-docker-netz:1', { serverId: 's', container: { state: 'running', status } });
+  assert.equal((await frage('Up 2 days (healthy)')).zustand, 'online');
+  assert.equal((await frage('Up 2 days (unhealthy)')).zustand, 'offline');
+  assert.equal((await frage('Up 2 days')).zustand, 'unbekannt');
+});
+

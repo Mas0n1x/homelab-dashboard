@@ -143,6 +143,8 @@ export async function discoverServices(serverId = 'local') {
           order: parseInt(c.Labels?.['dashboard.order'] || '999'),
           state: c.State,
           status: c.Status,
+          // Ports, die nur an einer bestimmten Adresse lauschen (z. B. der Docker-Brücke).
+          bind: [...new Set((c.Ports || []).filter(p => p.PublicPort && /^\d+\.\d+\.\d+\.\d+$/.test(p.IP) && p.IP !== '0.0.0.0').map(p => p.IP))],
           image: c.Image,
           project: composeProject || name
         };

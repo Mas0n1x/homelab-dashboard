@@ -112,8 +112,8 @@ function bewerte(antwort, sprachHttp) {
   return { zustand: 'online', statusCode: 0 };
 }
 
-async function durchTunnel(u, serverId, weiterleiten, sprachHttp) {
-  const ziele = ['127.0.0.1', ...(istSchleife(u.hostname) ? [] : [u.hostname])];
+async function durchTunnel(u, weiterleiten, sprachHttp, bind) {
+  const ziele = [...new Set(['127.0.0.1', ...(istSchleife(u.hostname) ? [] : [u.hostname]), ...bind])];
   for (const host of ziele) {
     let kanal;
     try {
@@ -133,14 +133,24 @@ async function durchTunnel(u, serverId, weiterleiten, sprachHttp) {
  * @param {{ serverId: string, server?: object, weiterleiten?: Function, container?: object|null, sprachHttp?: boolean }} umfeld
  * @returns {Promise<{ zustand: 'online'|'offline'|'unbekannt', statusCode: number, grund?: string }>}
  */
-export async function pruefeDienst(url, { serverId, server = {}, weiterleiten, container = null, sprachHttp = false }) {
+export async function pruefeDienst(url, umfeld) {
+  const ergebnis = await pruefeNetz(url, umfeld);
+  if (ergebnis.zustand !== 'unbekannt') return ergebnis;
+  // Dienste ohne erreichbaren Port: der Healthcheck des Containers ist eine echte Prüfung.
+  const status = umfeld.container?.status || '';
+  if (/\(healthy\)/.test(status)) return { zustand: 'online', statusCode: 0 };
+  if (/\(unhealthy\)/.test(status)) return { zustand: 'offline', statusCode: 0 };
+  return ergebnis;
+}
+
+async function pruefeNetz(url, { serverId, server = {}, weiterleiten, container = null, sprachHttp = false }) {
   if (container?.state && container.state !== 'running') return { zustand: 'offline', statusCode: 0 };
 
   let u;
   try { u = new URL(url); } catch { return { zustand: 'offline', statusCode: 0 }; }
 
   const eigen = istSchleife(u.hostname) || u.hostname === server.host || u.hostname === server.ssh_host;
-  if (eigen && weiterleiten) return mitPlatz(serverId, () => durchTunnel(u, serverId, weiterleiten, sprachHttp));
+  if (eigen && weiterleiten) return mitPlatz(serverId, () => durchTunnel(u, weiterleiten, sprachHttp, container?.bind || []));
 
   // Läuft das Dashboard auf demselben Rechner (kein SSH), sind private Adressen nur
   // über das Host-Gateway erreichbar.

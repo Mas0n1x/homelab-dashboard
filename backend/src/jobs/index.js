@@ -65,7 +65,7 @@ export function starteJobs() {
       ?? await withTimeout(discoverServices(server.id), 20000, 'discovery');
     const manual = getDb().prepare('SELECT id, name, url, server_id as serverId FROM manual_services WHERE server_id = ?').all(server.id);
     const allServices = [
-      ...discovered.map(s => ({ id: s.id, name: s.name, url: s.url, serverId: s.serverId, container: { state: s.state, status: s.status } })),
+      ...discovered.map(s => ({ id: s.id, name: s.name, url: s.url, serverId: s.serverId, container: { state: s.state, status: s.status, bind: s.bind } })),
       ...manual
     ];
     const results = await checkAllServices(allServices);
